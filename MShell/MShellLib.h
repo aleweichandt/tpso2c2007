@@ -54,6 +54,8 @@ int 	MSH_ConectarADS();
 void 	MSH_ConfirmarConexion( tSocket* sockIn );
 void 	MSH_AtenderADS ( tSocket *sockIn );
 
-
+int 	MSH_Login_Send(char msj[15]);
+int 	MSH_Exec_Prog(char prog[30]);
+int 	MSH_Logout();
 #endif /*MSHELLLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

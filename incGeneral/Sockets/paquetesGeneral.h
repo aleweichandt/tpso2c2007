@@ -67,9 +67,16 @@ typedef enum
 {
 	PAQ_PING,
 	PAQ_PONG,
-	
-	PAQ_USR_NAME,
-	PAQ_USR_PWD
+	PAQ_LOGIN_USR,
+	PAQ_LOGIN_PWD,
+	PAQ_LOGOUT,
+	PAQ_EXIT,
+	PAQ_EXEC_PROG,
+	PAQ_USR_OK,
+	PAQ_USR_ERROR,
+	PAQ_PWD_OK,
+	PAQ_PWD_ERROR,
+	PAQ_PRINT
 	
 } tPaq_ids;
 /* Fin de Registro de los ids de paquetes */
@@ -84,10 +91,16 @@ char IS_PPCB_PAQ ( tPaquete *paq );
 /* Funciones para identificar el paquete, seria conveniente ir agregando aca una funcion para cada paq */
 char IS_PAQ_PING ( tPaquete *paq );
 char IS_PAQ_PONG ( tPaquete *paq );
-
-char IS_PAQ_USR_NAME ( tPaquete *paq );
-char IS_PAQ_USR_PWD ( tPaquete *paq );
-
+char IS_PAQ_LOGIN_USR ( tPaquete *paq );
+char IS_PAQ_LOGIN_PWD ( tPaquete *paq );
+char IS_PAQ_LOGOUT ( tPaquete *paq );
+char IS_PAQ_EXIT ( tPaquete *paq );
+char IS_PAQ_EXEC_PROG ( tPaquete *paq );
+char IS_PAQ_USR_OK ( tPaquete *paq );
+char IS_PAQ_USR_ERROR ( tPaquete *paq );
+char IS_PAQ_PWD_OK ( tPaquete *paq );
+char IS_PAQ_PWD_ERROR ( tPaquete *paq );
+char IS_PAQ_PRINT ( tPaquete *paq );
 /* --- */
 
 /* Prototipos publicos */
@@ -99,7 +112,11 @@ tPaquete* paquetes_PaqToPaq( const char* buffer  );
 
 tPaquete* paquetes_newPaqPing( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqPong( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
-
-
+tPaquete* paquetes_newPaqLogin_Usr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char user_Name[15] );
+tPaquete* paquetes_newPaqLogin_Pwd( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char user_Password[15] );
+tPaquete* paquetes_newPaqLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqExit( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqExec_Prog( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char program_Name[30] );
+tPaquete* paquetes_newPaqPrint( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char msg[30] );
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
