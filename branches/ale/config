@@ -1,8 +1,8 @@
 %MSHELL%
 <ADS_IP>=127.0.0.1
 <ADS_PORT>=9150
-<PATH_USU>=./
+<PATH_USU>=./login/
 %ADS%
 <ACR_IP>=127.0.0.1
 <ACR_PORT>=92000
-<PATH_USU>=./
+<PATH_USU>=./login/
