@@ -1,10 +1,10 @@
 GCC_NOCHECK = 
-GCC_BASICO = 
+GCC_BASICO =
 GCC_POSIX = $(GCC_BASICO) 
 GCC_ANSI = $(GCC_POSIX) -ansi -DNCOMP_SOLO_ANSI
 # -DCHT_NOGRAF elimina los iconos del contestador
 GCC_DEBUG = -O0 -g3 -DNCOMP_DEBUG
-LIBRERIAS = lib/incGeneral.o lib/log.o lib/infoControl.o lib/estructuras.o lib/libConf.o lib/conexiones.o lib/paquetesGeneral.o lib/ventanas.o 
+LIBRERIAS = lib/incGeneral.o lib/log.o lib/infoControl.o lib/estructuras.o lib/libConf.o lib/conexiones.o lib/paquetesGeneral.o lib/ventanas.o lib/DatosUsuariosADS.o
 
 
 all : librerias MSHELL ADS
@@ -22,11 +22,14 @@ lib/MShellLib.o : MShell/MShellLib.c MShell/MShellLib.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/MShellLib.o" "MShell/MShellLib.c"
 
 #ADS ---------------------------------------------
-ADS : librerias lib/ADSLib.o ADS/ADS.c ADS/ADS.h
+ADS : librerias lib/DatosUsuariosADS.o lib/ADSLib.o ADS/ADS.c ADS/ADS.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -lpthread -o"ads" $(LIBRERIAS) "lib/ADSLib.o" "ADS/ADS.c"
 
 lib/ADSLib.o : ADS/ADSLib.c ADS/ADSLib.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/ADSLib.o" "ADS/ADSLib.c"
+
+lib/DatosUsuariosADS.o : ADS/DatosUsuariosADS.c ADS/DatosUsuariosADS.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosUsuariosADS.o" "ADS/DatosUsuariosADS.c"
 
 #Librerias -------------------------------------
 librerias : $(LIBRERIAS)

@@ -13,7 +13,6 @@
  /*Variables privadas*/
 sigset_t 		conjunto_seniales;
 
-
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
 \**************************************************/
@@ -81,6 +80,12 @@ int ADS_Init( )
 			
 		ADS.m_ultimoSocket = SOCK_ESCUCHA;
 		
+		if ( ADS_ConectarACR() == ERROR )
+		{
+			Log_log( log_error, "Error conectandose con el ACR!" );
+			break;
+		}
+		
 		signal(SIGALRM, ADS_ProcesarSeniales);
 		signal(SIGCHLD, ADS_ProcesarSeniales);
 	
@@ -94,7 +99,7 @@ int ADS_Init( )
 	}
 	else
 	{
-		printf("No se puede crear el Buscador: revise el archivo de configuracion\n");
+		printf("No se puede crear el ADS: revise el archivo de configuracion\n");
 	}
 		
 	exit(EXIT_FAILURE);
@@ -122,14 +127,14 @@ int ADS_LeerConfig()
 		ADS.m_ACR_Port = config_GetVal_Int( cfg, _ADS_, "ACR_PORT" );
 		
 		/*Levanto la configuracion*/
-		if ( (tmp = config_GetVal( cfg, _MSHELL_, "ADS_IP" ) ) )
+		if ( (tmp = config_GetVal( cfg, _ADS_, "ADS_IP" ) ) )
 		{
 			strncpy( ADS.m_IP, tmp, LEN_IP );
 		}
 		
-		ADS.m_Port = config_GetVal_Int( cfg, _MSHELL_, "ADS_PORT" );
+		ADS.m_Port = config_GetVal_Int( cfg, _ADS_, "ADS_PORT" );
 		
-			
+		strcpy(ADS.m_PathUsuarios, config_GetVal( cfg, _ADS_, "PATH_USU"));	
 
 		config_Destroy(cfg);
 
@@ -141,9 +146,69 @@ int ADS_LeerConfig()
 }
 
 /**********************************************************************/
-int ACR_ConectarACR()
+int ADS_ConectarACR()
 {
-	return ERROR;
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
+	
+	memset( szIP, 0, 4 );
+	
+	if ( !( pSocket = conexiones_ConectarHost( ADS.m_ACR_IP, ADS.m_ACR_Port,
+										 &ADS_ConfirmarConexion ) ) )
+	{
+		return ERROR;
+	}
+	
+	ADS.m_ListaSockets[ SOCK_ACR ] = pSocket;
+	ADS.m_ultimoSocket = SOCK_ACR;
+	
+	/*Mando el Ping al ACR*/
+	Log_log( log_debug, "envio Ping para conectarme con ACR" );
+	
+	if ( !(pPaq  = paquetes_newPaqPing( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+		return ERROR;
+	
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	
+	paquetes_destruir( pPaq );
+	
+	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
+}
+/**********************************************************/
+void ADS_ConfirmarConexion( tSocket* sockIn )
+{
+	char* 			tmp; 
+	int 			len; 
+	char 			buffer[ PAQUETE_MAX_TAM ];
+	tPaquete* 		paq = NULL;
+	
+	Log_printf( log_debug, "%s: %d confirma conexion!", 
+			conexiones_getIpRemotaDeSocket( sockIn ), 
+			(int) conexiones_getPuertoRemotoDeSocket( sockIn ) );
+	
+		
+	len = conexiones_recvBuff( sockIn, buffer, PAQUETE_MAX_TAM );
+	
+	if ( ERROR == len || !len)
+	{
+		conexiones_CerrarSocket( ADS.m_ListaSockets, sockIn, &ADS.m_ultimoSocket );
+		return;
+	}
+	
+		
+	paq = paquetes_CharToPaq( buffer );
+
+	if ( IS_ACR_PAQ( paq ) &&  IS_PAQ_PONG ( paq ) )
+	{/*Si el ADS me responde pong la conexion queda establecida!*/
+				
+		Log_log( log_debug, "Conexion establecida con el ACR!" );
+		sockIn->callback = &ADS_AtenderACR;
+	}
+	
+	if ( paq ) 
+		paquetes_destruir( paq );
 }
 
 /**********************************************************/
@@ -211,7 +276,7 @@ void ADS_HandShake( tSocket* sockIn )
 		
 		sockIn->callback = &ADS_AtenderMSH;
 		
-		/*Mando el Pong al ADS*/
+		/*Mando el Pong al Mshell*/
 		paquetes_destruir( paq );
 		paq = NULL; /*Se puede hacer una funcion en paquetesGeneral que devuelve un char directamente*/
 		
@@ -227,7 +292,6 @@ void ADS_HandShake( tSocket* sockIn )
 			Log_logLastError( "error enviando pong " );
 		
 	}
-	
 	if ( paq ) 
 		paquetes_destruir( paq );
 }
@@ -269,6 +333,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 	char 			*tmp;
 	char			buffer [ 66 ]; 
 	tIDMensaje		idMsj;
+	char			szUserName[LEN_USERNAME] = {'\0'};
 
 
 	len = conexiones_recvBuff(sockIn, buffer, 66);
@@ -284,18 +349,230 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 
 	if ( IS_PAQ_USR_NAME( paq ) )
 	{/*Me llega el nombre de usuario*/
+		tPaquete *paqSend = NULL;
+		unsigned char szIP[4];
+		int nSend;
+			
+		memset( szIP, 0, 4 );
+		
+		paquetes_ParsearUserName(buffer, szUserName);
+		/*verificarExistenciaUsuario en archivo de usuarios*/
+		if ( ADS_BuscarUsuario(ADS.m_PathUsuarios, szUserName ) )
+		{
+			UsuariosADS_AgregarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor, paq->id.IP, szUserName, ESPERANDO_PASS);
+			
+			if ( !(paqSend  = paquetes_newPaqUserNameOk( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn) )) )
+			{
+				Log_log( log_error, "Error enviando UserNameOk al MShell" );
+			}
+			Log_log( log_debug, "Informo que el UserName es valido" );
+			
+		}
+		else
+		{
+			if ( !(paqSend  = paquetes_newPaqUserNameInvalido( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn) )) )
+			{
+				Log_log( log_error, "Error enviando UserNameInvalido al MShell" );
+			}
+			Log_log( log_debug, "Informo que el UserName no es valido" );
+		}
+		nSend = conexiones_sendBuff( sockIn,(const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
+		if ( nSend != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError( "error enviando Validacion UserName " );
+		}
+		paquetes_destruir( paqSend );
 	}
-	else if ( IS_PAQ_USR_PWD( paq ) )
-	{/*Me llega el password*/
+	else /*es un paquete encriptado*/
+	{	
+		paquetes_destruir(paq);
+		paq = paquetes_CharToPaq((const char*)AplicarXorEnString(buffer, ADS_GetClaveByConnId(sockIn->descriptor)));
+		
+		
+		if ( IS_PAQ_USR_PWD( paq ) )
+		{/*Me llega el password */
+			
+			/*precondicion: el Mshell sabe que no puede mandar otra ves el pass, si ya esta logueado*/
+			tUsuarioADS* usrBuscado = NULL;
+			int iPos = 0;
+			char szPassword[LEN_PASSWORD];
+			tPaquete *paqSend = NULL;
+			unsigned char szIP[4];
+			int nSend;
+			
+			memset( szIP, 0, 4 );
+			
+			if((usrBuscado = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),sockIn->descriptor, &iPos))==NULL)
+			{
+				return;
+			}
+			paquetes_ParsearPassword(buffer, szPassword);
+			if(ADS_ValidarPassword(usrBuscado->Usuario, szPassword, ADS.m_PathUsuarios))
+			{
+				usrBuscado->Estado = CONECTADO;
+				if ( !(paqSend  = paquetes_newPaqPasswordOk( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn) )) )
+				{
+					Log_log( log_error, "Error enviando Welcome al MShell" );
+				}
+				Log_log( log_debug, "Informo que el usuario esta logueado" );
+				nSend = conexiones_sendBuff( sockIn,  (const char*)AplicarXorEnString(paquetes_PaqToChar( paqSend ), ADS_GetClaveByConnId(sockIn->descriptor)), PAQUETE_MAX_TAM );
+				if ( nSend != PAQUETE_MAX_TAM )
+				{
+					Log_logLastError( "error enviando Welcome al MShell" );
+				}
+			}
+			else
+			{
+				if ( !(paqSend  = paquetes_newPaqPasswordInvalido( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn) )) )
+				{
+					Log_log( log_error, "Error enviando pasword invalido al MShell" );
+				}
+				Log_log( log_debug, "Informo que el usuario no se pudo loguear" );
+				nSend = conexiones_sendBuff( sockIn, (const char*)AplicarXorEnString(paquetes_PaqToChar( paqSend ), ADS_GetClaveByConnId(sockIn->descriptor)), PAQUETE_MAX_TAM );
+				if ( nSend != PAQUETE_MAX_TAM )
+				{
+					Log_logLastError( "error enviando pasword invalido al MShell" );
+				}
+				UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
+				ADS_CerrarConexion(sockIn);
+			}
+			paquetes_destruir( paqSend );
+		}
+		else if(IS_PAQ_LOGOUT(paq))
+		{
+			tPaquete *paqSend = NULL;
+			unsigned char szIP[4];
+			int nSend;
+			
+			memset( szIP, 0, 4 );
+
+			ADS_CerrarConexion(sockIn);
+			
+			if ( !(paqSend  = paquetes_newPaqADSLogout( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),sockIn->descriptor )) )
+			{
+				Log_log( log_error, "Error enviando Logout al ACR" );
+			}
+			Log_log( log_debug, "Informo al ACR que se desconecto un Usuario" );
+			nSend = conexiones_sendBuff( ADS.m_ListaSockets[SOCK_ACR], (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
+			if ( nSend != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError( "Error enviando Logout de un usuario al ACR" );
+			}
+			
+			UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
+			
+			paquetes_destruir( paqSend );
+		}
+		else if(IS_PAQ_EXEC(paq))/*TODO: verificar q info necesita el ACR*/
+		{
+			int nSend;
+			
+			nSend = conexiones_sendBuff( ADS.m_ListaSockets[SOCK_ACR], (const char*)paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+			if ( nSend != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError( "Error enviando Exec al ACR" );
+			}
+		}
+		
+		if ( paq )
+		{
+			paquetes_destruir( paq );
+		}
 	}
-	
-	
-	if ( paq ) 
-		paquetes_destruir( paq );
 	
 }
 
 
+/**********************************************************/
+char* ADS_BuscarUsuario(const char* szPathUsuarios, const char* userName)
+{
+	char szLinea[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	FILE *fp;
+	
+	if( ( fp = fopen( szPathUsuarios, "r" ) ) == NULL )
+	{
+		printf("Error al abrir el archivo de Usuarios\n");
+		return NULL;
+	}
+	while(fgets(szLinea,LEN_MAX_LINEA_ARCH_USUARIOS, fp))
+	{
+		char szUserName[LEN_USERNAME] = {'\0'};
+		
+		ADS_ExtraerUserName(szUserName, szLinea);
+		if (strcmp(userName, szUserName) == 0)
+		{
+			fclose(fp);
+			return szLinea;
+		}
+	}
+	fclose(fp);
+	return NULL;
+}
+
+/**********************************************************/
+void ADS_ExtraerUserName(char* szUserNAme, const char* szLinea)
+{
+	char szLineaCpy[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	
+	strcpy(szUserNAme, strtok(szLineaCpy, ":"));
+	return;
+}
+
+/**********************************************************/
+char *  ADS_ValidarPassword(const char *szUsername, const char *szPassword, const char *szPathUsuarios)
+{
+	char szLinea[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	char szPassExtraido[LEN_PASSWORD] = {'\0'};
+	
+	strcpy(szLinea,  ADS_BuscarUsuario(szPathUsuarios, szUsername));
+	if(strlen(szLinea) == 0)
+	{
+		return NULL;
+	}
+	ADS_ExtraerPassword(szPassExtraido, szPathUsuarios);
+	if (strcmp(szPassword, szPassExtraido) != 0)
+	{
+		return NULL;
+	}
+	return szPassExtraido;
+}
+
+/**********************************************************/
+void 	ADS_ExtraerPassword(char* szPassword, const char* szLinea)
+{
+	char szLineaCpy[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	strtok(szLineaCpy, ":");
+	strcpy(szPassword, strtok(szLineaCpy, NULL));
+	return;
+}
+/**********************************************************/
+int ADS_GetClaveByConnId(int ConnId)
+{
+	char szNombreArchivoClave[LEN_USERNAME + 5] = {'\0'};
+	int iPos = 0;
+	tUsuarioADS *usr = NULL;
+	FILE *fp;
+	int key;
+	
+	if((usr = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),ConnId, &iPos))==NULL)
+	{
+		printf("Error al abrir el archivo de Clave\n");
+		return -1;
+	}
+	strcpy(szNombreArchivoClave, usr->Usuario);
+	strcat(szNombreArchivoClave, TERMINACION_ARCHIVO_CLAVE);
+	
+	if( ( fp = fopen( szNombreArchivoClave, "r" ) ) == NULL )
+	{
+		printf("Error al abrir el archivo de Clave\n");
+		return -1;
+	}
+	key = fgetc(fp);
+	
+	fclose(fp);
+	
+	return key;
+}
 /**********************************************************/
 void ADS_Salir()
 {
@@ -311,6 +588,7 @@ void ADS_Salir()
 /**********************************************************/
 void 	ADS_CerrarConexion( tSocket *sockIn )
 {/*Cerrar el socket correspondiente y tomar la accion correspondiente*/
+	conexiones_CerrarSocket( ADS.m_ListaSockets, sockIn, &ADS.m_ultimoSocket );
 }
  
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

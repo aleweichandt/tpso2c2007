@@ -57,6 +57,8 @@ char IS_PAQ_PONG ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PONG); }
 
 char IS_PAQ_USR_NAME ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_NAME); }
 char IS_PAQ_USR_PWD ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_PWD); }
+char IS_PAQ_LOGOUT ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_LOGOUT); }
+char IS_PAQ_EXEC ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_EXEC); }
 
 
 /*******************************************************************/
@@ -129,5 +131,78 @@ tPaquete* paquetes_newPaqPong( unsigned char IP[4], unsigned char id_Proceso, un
 	
 	return paq;		
 }
+/*******************************************************************/
+tPaquete* paquetes_newPaqUserNameOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
 
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_USR_NAME_OK, puerto );
+	
+	return paq;		
+}
+/*******************************************************************/
+tPaquete* paquetes_newPaqPasswordOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+		
+		if ( !(paq = paquetes_Crear() ) )
+			return NULL;
+
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PASSWORD_OK, puerto );
+		
+		return paq;
+}
+/*******************************************************************/
+tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+		
+		if ( !(paq = paquetes_Crear() ) )
+			return NULL;
+
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PASSWORD_INVALIDO, puerto );
+		
+		return paq;
+}
+/*******************************************************************/
+tPaquete* paquetes_newPaqADSLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion )
+{
+	tPaquete *paq;
+		
+		if ( !(paq = paquetes_Crear() ) )
+			return NULL;
+
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_ADS_USR_LOGOUT, puerto );
+		memcpy( paq->msg, &idConeccion, sizeof(idConeccion));
+		paq->msg_len = sizeof(idConeccion);
+		
+		return paq;
+}
+/*******************************************************************/
+tPaquete* paquetes_newPaqUserNameInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_USR_NAME_INVALIDO, puerto );
+	
+	return paq;		
+}
+/**********************************************************************/
+void paquetes_ParsearUserName( const char *msg, char *szUserName )
+{
+	tPaquete *paq;
+	memcpy( szUserName,		&(msg[POS_PAQ_MSG]), 	LEN_USERNAME );
+}
+/**********************************************************************/
+void paquetes_ParsearPassword(const char *msg, char *szPassword)
+{
+	tPaquete *paq;
+	memcpy( szPassword,		&(msg[POS_PAQ_MSG]), 	LEN_PASSWORD );
+}
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
