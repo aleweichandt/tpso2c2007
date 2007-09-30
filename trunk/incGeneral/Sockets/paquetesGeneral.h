@@ -28,6 +28,8 @@
 
 
 #define PAQ_LEN_MSGCTRL 50
+/*#define LEN_USERNAME	50
+#define LEN_NOMBRE_MSHELL	50 los pongo en incGeneral*/
 
 /*Posiciones para el parseo del mensaje*/
 #define POS_PAQ_IP			0
@@ -38,7 +40,7 @@
 #define POS_PAQ_LEN_MSG		POS_PAQ_ID_ID_UU + sizeof( paq->id.UnUsed )
 #define POS_PAQ_MSG			POS_PAQ_LEN_MSG + sizeof( paq->msg_len )
 
-
+#define POS_PAQ_ADS_NOMBRE_MSHELL	POS_PAQ_MSG + LEN_USERNAME
 /*-----------------------------------------------------*/
 
 /* Estructuras publicas */
@@ -69,6 +71,14 @@ typedef enum
 	PAQ_PONG,
 	
 	PAQ_USR_NAME,
+	PAQ_USR_NAME_OK,
+	PAQ_USR_NAME_INVALIDO,
+	PAQ_PASSWORD_OK,
+	PAQ_PASSWORD_INVALIDO,
+	PAQ_ADS_USR_LOGOUT,
+	PAQ_LOGOUT,
+	PAQ_EXEC,
+	
 	PAQ_USR_PWD
 	
 } tPaq_ids;
@@ -99,7 +109,14 @@ tPaquete* paquetes_PaqToPaq( const char* buffer  );
 
 tPaquete* paquetes_newPaqPing( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqPong( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqUserNameOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqUserNameInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqPasswordOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqADSLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion );
 
+void paquetes_ParsearUserName( const char *msg, char *szUserName );
+void paquetes_ParsearPassword(const char *msg, char *szPassword);
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
