@@ -16,11 +16,14 @@
 #include "../incGeneral/Sockets/paquetesGeneral.h"
 #include "../incGeneral/log.h"
 #include "../incGeneral/libConf.h"
+#include "./DatosUsuariosADS.h"
 #include <signal.h>
 
 #define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
+#define SOCK_ACR		1		
 #define SOCKS_OCUPADOS 	1
 #define MALLOC_SOCKS_INI	1	/* Cantidad de mem para sockets reservada al inicio */
+#define TERMINACION_ARCHIVO_CLAVE  ".key"
 
 
 typedef struct 
@@ -33,6 +36,10 @@ typedef struct
 
 	tSocket** 			m_ListaSockets;
 	unsigned int		m_ultimoSocket;
+	
+	tListaUsuariosADS	m_ListaUsuarios;
+	
+	char				m_PathUsuarios[LEN_PATH_USUARIOS];
 	
 } tADS;
 
@@ -47,12 +54,20 @@ int 	ADS_LeerConfig();
 void 	ADS_ProcesarSeniales( int senial );
 void 	ADS_SenialTimer();
 
-int 	ADS_ConectarADS();
+int 	ADS_ConectarACR();
+void 	ADS_ConfirmarConexion( tSocket* sockIn );
 void 	ADS_AceptarConexion( tSocket* sockIn );
 void 	ADS_HandShake( tSocket* sockIn );
 void 	ADS_AtenderMSH ( tSocket *sockIn );
 void 	ADS_AtenderACR ( tSocket *sockIn );
 void 	ADS_CerrarConexion( tSocket *sockIn );
+
+char*	ADS_BuscarUsuario(const char* szPathUsuarios, const char* userName);
+void 	ADS_ExtraerUserName(char* szUserNAme, const char* szLinea);
+char *  ADS_ValidarPassword(const char *szUsername, const char *szPassword, const char *szPathUsuarios);
+void 	ADS_ExtraerPassword(char* szPassword, const char* szLinea);
+
+int ADS_GetClaveByConnId(int ConnId);
 
 
 #endif /*ADSLIB_H_*/
