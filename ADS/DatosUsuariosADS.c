@@ -59,10 +59,10 @@ tUsuarioADS*	UsuariosADS_BuscarUsr	(tListaUsuariosADS *lista, const int idConn, 
 	*pos = 0;
 	while(listaAux)
 	{
-		usrADS = (tUsuarioADS*)nodo_datos(*lista,&cantBytes);
+		usrADS = (tUsuarioADS*)nodo_datos(listaAux,&cantBytes);
 		if(compararUsuariosADS ( (void*)&usrBuscado, (void*)usrADS ) == 0)
 			return usrADS; 
-		
+		listaAux = listaAux->sgte;
 		++*pos;
 	}
 	return NULL;
