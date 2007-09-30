@@ -83,11 +83,27 @@ int ADS_Init( )
 		if ( ADS_ConectarACR() == ERROR )
 		{
 			Log_log( log_error, "Error conectandose con el ACR!" );
-			break;
+			/*break; TODO: descomentar cuando pueda conectarme al ACR*/
 		}
 		
 		signal(SIGALRM, ADS_ProcesarSeniales);
 		signal(SIGCHLD, ADS_ProcesarSeniales);
+		/*tests*/
+		if(0)
+		{
+			char  str[LEN_USERNAME] = {'\0'};
+			char  str2[LEN_USERNAME] = {'\0'};
+			int i;
+			tUsuarioADS * usr;
+			strcpy(str2,ADS_BuscarUsuario("/home/miguel/emulaso/usuarios", "miguel"));
+			UsuariosADS_AgregarUsr(&ADS.m_ListaUsuarios, 2, "", str2, ESPERANDO_PASS);
+			usr = UsuariosADS_BuscarUsr(&ADS.m_ListaUsuarios, 2, &i);
+			UsuariosADS_AgregarUsr(&ADS.m_ListaUsuarios, 1, "", str2, ESPERANDO_PASS);
+			ADS_GetClaveByConnId(2, "/home/miguel/emulaso/claves");
+			AplicarXorEnString(str2, ADS_GetClaveByConnId(2, "/home/miguel/emulaso/claves"));
+			AplicarXorEnString(str2, ADS_GetClaveByConnId(2, "/home/miguel/emulaso/claves"));
+			printf(str2);
+		}
 	
 		return OK;
 		
@@ -134,7 +150,9 @@ int ADS_LeerConfig()
 		
 		ADS.m_Port = config_GetVal_Int( cfg, _ADS_, "ADS_PORT" );
 		
-		strcpy(ADS.m_PathUsuarios, config_GetVal( cfg, _ADS_, "PATH_USU"));	
+		strcpy(ADS.m_PathUsuarios, config_GetVal( cfg, _ADS_, "PATH_USU"));
+		
+		strcpy(ADS.m_PathClavesUsuarios, config_GetVal( cfg, _ADS_, "PATH_KEY_USU"));
 
 		config_Destroy(cfg);
 
@@ -333,7 +351,6 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 	char 			*tmp;
 	char			buffer [ 66 ]; 
 	tIDMensaje		idMsj;
-	char			szUserName[LEN_USERNAME] = {'\0'};
 
 
 	len = conexiones_recvBuff(sockIn, buffer, 66);
@@ -350,6 +367,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 	if ( IS_PAQ_USR_NAME( paq ) )
 	{/*Me llega el nombre de usuario*/
 		tPaquete *paqSend = NULL;
+		char szUserName[LEN_USERNAME] = {'\0'};
 		unsigned char szIP[4];
 		int nSend;
 			
@@ -386,7 +404,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 	else /*es un paquete encriptado*/
 	{	
 		paquetes_destruir(paq);
-		paq = paquetes_CharToPaq((const char*)AplicarXorEnString(buffer, ADS_GetClaveByConnId(sockIn->descriptor)));
+		paq = paquetes_CharToPaq((const char*)AplicarXorEnString(buffer, ADS_GetClaveByConnId(sockIn->descriptor, ADS.m_PathClavesUsuarios)));
 		
 		
 		if ( IS_PAQ_USR_PWD( paq ) )
@@ -415,7 +433,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 					Log_log( log_error, "Error enviando Welcome al MShell" );
 				}
 				Log_log( log_debug, "Informo que el usuario esta logueado" );
-				nSend = conexiones_sendBuff( sockIn,  (const char*)AplicarXorEnString(paquetes_PaqToChar( paqSend ), ADS_GetClaveByConnId(sockIn->descriptor)), PAQUETE_MAX_TAM );
+				nSend = conexiones_sendBuff( sockIn,  (const char*)AplicarXorEnString((char*)paquetes_PaqToChar( paqSend ), ADS_GetClaveByConnId(sockIn->descriptor, ADS.m_PathClavesUsuarios)), PAQUETE_MAX_TAM );
 				if ( nSend != PAQUETE_MAX_TAM )
 				{
 					Log_logLastError( "error enviando Welcome al MShell" );
@@ -428,7 +446,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 					Log_log( log_error, "Error enviando pasword invalido al MShell" );
 				}
 				Log_log( log_debug, "Informo que el usuario no se pudo loguear" );
-				nSend = conexiones_sendBuff( sockIn, (const char*)AplicarXorEnString(paquetes_PaqToChar( paqSend ), ADS_GetClaveByConnId(sockIn->descriptor)), PAQUETE_MAX_TAM );
+				nSend = conexiones_sendBuff( sockIn, (const char*)AplicarXorEnString((char*)paquetes_PaqToChar( paqSend ), ADS_GetClaveByConnId(sockIn->descriptor, ADS.m_PathClavesUsuarios)), PAQUETE_MAX_TAM );
 				if ( nSend != PAQUETE_MAX_TAM )
 				{
 					Log_logLastError( "error enviando pasword invalido al MShell" );
@@ -502,7 +520,7 @@ char* ADS_BuscarUsuario(const char* szPathUsuarios, const char* userName)
 		if (strcmp(userName, szUserName) == 0)
 		{
 			fclose(fp);
-			return szLinea;
+			return (char*)userName;
 		}
 	}
 	fclose(fp);
@@ -523,19 +541,28 @@ void ADS_ExtraerUserName(char* szUserNAme, const char* szLinea)
 char *  ADS_ValidarPassword(const char *szUsername, const char *szPassword, const char *szPathUsuarios)
 {
 	char szLinea[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
-	char szPassExtraido[LEN_PASSWORD] = {'\0'};
-	
-	strcpy(szLinea,  ADS_BuscarUsuario(szPathUsuarios, szUsername));
-	if(strlen(szLinea) == 0)
-	{
+		FILE *fp;
+		
+		if( ( fp = fopen( szPathUsuarios, "r" ) ) == NULL )
+		{
+			printf("Error al abrir el archivo de Usuarios\n");
+			return NULL;
+		}
+		while(fgets(szLinea,LEN_MAX_LINEA_ARCH_USUARIOS, fp))
+		{
+			char szUserNameExt[LEN_USERNAME] = {'\0'};
+			char szPasswordExt[LEN_PASSWORD] = {'\0'};
+			
+			ADS_ExtraerUserName(szUserNameExt, szLinea);
+			ADS_ExtraerPassword(szPasswordExt, szLinea);
+			if ((strcmp(szUsername, szUserNameExt) == 0) && (strcmp(szPassword, szPasswordExt) == 0))
+			{
+				fclose(fp);
+				return (char*)szPassword;
+			}
+		}
+		fclose(fp);
 		return NULL;
-	}
-	ADS_ExtraerPassword(szPassExtraido, szPathUsuarios);
-	if (strcmp(szPassword, szPassExtraido) != 0)
-	{
-		return NULL;
-	}
-	return szPassExtraido;
 }
 
 /**********************************************************/
@@ -548,20 +575,22 @@ void 	ADS_ExtraerPassword(char* szPassword, const char* szLinea)
 	return;
 }
 /**********************************************************/
-int ADS_GetClaveByConnId(int ConnId)
+int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 {
-	char szNombreArchivoClave[LEN_USERNAME + 5] = {'\0'};
+	char szNombreArchivoClave[LEN_PATH_USUARIOS] = {'\0'};
 	int iPos = 0;
 	tUsuarioADS *usr = NULL;
 	FILE *fp;
 	int key;
 	
-	if((usr = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),ConnId, &iPos))==NULL)
+	if((usr = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),connId, &iPos))==NULL)
 	{
 		printf("Error al abrir el archivo de Clave\n");
 		return -1;
 	}
-	strcpy(szNombreArchivoClave, usr->Usuario);
+	strcpy(szNombreArchivoClave, pathClaves);
+	strcat(szNombreArchivoClave, "/");
+	strcat(szNombreArchivoClave, usr->Usuario);
 	strcat(szNombreArchivoClave, TERMINACION_ARCHIVO_CLAVE);
 	
 	if( ( fp = fopen( szNombreArchivoClave, "r" ) ) == NULL )

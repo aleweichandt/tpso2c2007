@@ -30,9 +30,9 @@
 
 #define LEN_MAX_LINEA_ARCH_USUARIOS		100
 
-#define LEN_USERNAME	50
-#define LEN_PASSWORD	50
-#define LEN_NOMBRE_MSHELL	50
+#define LEN_USERNAME	20
+#define LEN_PASSWORD	20
+#define LEN_NOMBRE_MSHELL	20
 
 /* Registro de los procesos */
 #define _ID_MSHELL_	0

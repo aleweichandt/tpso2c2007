@@ -41,6 +41,8 @@ typedef struct
 	
 	char				m_PathUsuarios[LEN_PATH_USUARIOS];
 	
+	char				m_PathClavesUsuarios[LEN_PATH_USUARIOS];
+	
 } tADS;
 
 /* "Objeto" Publico */
@@ -67,7 +69,7 @@ void 	ADS_ExtraerUserName(char* szUserNAme, const char* szLinea);
 char *  ADS_ValidarPassword(const char *szUsername, const char *szPassword, const char *szPathUsuarios);
 void 	ADS_ExtraerPassword(char* szPassword, const char* szLinea);
 
-int ADS_GetClaveByConnId(int ConnId);
+int ADS_GetClaveByConnId(int connId, const char *pathClaves);
 
 
 #endif /*ADSLIB_H_*/
