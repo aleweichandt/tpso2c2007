@@ -50,4 +50,18 @@ int ContarCharEnString( const char *szString, char cCharAContar )
 	
 	return nRetorno;
 }
+/*****************************************************************/
+char* AplicarXorEnString(char *szStringOrigen, int clave)
+{
+	int i;
+	if(clave == -1)
+	{
+		return szStringOrigen;
+	}
+	for ( i = 0; i < strlen(szStringOrigen); ++i) 
+	{
+		szStringOrigen[i] ^= clave;
+	}
+	return szStringOrigen;
+}
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
