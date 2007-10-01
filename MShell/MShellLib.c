@@ -16,6 +16,7 @@ char			isUsrLogued;	//1 si el uusario esta logueado, 0 si no lo esta
 char			isExit;		//señal para separar cuando cierra sesion de cuando cierra el mshell
 char			usrName[15];
 char			*usrPath;
+char 			key;
 
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
@@ -95,6 +96,7 @@ int MSH_Init( )
 	loginSig = 0;
 	isExit = 0;
 	isUsrLogued = 0;
+	key = 0;
 	do
 	{
 		Log_Inicializar( _MSHELL_, "1" );
@@ -270,6 +272,7 @@ void MSH_AtenderADS( tSocket* sockIn )
 	}
 	if ( IS_PAQ_USR_OK ( paq ) )
 	{/*Si el ADS me responde Usr_Ok se pide contraseña!*/
+		MSH_GetKey();
 		MShell.m_ListaSockets[ SOCK_TECLADO ]->callback = &MSH_ProcesarTecladoIfUsrOk;
 		sockIn->callback = &MSH_AtenderADSEncript
 		ventana_Print( MShell.m_pwRemoto, "Ingrese Contraseña:" );
@@ -312,7 +315,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	
 	Log_log( log_debug, "Me llega un paquete del ADS" );
 	
-	paq = paquetes_CharToPaq(MSH_Encript(buffer));
+	paq = paquetes_CharToPaq(AplicarXorEnString(buffer),key);
 
 	if ( IS_PAQ_PWD_OK ( paq ) )
 	{/*Si el ADS me responde Pwd_ok la sesion queda iniciada!*/
@@ -462,7 +465,6 @@ void MSH_ProcesarTecladoIfUsrOk(tSocket* sockIn)
 			Log_log( log_error, "MShell No Envio Password a ADS!!" );
 			break;
 		}
-		MSH_Set_UsrFile(cmd);
 		sockIn->callback = &MSH_ProcesarTeclado;
 		ventana_Clear( MShell.m_pwLocal );
 		
@@ -518,7 +520,7 @@ int MSH_Login_Send(char msj[15], char isPwd)
 			if ( !(pPaq  = paquetes_newPaqLogin_Usr( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
 				return ERROR;
 			
-			nSend = conexiones_sendBuff( pSocket, (const char*) MSH_Encript(paquetes_PaqToChar( pPaq )), PAQUETE_MAX_TAM );
+			nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString(paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 			
 			paquetes_destruir( pPaq );
 			
@@ -542,7 +544,7 @@ int MSH_Exec_Prog(char prog[30])
 	if ( !(pPaq  = paquetes_newPaqExec_Prog( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),prog )) )
 		return ERROR;
 	
-	nSend = conexiones_sendBuff( pSocket, (const char*) MSH_Encript(paquetes_PaqToChar( pPaq )), PAQUETE_MAX_TAM );
+	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString(paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 	
 	paquetes_destruir( pPaq );
 	
@@ -566,43 +568,26 @@ int MSH_Logout()
 	if ( !(pPaq  = paquetes_newPaqLogout( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
 	
-	nSend = conexiones_sendBuff( pSocket, (const char*) MSH_Encript(paquetes_PaqToChar( pPaq )), PAQUETE_MAX_TAM );
+	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString(paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 	
 	paquetes_destruir( pPaq );
 	
 	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
 }
 
-/***************************************************************************/
-int MSH_Set_UsrFile(char pwd[15])
-{
-	File *f;
-	
-	if((f = fopen(usrPath + usrName + ".key", "w")==NULL){
-		Log_log( log_error, "no se pudo crear el archivo" + usrName + ".key" );
-		return 0;
-	}
-	fprintf(f,pwd);
-	fclose(f);
-	
-	return 1;
-}
+
 /**********************************************************/
-int MSH_Encript(char *cad)
+int MSH_GetKey()
 {
-	File *f
-	int i;
-	char k;
+	FILE *f
 	
 	if((f = fopen(usrPath + usrName + ".key", "r")==NULL){
 		Log_log( log_error, "no se pudo abrir el archivo" + usrName + ".key" );
 		return 0;
 	}
-	k=fgetc(f);
+	key=fgetc(f);
 	fclose(f);
 		
-	for ( i = 0; i < strlen(cad); i++ )
-		cad[i]=cad[i] XOR k;
 	return 1;
 }
 

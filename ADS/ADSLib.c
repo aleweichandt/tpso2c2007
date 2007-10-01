@@ -364,7 +364,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 	
 	paq = paquetes_CharToPaq(buffer);
 
-	if ( IS_PAQ_USR_NAME( paq ) )
+	if ( IS_PAQ_LOGIN_USR( paq ) )
 	{/*Me llega el nombre de usuario*/
 		tPaquete *paqSend = NULL;
 		char szUserName[LEN_USERNAME] = {'\0'};
@@ -407,7 +407,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 		paq = paquetes_CharToPaq((const char*)AplicarXorEnString(buffer, ADS_GetClaveByConnId(sockIn->descriptor, ADS.m_PathClavesUsuarios)));
 		
 		
-		if ( IS_PAQ_USR_PWD( paq ) )
+		if ( IS_PAQ_LOGIN_PWD( paq ) )
 		{/*Me llega el password */
 			
 			/*precondicion: el Mshell sabe que no puede mandar otra ves el pass, si ya esta logueado*/

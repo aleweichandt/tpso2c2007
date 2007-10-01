@@ -60,7 +60,6 @@ int 	MSH_Login_Send(char msj[15]);
 int 	MSH_Exec_Prog(char prog[30]);
 int 	MSH_Logout();
 
-int 	MSH_Set_UsrFile(char pwd[15]);
-int 	MSH_Encript(char *cad);
+int 	MSH_GetKey();
 #endif /*MSHELLLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

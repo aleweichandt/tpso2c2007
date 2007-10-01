@@ -42,6 +42,12 @@ void paquetes_CargarIdMSg( tPaquete *paq, unsigned char IP[4], unsigned char id_
 	paq->id.puerto = puerto;
 }
 
+/*------------------------------------------------------------------------------------------------------------*/
+void paquetes_CargarMSg( tPaquete *paq, char *msg )
+{
+	strcpy( paq->msg, msg );
+}
+
 /*-------------------------------------------------------*/
 
 char IS_MSHELL_PAQ ( tPaquete *paq ) { return (paq->id.id_Proceso == _ID_MSHELL_); }
@@ -55,11 +61,16 @@ char IS_PAQ_PING ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PING); }
 
 char IS_PAQ_PONG ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PONG); }
 
-char IS_PAQ_USR_NAME ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_NAME); }
-char IS_PAQ_USR_PWD ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_PWD); }
+char IS_PAQ_LOGIN_USR ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_LOGIN_USR); }
+char IS_PAQ_LOGIN_PWD ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_LOGIN_PWD); }
 char IS_PAQ_LOGOUT ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_LOGOUT); }
-char IS_PAQ_EXEC ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_EXEC); }
-
+char IS_PAQ_EXIT ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_EXIT); }
+char IS_PAQ_EXEC_PROG ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_EXEC_PROG); }
+char IS_PAQ_USR_OK ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_OK); }
+char IS_PAQ_PWD_OK ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PWD_OK); }
+char IS_PAQ_USR_ERROR ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_ERROR); }
+char IS_PAQ_PWD_ERROR ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PWD_ERROR); }
+char IS_PAQ_PRINT ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PRINT); }
 
 /*******************************************************************/
 void paquetes_destruir( tPaquete* paq  )
@@ -139,7 +150,7 @@ tPaquete* paquetes_newPaqUserNameOk( unsigned char IP[4], unsigned char id_Proce
 	if ( !(paq = paquetes_Crear() ) )
 		return NULL;
 
-	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_USR_NAME_OK, puerto );
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_USR_OK, puerto );
 	
 	return paq;		
 }
@@ -151,7 +162,7 @@ tPaquete* paquetes_newPaqPasswordOk( unsigned char IP[4], unsigned char id_Proce
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
-		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PASSWORD_OK, puerto );
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PWD_OK, puerto );
 		
 		return paq;
 }
@@ -163,7 +174,7 @@ tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
-		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PASSWORD_INVALIDO, puerto );
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PWD_ERROR, puerto );
 		
 		return paq;
 }
@@ -175,7 +186,7 @@ tPaquete* paquetes_newPaqADSLogout( unsigned char IP[4], unsigned char id_Proces
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
-		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_ADS_USR_LOGOUT, puerto );
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_LOGOUT, puerto );
 		memcpy( paq->msg, &idConeccion, sizeof(idConeccion));
 		paq->msg_len = sizeof(idConeccion);
 		
@@ -189,7 +200,7 @@ tPaquete* paquetes_newPaqUserNameInvalido( unsigned char IP[4], unsigned char id
 	if ( !(paq = paquetes_Crear() ) )
 		return NULL;
 
-	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_USR_NAME_INVALIDO, puerto );
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_USR_ERROR, puerto );
 	
 	return paq;		
 }
@@ -204,5 +215,87 @@ void paquetes_ParsearPassword(const char *msg, char *szPassword)
 {
 	tPaquete *paq;
 	memcpy( szPassword,		&(msg[POS_PAQ_MSG]), 	LEN_PASSWORD );
+}
+
+/*******************************************************************/
+tPaquete* paquetes_newPaqLogin_Usr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char user_Name[15] )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_LOGIN_USR, puerto );
+	paquetes_CargarMSg( paq, user_Name );
+	
+	return paq;		
+}
+
+/*******************************************************************/
+tPaquete* paquetes_newPaqLogin_Pwd( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char user_Password[15] )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_LOGIN_PWD, puerto );
+	paquetes_CargarMSg( paq, user_Password );
+	
+	return paq;		
+}
+
+/*******************************************************************/
+tPaquete* paquetes_newPaqLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_LOGOUT, puerto );
+	
+	return paq;		
+}
+
+/*******************************************************************/
+tPaquete* paquetes_newPaqExit( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_EXIT, puerto );
+	
+	return paq;		
+}
+
+/*******************************************************************/
+tPaquete* paquetes_newPaqExec_Prog( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char program_Name[30] )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_EXEC_PROG, puerto );
+	paquetes_CargarMSg( paq, program_Name );
+	
+	return paq;		
+}
+
+/*******************************************************************/
+tPaquete* paquetes_newPaqPrint( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char msg[30] )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_EXEC_PROG, puerto );
+	paquetes_CargarMSg( paq, msg );
+	
+	return paq;		
 }
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
