@@ -22,6 +22,7 @@ int UsuariosADS_AgregarUsr (tListaUsuariosADS *lista, const int idConn, const ch
 	int pos;
 	tUsuarioADS* usrADS = malloc(sizeof(tUsuarioADS));
 	usrADS->IdConeccion = idConn;
+	usrADS->key = -1;
 	memcpy(usrADS->MshellAsociado, mshellAsoc, 4);
 	strcpy(usrADS->Usuario, userName);
 	usrADS->Estado = estado;

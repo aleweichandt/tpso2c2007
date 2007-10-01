@@ -481,7 +481,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			
 			paquetes_destruir( paqSend );
 		}
-		else if(IS_PAQ_EXEC(paq))/*TODO: verificar q info necesita el ACR*/
+		else if(IS_PAQ_EXEC_PROG(paq))/*TODO: verificar q info necesita el ACR*/
 		{
 			int nSend;
 			
@@ -588,6 +588,10 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 		printf("Error al abrir el archivo de Clave\n");
 		return -1;
 	}
+	if(usr->key != -1)
+	{
+		return usr->key;
+	}
 	strcpy(szNombreArchivoClave, pathClaves);
 	strcat(szNombreArchivoClave, "/");
 	strcat(szNombreArchivoClave, usr->Usuario);
@@ -602,7 +606,9 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 	
 	fclose(fp);
 	
-	return key;
+	usr->key = key;
+ 	
+	return usr->key;
 }
 /**********************************************************/
 void ADS_Salir()
