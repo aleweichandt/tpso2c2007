@@ -8,6 +8,7 @@ typedef struct
 	int 			IdConeccion;
 	unsigned char	MshellAsociado[4];
 	char			Usuario[LEN_USERNAME];
+	int				key;
 	unsigned char	Estado;
 } tUsuarioADS;
 
