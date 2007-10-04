@@ -12,8 +12,8 @@
  
  /*Variables privadas*/
 sigset_t 		conjunto_seniales;
-char			isUsrLogued;	//1 si el uusario esta logueado, 0 si no lo esta
-char			isExit;		//señal para separar cuando cierra sesion de cuando cierra el mshell
+char			isUsrLogued;	/*1 si el usuario esta logueado, 0 si no lo esta*/
+char			isExit;		/*seal para separar cuando cierra sesion de cuando cierra el mshell*/
 char			usrName[15];
 char			*usrPath;
 char 			key;
@@ -93,7 +93,6 @@ void MSH_CrearGraficos( int activarGraficos )
 /**********************************************************************/
 int MSH_Init( )
 {
-	loginSig = 0;
 	isExit = 0;
 	isUsrLogued = 0;
 	key = 0;
@@ -264,18 +263,18 @@ void MSH_AtenderADS( tSocket* sockIn )
 	if ( IS_PAQ_PONG ( paq ) )
 	{/*Si el ADS me responde pong la conexion queda establecida!*/
 		Log_log( log_debug, "Conexion establecida con el ADS, se envia usuario!" );
-		if(!MSH_Login_Send(usrName, 0))
+		if(!MSH_Login_Send(usrName,0))
 		{
 			Log_log( log_error, "MShell No Envio Usuario a ADS!!" );
-			break;
+			/*break;-*/
 		}
 	}
 	if ( IS_PAQ_USR_OK ( paq ) )
-	{/*Si el ADS me responde Usr_Ok se pide contraseña!*/
+	{/*Si el ADS me responde Usr_Ok se pide contrasea!*/
 		MSH_GetKey();
 		MShell.m_ListaSockets[ SOCK_TECLADO ]->callback = &MSH_ProcesarTecladoIfUsrOk;
-		sockIn->callback = &MSH_AtenderADSEncript
-		ventana_Print( MShell.m_pwRemoto, "Ingrese Contraseña:" );
+		sockIn->callback = &MSH_AtenderADSEncript;
+		ventana_Print( MShell.m_pwRemoto, "Ingrese ContraseÃ±a:" );
 		Log_log( log_debug, "ADS confirma usuario!" );
 	}
 	if ( IS_PAQ_USR_ERROR ( paq ) )
@@ -315,7 +314,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	
 	Log_log( log_debug, "Me llega un paquete del ADS" );
 	
-	paq = paquetes_CharToPaq(AplicarXorEnString(buffer),key);
+	paq = paquetes_CharToPaq(AplicarXorEnString(buffer,key));
 
 	if ( IS_PAQ_PWD_OK ( paq ) )
 	{/*Si el ADS me responde Pwd_ok la sesion queda iniciada!*/
@@ -327,9 +326,9 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		
 		Log_log( log_debug, "ADS rechaza password!" );
 	}
-	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
+/*	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
 	{/*Si el ADS ejecuta el programa!*/
-		memset(tmp,0,50);
+/*		memset(tmp,0,50);
 		strcpy(tmp,paq->msg);
 		strcat(tmp," se esta ejecutando");
 		ventana_Print( MShell.m_pwRemoto, tmp );
@@ -337,24 +336,24 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	}
 	if ( IS_PAQ_NO_PROG ( paq ) )
 	{/*Si el ADS no ejecuta el programa!*/
-		memset(tmp,0,50);
+/*		memset(tmp,0,50);
 		strcpy(tmp,paq->msg);
 		strcat(tmp," o se ejecuto, o no es un programa");
 		ventana_Print( MShell.m_pwRemoto, tmp );
 		Log_log( log_debug, "ADS rechaza exec!" );
 	}
 	if ( IS_PAQ_END_SESION_OK ( paq ) )
-	{/*Si el ADS me responde ok al logout !*/
-		isUsrLogued = 0;
+	{/*Si el ADS me responde ok al logout !
+/*		isUsrLogued = 0;
 		Log_log( log_debug, "ADS confirma logout!" );
 		/*se cierra la conexion con ADS*/
-		conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
+/*		conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
 		if(isExit)
 		{
 			Log_log( log_debug, " se va a Finalizar MSHELL!" );
 			MSH_Salir();
 		}
-	}
+	}*/
 	if ( IS_PAQ_PRINT ( paq ) )
 	{/*Si el ADS envia un print!*/
 		Log_log( log_debug, "ADS envio un print!" );
@@ -389,7 +388,7 @@ void MSH_ProcesarTeclado(tSocket* sockIn)
 		if (!cant || !strlen(cmd)) 
 			break;
 		
-		p=strtok(cmd," ")
+		p=strtok(cmd," ");
 		if(!isUsrLogued)
 		{
 			if( strcmp ( p, "login" ) == 0 ){
@@ -407,7 +406,7 @@ void MSH_ProcesarTeclado(tSocket* sockIn)
 			if( strcmp ( p, "exec" ) == 0 )
 			{
 				p=strtok(NULL," ");
-				if(!MSH_exec(p))
+				if(!MSH_Exec_Prog(p))
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
@@ -489,7 +488,7 @@ void MSH_Salir()
 
 
 /**********************************************************/
-int MSH_Login_Send(char msj[15], char isPwd)
+int MSH_Login_Send(char msj[15], int isPwd)
 {
 	tSocket *pSocket;
 	tPaquete *pPaq;
@@ -579,10 +578,16 @@ int MSH_Logout()
 /**********************************************************/
 int MSH_GetKey()
 {
-	FILE *f
+	FILE *f;
+	char *p;
 	
-	if((f = fopen(usrPath + usrName + ".key", "r")==NULL){
-		Log_log( log_error, "no se pudo abrir el archivo" + usrName + ".key" );
+	strcpy(p,usrPath);
+	strcat(p,usrName);
+	strcat(p,".key");
+	
+	if((f = fopen(p, "r"))==NULL){
+		strcat(p,"no se pudo abrir");
+		Log_log( log_error, p);
 		return 0;
 	}
 	key=fgetc(f);

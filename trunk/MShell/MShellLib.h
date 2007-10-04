@@ -48,7 +48,7 @@ void 	MSH_CrearGraficos( int activarGraficos );
 
 void 	MSH_ProcesarSeniales( int senial );
 void 	MSH_ProcesarTeclado(tSocket*); /*Procesar imput de usuario */
-void 	MSH_ProcesarTecladoIfUsrOk(tSocket*); /* Procesa Contraseña del login */
+void 	MSH_ProcesarTecladoIfUsrOk(tSocket*); /* Procesa Contrasea del login */
 void 	MSH_SenialTimer();
 
 int 	MSH_ConectarADS();
@@ -56,7 +56,7 @@ void 	MSH_ConfirmarConexion( tSocket* sockIn );
 void 	MSH_AtenderADS ( tSocket *sockIn );
 void 	MSH_AtenderADSEncript ( tSocket *sockIn ); /*para los mensajes encriptados */
 
-int 	MSH_Login_Send(char msj[15]);
+int 	MSH_Login_Send(char msj[15], int isPwd);
 int 	MSH_Exec_Prog(char prog[30]);
 int 	MSH_Logout();
 
