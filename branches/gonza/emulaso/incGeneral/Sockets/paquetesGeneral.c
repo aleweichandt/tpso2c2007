@@ -36,7 +36,7 @@ tPaquete* paquetes_Crear()
 void paquetes_CargarIdMSg( tPaquete *paq, unsigned char IP[4], unsigned char id_Proceso, unsigned char id_Msg,
 								unsigned short int puerto )
 {
-	strcpy( paq->id.IP, IP );
+	memcpy( paq->id.IP, IP, 4 );
 	paq->id.id_Proceso = id_Proceso;
 	paq->id.id_Msg = id_Msg;
 	paq->id.puerto = puerto;
