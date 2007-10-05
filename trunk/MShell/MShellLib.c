@@ -14,8 +14,6 @@
 sigset_t 		conjunto_seniales;
 char			isUsrLogued;	/*1 si el usuario esta logueado, 0 si no lo esta*/
 char			isExit;		/*seal para separar cuando cierra sesion de cuando cierra el mshell*/
-char			usrName[15];
-char			*usrPath;
 char 			key;
 
 /**************************************************\
@@ -161,10 +159,7 @@ int MSH_LeerConfig()
 		}
 		
 		MShell.m_ADS_Port = config_GetVal_Int( cfg, _MSHELL_, "ADS_PORT" );
-		if ( (tmp = config_GetVal( cfg, _MSHELL_, "PATH_USU" ) ) )
-		{
-			strcpy( usrPath, tmp );
-		}
+		strcpy(MShell.m_Usr_Path, config_GetVal( cfg, _MSHELL_, "PATH_USU"));
 		
 		config_Destroy(cfg);
 
@@ -263,7 +258,7 @@ void MSH_AtenderADS( tSocket* sockIn )
 	if ( IS_PAQ_PONG ( paq ) )
 	{/*Si el ADS me responde pong la conexion queda establecida!*/
 		Log_log( log_debug, "Conexion establecida con el ADS, se envia usuario!" );
-		if(!MSH_Login_Send(usrName,0))
+		if(!MSH_Login_Send(MShell.m_Usr_Name,0))
 		{
 			Log_log( log_error, "MShell No Envio Usuario a ADS!!" );
 			/*break;-*/
@@ -367,7 +362,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 }
 
 /**********************************************************/
-void MSH_ProcesarTeclado(tSocket* sockIn)
+void MSH_ProcesarTeclado (tSocket* sockIn)
 /**/
 {
 	int i, largo;
@@ -393,7 +388,7 @@ void MSH_ProcesarTeclado(tSocket* sockIn)
 		{
 			if( strcmp ( p, "login" ) == 0 ){
 				p=strtok(NULL," ");
-				strcpy(usrName, p);
+				strcpy(MShell.m_Usr_Name, p);
 				if ( MSH_ConectarADS() == ERROR )
 				{
 					Log_log( log_error, "Error conectandose con el ADS!" );
@@ -488,7 +483,7 @@ void MSH_Salir()
 
 
 /**********************************************************/
-int MSH_Login_Send(char msj[15], int isPwd)
+int MSH_Login_Send (char msj[15], int isPwd)
 {
 	tSocket *pSocket;
 	tPaquete *pPaq;
@@ -528,7 +523,7 @@ int MSH_Login_Send(char msj[15], int isPwd)
 }
 
 /**********************************************************/
-int MSH_Exec_Prog(char prog[30])
+int MSH_Exec_Prog (char prog[30])
 {
 	tSocket *pSocket;
 	tPaquete *pPaq;
@@ -552,7 +547,7 @@ int MSH_Exec_Prog(char prog[30])
 }
 
 /**********************************************************************/
-int MSH_Logout()
+int MSH_Logout ()
 {
 	tSocket *pSocket;
 	tPaquete *pPaq;
@@ -576,13 +571,13 @@ int MSH_Logout()
 
 
 /**********************************************************/
-int MSH_GetKey()
+int MSH_GetKey ()
 {
 	FILE *f;
-	char *p;
+	char *p=malloc(21);
 	
-	strcpy(p,usrPath);
-	strcat(p,usrName);
+	strcpy(p,MShell.m_Usr_Path);
+	strcat(p,MShell.m_Usr_Name);
 	strcat(p,".key");
 	
 	if((f = fopen(p, "r"))==NULL){

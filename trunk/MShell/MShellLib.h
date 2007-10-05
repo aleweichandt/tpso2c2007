@@ -29,6 +29,8 @@ typedef struct
 {
 	char 				m_ADS_IP[LEN_IP];
 	unsigned short int 	m_ADS_Port;
+	char				m_Usr_Path[LEN_PATH_USUARIOS];
+	char 				m_Usr_Name[15];
 	
 	tSocket** 			m_ListaSockets;
 	unsigned int		m_ultimoSocket;
