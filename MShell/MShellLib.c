@@ -274,8 +274,8 @@ void MSH_AtenderADS( tSocket* sockIn )
 	}
 	if ( IS_PAQ_USR_ERROR ( paq ) )
 	{/*Si el ADS me responde Usr_Error no inicia sesion!*/
-		
-		Log_log( log_debug, "ADS rechaza usuario!" );
+		MSH_Logout();
+		Log_log( log_debug, "ADS rechaza usuario,cierro conexion!" );
 	}
 	
 	if ( paq ) 
@@ -318,8 +318,8 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	}
 	if ( IS_PAQ_PWD_ERROR ( paq ) )
 	{/*Si el ADS me responde Pwd_Error no inicia sesion!*/
-		
-		Log_log( log_debug, "ADS rechaza password!" );
+		MSH_Logout();
+		Log_log( log_debug, "ADS rechaza password, cierro conexion!" );
 	}
 /*	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
 	{/*Si el ADS ejecuta el programa!*/
@@ -376,11 +376,10 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 	memset(cmd,0,sizeof(cmd));
 
 	cant = getCadT(stdin, '\n', cmd);
-	
 	do
 	{
 		
-		if (!cant || !strlen(cmd)) 
+		if (!cant || !strlen(cmd))
 			break;
 		
 		p=strtok(cmd," ");
@@ -394,6 +393,11 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 					Log_log( log_error, "Error conectandose con el ADS!" );
 					break;
 				}
+			}
+			if (strcmp ( p, "exit" ) == 0 ){
+				Log_log( log_error, "Error conectandose con el ADS!" );
+				MSH_Salir();
+				break;
 			}
 		}
 		else
@@ -409,7 +413,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			}
 			if( strcmp ( p, "logout" ) == 0 )
 			{
-				if(!MSH_Logout(p))
+				if(!MSH_Logout())
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
@@ -417,7 +421,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			}
 			if( strcmp ( p, "exit" ) == 0 )
 			{
-				if(!MSH_Logout(p))
+				if(!MSH_Logout())
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
@@ -514,7 +518,7 @@ int MSH_Login_Send (char msj[15], int isPwd)
 			if ( !(pPaq  = paquetes_newPaqLogin_Usr( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
 				return ERROR;
 			
-			nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
+			nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString(paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 			
 			paquetes_destruir( pPaq );
 			
@@ -538,7 +542,7 @@ int MSH_Exec_Prog (char prog[30])
 	if ( !(pPaq  = paquetes_newPaqExec_Prog( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),prog )) )
 		return ERROR;
 	
-	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
+	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString(paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 	
 	paquetes_destruir( pPaq );
 	
@@ -562,7 +566,7 @@ int MSH_Logout ()
 	if ( !(pPaq  = paquetes_newPaqLogout( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
 	
-	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
+	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString(paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 	
 	paquetes_destruir( pPaq );
 	

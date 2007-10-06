@@ -143,12 +143,12 @@ int ADS_LeerConfig()
 		ADS.m_ACR_Port = config_GetVal_Int( cfg, _ADS_, "ACR_PORT" );
 		
 		/*Levanto la configuracion*/
-		if ( (tmp = config_GetVal( cfg, _MSHELL_, "ADS_IP" ) ) )
+		if ( (tmp = config_GetVal( cfg, _ADS_, "ADS_IP" ) ) )
 		{
 			strncpy( ADS.m_IP, tmp, LEN_IP );
 		}
 		
-		ADS.m_Port = config_GetVal_Int( cfg, _MSHELL_, "ADS_PORT" );
+		ADS.m_Port = config_GetVal_Int( cfg, _ADS_, "ADS_PORT" );
 		
 		strcpy(ADS.m_PathUsuarios, config_GetVal( cfg, _ADS_, "PATH_USU"));
 		
