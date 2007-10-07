@@ -683,7 +683,7 @@ int	ACR_CrearPPCB( long lpcbid, tSocket* pSock )
 		ppcb->sFechaInactvdad = time(NULL);
 		/*ppcb->socket=;   			nada ! Recien cuando se conecte desde mi nodo*/
 		
-		/*lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);*/
+		lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);
 		
 		
 		return OK;
