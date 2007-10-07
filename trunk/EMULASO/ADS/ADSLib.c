@@ -569,9 +569,11 @@ char *  ADS_ValidarPassword(const char *szUsername, const char *szPassword, cons
 void 	ADS_ExtraerPassword(char* szPassword, const char* szLinea)
 {
 	char szLineaCpy[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	char* p;
 	strcpy(szLineaCpy,szLinea);
-	strtok(szLineaCpy, ":");
-	strcpy(szPassword, strtok(szLineaCpy, NULL));
+	p = strtok(szLineaCpy, ":");
+	p = strtok(NULL, ":");
+	strcpy(szPassword, p);
 	return;
 }
 /**********************************************************/
