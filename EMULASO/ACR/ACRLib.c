@@ -321,18 +321,18 @@ void ACR_HandShake( tSocket* sockIn )
 /**********************************************************************/
 void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 {
-	unsigned int alpe;
-	tSocket* socket = NULL;
-	t_nodo* lista_aux = ACR.t_ListaSocketAdp;
-	unsigned char ip[4], ip2[4], ipIdeal[4], *pid;
-	char * tmp, szIpAmplia[LEN_IP],	buffer [ PAQUETE_MAX_TAM ];
-	int *iMaxMem, *iCantPcb, iCantPcbIdeal, len;
-	float *fCargaProm, fCargaPromIdeal;
+	unsigned int 	alpe;
+	tSocket* 		socket = NULL;
+	t_nodo* 		lista_aux = ACR.t_ListaSocketAdp;
+	unsigned char 	ip[4], ip2[4], ipIdeal[4], *pid;
+	char 			* tmp, szIpAmplia[LEN_IP],	buffer [ PAQUETE_MAX_TAM ];
+	int 			*iMaxMem, *iCantPcb, iCantPcbIdeal, len;
+	float 			*fCargaProm, fCargaPromIdeal;
 	unsigned short int *puerto, puertoIdeal, bNodoIdeal;
-	tPaquete* paq;
+	tPaquete		* paq;
 	
 	bNodoIdeal = FALSE;
-	fCargaPromIdeal = 99999999.99;
+	fCargaPromIdeal = 99999999.99;/*Un valor maximo facilmente reemplazado*/
 	
 	ReducirIP(ACR.sz_ACR_IP,ip);
 	
@@ -478,7 +478,10 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 	int 			len; 
 	tPaquete* 		paq ; 
 	char 			*tmp;
-	char			buffer [ PAQUETE_MAX_TAM ]; 
+	char			buffer [ PAQUETE_MAX_TAM ];
+	char			szPathArch[15]; 
+	long			lpcb_id;
+	FILE*			arch;
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -495,20 +498,23 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 	{
 		Log_log( log_debug, "Llega PAQ_MIGRAR" );
 		
-/*		memcpy( &lpcb_id, paq->msg, sizeof(long) );
+		memcpy( &lpcb_id, paq->msg, sizeof(long) );
+		bzero(szPathArch,sizeof(szPathArch));
+		
 		ArmarPathPCBConfig( szPathArch, lpcb_id );
 		
-		g_lpcb_id = lpcb_id;
+		
 		
 		if ( (arch = fopen( szPathArch, "wb+" )) )
 		{
-			sockIn->callback = &ADP_RecibirArchivo;
-			sockIn->extra = arch;
+			sockIn->callback = &ACR_RecibirArchivo;
+			sockIn->extra = (void*)lpcb_id;
+			fclose(arch);
 		}
 		else
 		{
-			Log_log( log_error, "No pude abrir el archivo de la migracion" );
-		}*/
+			Log_logLastError( "No pude abrir el archivo de la migracion" );
+		}
 	}
 
 
@@ -517,6 +523,176 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 	
 }
 
+/**********************************************************************/
+void ACR_RecibirArchivo( tSocket *sockIn )
+{
+	int 			len; 
+	tPaqueteArch* 	paq ; 
+	tPaquete* 		paq2 ;
+	FILE*			arch;
+	char 			*tmp;
+	char			buffer [ PAQUETE_ARCH_MAX_TAM ];
+	char			szPathArch[15];
+	unsigned char	szIP[4];
+	long			lpcb_id;
+
+	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_ARCH_MAX_TAM );
+	
+	if ( ERROR == len || !len)
+	{
+		Log_log(log_error,"Se cierra socket en medio de migracion");
+		ACR_CerrarConexion( sockIn );		
+	
+		return;
+	}
+	
+	
+	if( len != PAQUETE_ARCH_MAX_TAM )
+	{ 
+		Log_printf(log_warning,
+			"Atencion no recibi el largo fijo de paquete. Me llega %d en vez de %d al transferir",
+			len, PAQUETE_ARCH_MAX_TAM ); 
+	}
+	
+	paq = paquetes_CharToPaqArch(buffer);
+
+	if ( IS_PAQ_ARCHIVO( paq ) )
+	{/*Llega el paq archivo -> persisto el contenido*/
+		Log_log( log_debug, "Llega un PAQ_ARCHIVO" );
+		
+		bzero(szPathArch,sizeof(szPathArch));
+		lpcb_id = (long)sockIn->extra;
+		ArmarPathPCBConfig( szPathArch, lpcb_id );
+		
+		if ( (arch = fopen( szPathArch, "ab+" )) ){
+			fprintf( arch, "%s", paq->msg );
+			fclose(arch);
+		}else{
+			Log_logLastError( "No pude abrir el archivo de la migracion" );
+		}
+	}
+	else if ( IS_PAQ_FIN_MIGRAR( paq ) )
+	{
+		Log_log( log_debug, "llega un PAQ_FIN_MIGRAR" );
+		lpcb_id = (long)sockIn->extra;
+		sockIn->callback = 	&ACR_AtenderPPCB;
+		
+		/*Envio el msj de migracion OK*/
+		Log_log( log_debug, "envio migrar ok" );
+		ReducirIP( ACR.sz_ACR_IP, szIP );
+		
+		if ( ACR_ForkPPCB( lpcb_id ) == OK  &&
+			ACR_CrearPPCB( lpcb_id, sockIn ) == OK ){
+			
+			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarOKAsStr( szIP, _ID_ACR_, ACR.usi_ACR_Port ), 
+					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError("enviando migrar_ok");
+			}
+			
+		}else{
+			if( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarFaultAsStr( szIP, _ID_ACR_, ACR.usi_ACR_Port ), 
+					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError("enviando migrar_fault");
+			}
+		}
+		
+	}
+	
+	if ( paq ) 
+		paquetes_Archdestruir( paq );
+	
+}
+
+/**********************************************************/
+int ACR_ForkPPCB( long lpcbid )
+{
+	int pid;
+	char szPCB_ID[10];
+	
+	sprintf( szPCB_ID, "%ld", lpcbid );
+	
+	Log_printf(log_debug,"Voy a hacer el fork del PCB");
+	pid = fork();
+    
+    if( !pid )
+    {
+       	Log_printf(log_debug,"Voy a instanciar el PCB");
+    	execl( "ppcb", szPCB_ID, NULL);
+        Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
+        Log_printf(log_debug,"Error en exec: %s", strerror(errno));
+        
+        return ERROR;
+  	}
+  	else if( pid ) 
+  	{
+  		Log_printf(log_debug,"El PID del PCB es: %d ", pid );
+  		return OK;
+    }
+
+}
+
+
+/**********************************************************/
+int	ACR_CrearPPCB( long lpcbid, tSocket* pSock )
+{
+	char		szPathArch[15];
+	tPpcbAcr	*ppcb =NULL;
+	char 		*tmp;
+	tConfig 	*cfg;
+	
+	if ( !( ppcb = malloc(sizeof(tPpcbAcr)) ) )
+	{
+		Log_logLastError("Creando datos de PPCB en ACR");
+		return ERROR;
+	}
+	
+	bzero(szPathArch,sizeof(szPathArch));
+	ArmarPathPCBConfig( szPathArch, lpcbid );
+	
+	do
+	{
+		ppcb->pid = lpcbid;	/*PPCB ID*/
+		
+		/*Levanto la configuracion*/		
+		if ( !(cfg = config_Crear( szPathArch, _PPCB_ )) ) 
+			break;
+		
+		
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "CREATORID" ) ) )	/*USUARIO*/
+		{
+			strncpy( ppcb->szUsuario, tmp, LEN_USUARIO );
+		}
+		
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )		/*COMANDO que lo EJECUTO*/
+		{
+			strncpy( ppcb->szComando, tmp, LEN_COMANDO_EJEC );
+		}
+		
+		ppcb->lIdSesion = config_GetVal_Int( cfg, _PPCB_, "SESIONID" );		/*ID de SESION*/
+		
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "CODE1" ) ) )		/*cantidad de MEMORIA*/
+		{
+			sscanf( tmp, "MEM %d", &(ppcb->iMemoria));
+		}
+		
+		config_Destroy(cfg);
+
+		ppcb->sActividad = Estado_Inactivo;
+		ppcb->sFechaInactvdad = time(NULL);
+		/*ppcb->socket=;   			nada ! Recien cuando se conecte desde mi nodo*/
+		
+		/*lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);*/
+		
+		
+		return OK;
+		
+	}while(0);
+	
+	return ERROR;
+	
+}
 /**********************************************************************/
 void ACR_CerrarConexion( tSocket *sockIn )
 {
@@ -533,6 +709,8 @@ void ACR_DesconectarADS(tSocket *sockIn)
 void ACR_DesconectarADP(tSocket *sockIn)
 {
 	Log_log(log_warning,"Se cierra Socket ADP");
+	lista_quitar(&ACR.t_ListaSocketAdp,sockIn, compararSocket);
+	Log_log(log_debug,"Se elimina el socket de la lista de adps");
 }
 
 /**********************************************************************/

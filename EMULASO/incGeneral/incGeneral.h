@@ -49,6 +49,7 @@
 #define _ADS_		"ADS"
 #define _ADP_		"ADP"
 #define _ACR_		"ACR"
+#define _PPCB_		"PPCB"
 
 /*23/09/2007	GT	Recursos*/
 #define _SEP_RECURSO_			";"

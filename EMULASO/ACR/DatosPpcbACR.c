@@ -16,13 +16,11 @@ void		PpcbAcr_IniciarLista	(tListaPpcbAcr lista)
 }
 
 /*********************************************************/
-int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, const long pid, const char *nombre)
+int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, const long pid)
 {
 	int pos;
 	tPpcbAcr* transfAde = malloc(sizeof(tPpcbAcr));
 	transfAde->pid = pid;
-	strcpy(transfAde->nombreTrans, nombre);
-	transfAde->bMarcaDeteccion = FALSE;
 	lista_insertar(lista, transfAde, sizeof(tPpcbAcr), &comparaPpcbAcr, _SIN_REPET_ );
 	PpcbAcr_BuscarTrans(lista,pid,&pos);
 	return pos;
@@ -80,10 +78,10 @@ tListaPpcbAcr	PpcbAcr_Siguiente	(tListaPpcbAcr lista)
 }
 
 /*********************************************************/
-int comparaPpcbAcr( const void *trf1, const void *trf2 )
+int comparaPpcbAcr( const void *ppcb1, const void *ppcb2 )
 {
-	tPpcbAcr *trfAde1 = (tPpcbAcr*) trf1,
-			   *trfAde2 = (tPpcbAcr*) trf2;
+	tPpcbAcr *ppcbAcr1 = (tPpcbAcr*) ppcb1,
+			   *ppcbAcr2 = (tPpcbAcr*) ppcb2;
 			   
-	return (int)(trfAde1->pid - trfAde2->pid); 
+	return (int)(ppcbAcr1->pid - ppcbAcr2->pid); 
 }

@@ -632,7 +632,7 @@ tPaquete* CrearPaqSinBody( unsigned char IP[4], unsigned char id_Proceso, unsign
 char IS_PAQ_MIGRAR ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_MIGRAR); }
 char IS_PAQ_MIGRAR_OK ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_MIGRAR_OK); }
 char IS_PAQ_MIGRAR_FAULT ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_MIGRAR_FAULT); }
-char IS_PAQ_FIN_MIGRAR ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_FIN_MIGRAR); }
+char IS_PAQ_FIN_MIGRAR ( tPaqueteArch *paq ) { return (paq->id.id_Msg == PAQ_FIN_MIGRAR); }
 char IS_PAQ_ARCHIVO ( tPaqueteArch *paq ) { return (paq->id.id_Msg == PAQ_ARCHIVO); }
 
 /*******************************************************************/
@@ -686,9 +686,16 @@ tPaquete* paquetes_newPaqMigrarFault( unsigned char IP[4], unsigned char id_Proc
 }
 
 /*-----------------------------------------------------------------------------------------------------------*/
-tPaquete* paquetes_newPaqFinMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+tPaqueteArch* paquetes_newPaqFinMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
 {
-	return CrearPaqSinBody( IP, id_Proceso,puerto, PAQ_FIN_MIGRAR );
+	tPaqueteArch *paq;
+	
+	if ( !(paq = paquetes_CrearArch() ) )
+		return NULL;
+
+	paquetes_CargarIdMSgArch( paq, IP, id_Proceso, PAQ_FIN_MIGRAR, puerto );
+	
+	return paq;
 }
 
 /*-----------------------------------------------------------------------------------------------------------*/
@@ -757,12 +764,12 @@ char* paquetes_newPaqMigrarFaultAsStr( unsigned char IP[4], unsigned char id_Pro
 /*-----------------------------------------------------------------------------------------------------------*/
 char* paquetes_newPaqFinMigrarAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
 {
-	tPaquete *pNew; char *Ret;
+	tPaqueteArch *pNew; char *Ret;
 	if ( (pNew = paquetes_newPaqFinMigrar(IP,id_Proceso, puerto )) )
 	{
-		Ret = paquetes_PaqToChar( pNew );
+		Ret = paquetes_PaqArchToChar( pNew );
 		
-		paquetes_destruir( pNew );
+		paquetes_Archdestruir( pNew );
 		
 		return Ret;
 	}	
