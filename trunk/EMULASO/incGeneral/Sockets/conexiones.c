@@ -469,6 +469,18 @@ void conexiones_CerrarLista (unsigned int primerSocket, unsigned int *ultimoSock
 }
 
 /****************************************************/
+int compararSocket( const void *s1, const void *s2 )
+{
+	tSocket		*psock1 = (tSocket*) s1,
+				*psock2 = (tSocket*) s2;
+						
+	if ( psock1 == psock2 )
+	{
+		return 0;
+	}
+	
+	return 1;	
+}
 
 #undef PROTOCOLO_AUTO
 #undef ERROR

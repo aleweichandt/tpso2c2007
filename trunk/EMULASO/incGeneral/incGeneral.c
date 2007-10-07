@@ -64,4 +64,53 @@ char* AplicarXorEnString(char *szStringOrigen, int clave)
 	}
 	return szStringOrigen;
 }
+
+/*******************************************************************************************/
+/*	Reduce un IP dado de la forma "192.168.0.1" a un char[4] = {192,0,0,1} 
+ * 	Precondiciones: szIP debe ser de la forma "#.#.#.#" y szIPReducido debe ser un char[4]*/
+int ReducirIP( const char* szIP, unsigned char* szIPReducido )
+{
+	char 	szAux[ LEN_IP ];/*Como strtok modifca la cadena uso un char auxiliar*/
+	char* 	pNro;
+	int		indice = 0;
+	
+	strncpy( szAux, szIP, LEN_IP );
+	
+	pNro = strtok( szAux, "." );
+	
+	while ( pNro )
+	{
+		szIPReducido[ indice++ ] = (unsigned char) atoi( pNro );
+		
+		pNro = strtok( NULL, ".");
+	}
+
+	if ( indice == 4 )
+		return OK; /*Exitosa si cargo los cuatro valores!*/
+	
+	return ERROR;	
+} 
+
+/*Funcion inversa a la de REducirIP!*/
+int AmpliarIP( const unsigned char* szIPReducido, char* szIP )
+/**/
+{
+	sprintf( szIP, "%d.%d.%d.%d", 	(int) szIPReducido[0], 
+				(int) szIPReducido[1], (int) szIPReducido[2], 
+				(int) szIPReducido[3] );
+	return OK;
+}
+
+/******************************************************************/
+void ArmarPathPCBConfig( char* szPathOut, long lpcb_id )
+/*02-10-07:LAS:*/
+{
+	char			szNombreArch[50];
+
+	/*Se puede agregar aca la comprobacion de la carpeta de los pcbs*/	
+	getcwd( szPathOut, sizeof (szNombreArch) );
+	sprintf( szNombreArch, "/config.ppcb%ld", lpcb_id );
+	strcat( szPathOut, szNombreArch );
+}
+
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

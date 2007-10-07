@@ -84,4 +84,5 @@ void 	 conexiones_CerrarSocket			(tSocket* listaSocket[], tSocket* cerrar, unsig
 void	 conexiones_CerrarLista				(unsigned int primerSocket, unsigned int *ultimoSocket, tSocket **lstSockets);
 /*12-06-07:LAS*/
 unsigned short conexiones_getPuertoLocalDeSocket(tSocket *sock);
+int compararSocket( const void *s1, const void *s2 );
 #endif /*CONEXIONES_H_*/
