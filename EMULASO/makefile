@@ -4,10 +4,10 @@ GCC_POSIX = $(GCC_BASICO)
 GCC_ANSI = $(GCC_POSIX) -ansi -DNCOMP_SOLO_ANSI
 # -DCHT_NOGRAF elimina los iconos del contestador
 GCC_DEBUG = -O0 -g3 -DNCOMP_DEBUG
-LIBRERIAS = lib/incGeneral.o lib/log.o lib/infoControl.o lib/estructuras.o lib/libConf.o lib/conexiones.o lib/paquetesGeneral.o lib/ventanas.o lib/DatosUsuariosADS.o
+LIBRERIAS = lib/incGeneral.o lib/log.o lib/infoControl.o lib/estructuras.o lib/libConf.o lib/conexiones.o lib/paquetesGeneral.o lib/ventanas.o lib/DatosUsuariosADS.o lib/FindFile.o
 
 
-all : librerias MSHELL ADS
+all : librerias MSHELL ADS ADP ACR
 	@echo 'Compilacion finalizada.'
 
 .PHONY : clean
@@ -30,6 +30,27 @@ lib/ADSLib.o : ADS/ADSLib.c ADS/ADSLib.h
 
 lib/DatosUsuariosADS.o : ADS/DatosUsuariosADS.c ADS/DatosUsuariosADS.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosUsuariosADS.o" "ADS/DatosUsuariosADS.c"
+
+#ADP ---------------------------------------------
+ADP : librerias lib/ADPLib.o ADP/ADP.c ADP/ADP.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -lpthread -o"adp" $(LIBRERIAS) "lib/ADPLib.o" "ADP/ADP.c"
+
+lib/ADPLib.o : lib/DatosPCBs.o lib/paquetesGeneral.o ADP/ADPLib.c ADP/ADPLib.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/ADPLib.o" "ADP/ADPLib.c"
+lib/DatosPCBs.o : ADP/DatosPCBs.c ADP/DatosPCBs.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosPCBs.o" "ADP/DatosPCBs.c"
+#lib/paquetesADP.o : incGeneral/Sockets/paquetesADP.c incGeneral/Sockets/paquetesADP.h
+#	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o "lib/paquetesGeneral.o" "lib/paquetesADP.o" "incGeneral/Sockets/paquetesADP.c"
+#lib/paquetesACR.o : incGeneral/Sockets/paquetesACR.c incGeneral/Sockets/paquetesACR.h
+#	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/paquetesGeneral.o" "lib/paquetesACR.o" "incGeneral/Sockets/paquetesACR.c"
+
+#ACR ---------------------------------------------
+ACR : librerias lib/ACRLib.o ACR/ACR.c ACR/ACR.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -Lefence -lpthread -o"acr" $(LIBRERIAS) "lib/ACRLib.o" "ACR/ACR.c"
+
+lib/ACRLib.o : ACR/ACRLib.c ACR/ACRLib.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -Lefence -o"lib/ACRLib.o" "ACR/ACRLib.c"
+
 
 #Librerias -------------------------------------
 librerias : $(LIBRERIAS)
@@ -60,3 +81,6 @@ lib/paquetesGeneral.o : incGeneral/Sockets/paquetesGeneral.c incGeneral/Sockets/
 	
 lib/ventanas.o : incGeneral/ventanas.c incGeneral/ventanas.h
 	gcc $(GCC_DEBUG) $(GCC_NOCHECK) -c -o"lib/ventanas.o" "incGeneral/ventanas.c"
+
+lib/FindFile.o: incGeneral/FindFile.c incGeneral/FindFile.h
+	gcc $(GCC_DEBUG) $(GCC_NOCHECK) -c -o"lib/FindFile.o" "incGeneral/FindFile.c"

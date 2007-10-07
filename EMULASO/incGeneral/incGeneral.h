@@ -24,7 +24,11 @@
 
 #define CONN_BACKLOG		10
 
-#define LEN_IP	16
+#define LEN_IP			16
+#define LEN_DIR			30		/*23/09/2007	GT	Longitud de directorios*/ 
+#define LEN_USUARIO		15		/*23/09/2007	GT	Longitud del nombre de usuario*/
+#define LEN_COMANDO_EJEC 26		/*23/09/2007	GT	Longitud del comando que instacio un ppcb*/
+#define LEN_NOM_ARCHIVO 16
 
 #define LEN_PATH_USUARIOS	100
 
@@ -43,6 +47,12 @@
 
 #define _MSHELL_	"MSHELL"
 #define _ADS_		"ADS"
+#define _ADP_		"ADP"
+#define _ACR_		"ACR"
+
+/*23/09/2007	GT	Recursos*/
+#define _SEP_RECURSO_			";"
+
 /* ----------------------- */
 
 #define bzero(donde, cuanto) memset(donde, '\0', cuanto); /* Como que no es ansi? */
@@ -53,8 +63,12 @@ int getCadT(FILE *flujo, int fin, char *cad);
 int ContarCharEnString( const char *szString, char cCharAContar );
 
 char* AplicarXorEnString(char *szStringOrigen, int clave);
+int ReducirIP( const char* szIP, unsigned char* szIPReducido );
+int AmpliarIP( const unsigned char* szIPReducido, char* szIP );
 
 #define _LARGO_CMD_	100
+
+void ArmarPathPCBConfig( char* szPathOut, long lpcb_id );/*02-10-07:LAS:*/
 
 #endif /*INCGENERAL_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

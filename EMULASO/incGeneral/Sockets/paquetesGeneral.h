@@ -28,8 +28,6 @@
 
 
 #define PAQ_LEN_MSGCTRL 50
-/*#define LEN_USERNAME	50
-#define LEN_NOMBRE_MSHELL	50 los pongo en incGeneral*/
 
 /*Posiciones para el parseo del mensaje*/
 #define POS_PAQ_IP			0
@@ -40,7 +38,7 @@
 #define POS_PAQ_LEN_MSG		POS_PAQ_ID_ID_UU + sizeof( paq->id.UnUsed )
 #define POS_PAQ_MSG			POS_PAQ_LEN_MSG + sizeof( paq->msg_len )
 
-#define POS_PAQ_ADS_NOMBRE_MSHELL	POS_PAQ_MSG + LEN_USERNAME
+
 /*-----------------------------------------------------*/
 
 /* Estructuras publicas */
@@ -73,12 +71,30 @@ typedef enum
 	PAQ_LOGIN_PWD,
 	PAQ_LOGOUT,
 	PAQ_EXIT,
+	
+	PAQ_USR_NAME,
+	PAQ_USR_PWD,
 	PAQ_EXEC_PROG,
+	PAQ_PROG_EXECUTING,
+	PAQ_NO_PROG,
 	PAQ_USR_OK,
 	PAQ_USR_ERROR,
 	PAQ_PWD_OK,
 	PAQ_PWD_ERROR,
-	PAQ_PRINT
+	PAQ_PRINT,
+	
+	/* 24-09-07:LAS: Registro ACR-ADP*/
+	PAQ_GET_PERFORMANCE,
+	PAQ_INFO_PERFORMANCE,
+	
+	/*01-10-07:LAS: Migracion*/
+	PAQ_MIGRATE,
+	PAQ_MIGRAR,
+	PAQ_MIGRAR_OK,
+	PAQ_MIGRAR_FAULT,
+	PAQ_FIN_MIGRAR,
+	PAQ_ARCHIVO
+	/**/
 	
 } tPaq_ids;
 /* Fin de Registro de los ids de paquetes */
@@ -103,6 +119,10 @@ char IS_PAQ_USR_ERROR ( tPaquete *paq );
 char IS_PAQ_PWD_OK ( tPaquete *paq );
 char IS_PAQ_PWD_ERROR ( tPaquete *paq );
 char IS_PAQ_PRINT ( tPaquete *paq );
+
+char IS_PAQ_USR_NAME ( tPaquete *paq );
+char IS_PAQ_USR_PWD ( tPaquete *paq );
+
 /* --- */
 
 /* Prototipos publicos */
@@ -130,6 +150,109 @@ tPaquete* paquetes_newPaqADSLogout( unsigned char IP[4], unsigned char id_Proces
 
 void paquetes_ParsearUserName( const char *msg, char *szUserName );
 void paquetes_ParsearPassword(const char *msg, char *szPassword);
+
+/**************			PAQ_EXEC_PROG				****************/
+char IS_PAQ_EXEC_PROG ( tPaquete *paq );
+tPaquete* paquetes_newPaqExecProg( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+								char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion );
+tPaquete* paquetes_ParsearPaqExecProg( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, 
+										unsigned short int* puerto,char *szNomProg, char *szUsuario, int *idSesion );
+char* paquetes_newPaqExecProgAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+									char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion );
+
+/**************			PAQ_PROG_EXECUTING				****************/
+char IS_PAQ_PROG_EXECUTING ( tPaquete *paq );
+tPaquete* paquetes_newPaqProgExecuting( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+								char szNomProg[LEN_COMANDO_EJEC], int idSesion );
+tPaquete* paquetes_ParsearPaqProgExecuting( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, 
+										unsigned short int* puerto,char *szNomProg, int *idSesion );
+char* paquetes_newPaqProgExecutingAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+									char szNomProg[LEN_COMANDO_EJEC], int idSesion );
+
+/**************			PAQ_NO_PROG				****************/
+char IS_PAQ_NO_PROG ( tPaquete *paq );
+tPaquete* paquetes_newPaqNoProg( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+								char szNomProg[LEN_COMANDO_EJEC], int idSesion );
+tPaquete* paquetes_ParsearPaqNoProg( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, 
+										unsigned short int* puerto,char *szNomProg, int *idSesion );
+char* paquetes_newPaqNoProgAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+									char szNomProg[LEN_COMANDO_EJEC], int idSesion );
+
+/*----------------------- ADP -----------------------------------*/
+#define POS_MAX_MEM			0
+#define POS_CARGA_PROM		sizeof (int)
+#define POS_CANT_PCB		POS_CARGA_PROM + sizeof (float) 
+
+/* Funciones para identificar el paquete, seria conveniente ir agregando aca una funcion para cada paq */
+char IS_PAQ_INFO_PERFORMANCE ( tPaquete *paq );
+
+/* --- */
+
+/* Prototipos publicos */
+tPaquete* paquetes_newPaqInfoPerformance( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+											int nMaxMen, float fCargaProm, int CantPCB );
+
+char* paquetes_newPaqInfoPerformanceAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+											int nMaxMen, float fCargaProm, int CantPCB );
+
+tPaquete* paquetes_ParsearPaqInfoPerformance( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, 
+											unsigned short int* puerto,
+											int* nMaxMen, float* fCargaProm, int* CantPCB );
+/*----------------------- ADP -----------------------------------*/
+
+/*----------------------- ACR -----------------------------------*/
+
+/* Funciones para identificar el paquete, seria conveniente ir agregando aca una funcion para cada paq */
+char IS_PAQ_GET_PERFORMANCE ( tPaquete *paq );
+
+/* --- */
+
+/* Prototipos publicos */
+tPaquete* paquetes_newPaqGetPerformance( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqGetPerformanceAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+
+/*----------------------- ACR -----------------------------------*/
+
+/*--------------------- Migracion -------------------------------*/
+#define MAX_PAQ_ARCH	512
+
+typedef struct
+{
+	tIDMensaje id;
+	long msg_len;
+	char msg[ MAX_PAQ_ARCH +1 ];
+}tPaqueteArch;
+
+#define PAQUETE_ARCH_MAX_TAM		 sizeof(tPaqueteArch)
+
+
+char IS_PAQ_MIGRAR ( tPaquete *paq );
+char IS_PAQ_MIGRAR_OK ( tPaquete *paq );
+char IS_PAQ_MIGRAR_FAULT ( tPaquete *paq );
+char IS_PAQ_FIN_MIGRAR ( tPaquete *paq );
+char IS_PAQ_ARCHIVO ( tPaqueteArch *paq );
+
+tPaquete* paquetes_newPaqMigrate( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+									unsigned char IPDestino[4], unsigned short int puertoDestino );
+tPaquete* paquetes_newPaqMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long lPCB_ID );
+tPaquete* paquetes_newPaqMigrarOK( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqMigrarFault( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqFinMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaqueteArch* paquetes_newArchivo( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char szArch[ MAX_PAQ_ARCH ] );
+
+char* paquetes_newPaqMigrateAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
+									unsigned char IPDestino[4], unsigned short int puertoDestino );
+char* paquetes_newPaqMigrarAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long lPCB_ID );
+char* paquetes_newPaqMigrarOKAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqMigrarFaultAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqFinMigrarAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newArchivoAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char szArch[ MAX_PAQ_ARCH ] );
+
+char* paquetes_PaqArchToChar( tPaqueteArch* paq  );
+void paquetes_Archdestruir( tPaqueteArch* paq  );
+tPaqueteArch* paquetes_CharToPaqArch( const char* buffer  );
+
+/*--------------------- Migracion -------------------------------*/
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
