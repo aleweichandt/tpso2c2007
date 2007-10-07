@@ -5,5 +5,5 @@
 %ADS%
 <ACR_IP>=127.0.0.1
 <ACR_PORT>=92000
-<PATH_USU>=./
+<PATH_USU>=./usuarios
 <PATH_KEY_USU>=./claves
