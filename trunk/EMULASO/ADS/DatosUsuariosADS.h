@@ -21,7 +21,7 @@ typedef enum
 #define tListaUsuariosADS t_nodo*
 
 void				UsuariosADS_IniciarLista 	(tListaUsuariosADS lista);
-int 				UsuariosADS_AgregarUsr		(tListaUsuariosADS *lista, const int idConn, const char *mshellAsoc, const char *userName, unsigned char estado);
+int 				UsuariosADS_AgregarUsr		(tListaUsuariosADS *lista, const int idConn, const unsigned char *mshellAsoc, const char *userName, unsigned char estado);
 void				UsuariosADS_EliminarUsr		(tListaUsuariosADS *lista, const int idConn);
 void				UsuariosADS_EliminarTodas	(tListaUsuariosADS *lista);
 tUsuarioADS*		UsuariosADS_BuscarUsr		(tListaUsuariosADS *lista, const int idConn, int *pos);

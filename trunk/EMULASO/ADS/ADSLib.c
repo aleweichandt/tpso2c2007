@@ -173,6 +173,9 @@ int ADS_ConectarACR()
 	
 	memset( szIP, 0, 4 );
 	
+	if (ReducirIP(ADS.m_IP,szIP) == ERROR)
+			return;
+	
 	if ( !( pSocket = conexiones_ConectarHost( ADS.m_ACR_IP, ADS.m_ACR_Port,
 										 &ADS_ConfirmarConexion ) ) )
 	{
@@ -275,7 +278,9 @@ void ADS_HandShake( tSocket* sockIn )
 	
 	memset( szIP, 0, 4 );
 
-
+	if (ReducirIP(ADS.m_IP,szIP) == ERROR)
+		return;
+	
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
 	if ( ERROR == len || !len)
@@ -373,6 +378,9 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			
 		memset( szIP, 0, 4 );
 		
+		if (ReducirIP(ADS.m_IP,szIP) == ERROR)
+			return;
+		
 		paquetes_ParsearUserName(buffer, szUserName);
 		/*verificarExistenciaUsuario en archivo de usuarios*/
 		if ( ADS_BuscarUsuario(ADS.m_PathUsuarios, szUserName ) )
@@ -420,6 +428,9 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			
 			memset( szIP, 0, 4 );
 			
+			if (ReducirIP(ADS.m_IP,szIP) == ERROR)
+				return;
+			
 			if((usrBuscado = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),sockIn->descriptor, &iPos))==NULL)
 			{
 				return;
@@ -463,7 +474,9 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			int nSend;
 			
 			memset( szIP, 0, 4 );
-
+			if (ReducirIP(ADS.m_IP,szIP) == ERROR)
+				return;
+			
 			ADS_CerrarConexion(sockIn);
 			
 			if ( !(paqSend  = paquetes_newPaqADSLogout( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),sockIn->descriptor )) )
