@@ -227,7 +227,7 @@ void MSH_ConfirmarConexion( tSocket* sockIn )
 
 	if ( IS_ADS_PAQ( paq ) &&  IS_PAQ_PONG ( paq ) )
 	{/*Si el ADS me responde pong la conexion queda establecida!*/
-		ventana_Print( MShell.m_pwRemoto, "Bienvenido a B&RR MShell.");
+		/*ventana_Print( MShell.m_pwRemoto, "Bienvenido a B&RR MShell.");*/
 		
 		Log_log( log_debug, "Conexion establecida con el ADS!" );
 		sockIn->callback = &MSH_AtenderADS;
@@ -250,7 +250,7 @@ void MSH_AtenderADS( tSocket* sockIn )
 	char 			buffer[ PAQUETE_MAX_TAM ];
 	tPaquete* 		paq = NULL;
 	
-	len = conexiones_recvBuff( sockIn, buffer, 66 );
+	len = conexiones_recvBuff( sockIn, buffer, PAQUETE_MAX_TAM );
 	
 	if ( ERROR == len || !len)
 	{
@@ -280,7 +280,6 @@ void MSH_AtenderADS( tSocket* sockIn )
 		ventana_Print( MShell.m_pwRemoto, "Usuario invalido.");
 		if(MSH_Logout(sockIn)==OK){
 			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
-			ventana_Print( MShell.m_pwRemoto, "se cierra conexion con ADS" );
 		}
 	}
 	
@@ -299,7 +298,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	tIDMensaje		idMsj;
 
 
-	len = conexiones_recvBuff(sockIn, buffer, 66);
+	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
 	if ( ERROR == len || !len)
 	{
@@ -321,6 +320,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	{/*Si el ADS me responde Pwd_ok la sesion queda iniciada!*/
 		isUsrLogued = 1;
 		Log_log( log_debug, "ADS acepta password, sesion iniciada!" );
+		ventana_Print( MShell.m_pwRemoto, "bienvenido a B&RR MShell." );
 	}
 	if ( IS_PAQ_PWD_ERROR ( paq ) )
 	{/*Si el ADS me responde Pwd_Error no inicia sesion!*/
@@ -328,7 +328,6 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		ventana_Print( MShell.m_pwRemoto, "Password Invalida");
 		if(MSH_Logout(sockIn)==OK){
 			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
-			ventana_Print( MShell.m_pwRemoto, "se cierra conexion con ADS" );
 		}
 	}
 /*	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
@@ -398,27 +397,25 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 		p=strtok(cmd," ");
 		if(!isUsrLogued)
 		{
+			if(strcmp(p,"exit")==0){
+				MSH_Salir();
+			}
 			if( strcmp ( p, "login" ) == 0 ){
 				p=strtok(NULL," ");
-				strcpy(MShell.m_Usr_Name, p);
-				if ( MSH_ConectarADS() == ERROR )
-				{
-					Log_log( log_error, "Error conectandose con el ADS!" );
-					break;
+				if(p!=NULL){
+					strcpy(MShell.m_Usr_Name, p);
+					if ( MSH_ConectarADS() == ERROR )
+					{
+						Log_log( log_error, "Error conectandose con el ADS!" );
+						break;
+					}
+				}else{
+					ventana_Print( MShell.m_pwRemoto, "debe ingresar un usuario(ej:login <usr>)" );
 				}
 			}
 		}
 		else
 		{
-			if( strcmp ( p, "exec" ) == 0 )
-			{
-				p=strtok(NULL," ");
-				if(MSH_Exec_Prog(MShell.m_ListaSockets[ SOCK_ADS ],p)==ERROR)
-				{
-					Log_log( log_error, "MShell No Envio exec a ADS!!" );
-					break;
-				}
-			}
 			if( strcmp ( p, "logout" ) == 0 )
 			{
 				if(MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ])==ERROR)
@@ -427,7 +424,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 					break;
 				}else{
 					conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );
-					ventana_Print( MShell.m_pwRemoto, "se cierra conexion con ADS" );
+					ventana_Print( MShell.m_pwRemoto, "se cierra sesion" );
 				}
 			}
 			if( strcmp ( p, "exit" ) == 0 )
@@ -438,11 +435,24 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 					break;
 				}else{
 					conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );
-					ventana_Print( MShell.m_pwRemoto, "se cierra conexion con ADS" );
+					ventana_Print( MShell.m_pwRemoto, "se cierra sesion" );
 					MSH_Salir();
 				}
 				
 				/*isExit = 1;*/
+			}
+			if( strcmp ( p, "exec" ) == 0 )
+			{
+				p=strtok(NULL," ");
+				if(p!=NULL){
+					if(MSH_Exec_Prog(MShell.m_ListaSockets[ SOCK_ADS ],p)==ERROR)
+					{
+						Log_log( log_error, "MShell No Envio exec a ADS!!" );
+						break;
+					}
+				}else{
+					ventana_Print( MShell.m_pwRemoto, "debe ingresar nombre de script(ej:exec <prog>)" );
+				}
 			}
 		}
 		
