@@ -179,6 +179,10 @@ int MSH_ConectarADS()
 	unsigned char szIP[4];
 	
 	memset( szIP, 0, 4 );
+	
+	if (ReducirIP(MShell.m_ADS_IP,szIP) == ERROR)
+			return ERROR;
+	
 	isExit=0;
 	
 	if ( !( pSocket = conexiones_ConectarHost( MShell.m_ADS_IP, MShell.m_ADS_Port,
@@ -191,7 +195,7 @@ int MSH_ConectarADS()
 	/*Mando el Ping al ADS*/
 	Log_log( log_debug, "envio Ping para conectarme con ADS" );
 	
-	if ( !(pPaq  = paquetes_newPaqPing( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+	if ( !(pPaq  = paquetes_newPaqPing(szIP , _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
 	
 	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
@@ -521,12 +525,15 @@ int MSH_Login_Send (tSocket *pSocket, char msj[15], int isPwd)
 	
 	memset( szIP, 0, 4 );
 	
+	if (ReducirIP(MShell.m_ADS_IP,szIP) == ERROR)
+					return ERROR;
+	
 	if(!isPwd)
 	{
 		/*Mando el Usr al ADS*/
 		Log_log( log_debug, "envio Usuario al ADS" );
-	
-		if ( !(pPaq  = paquetes_newPaqLogin_Usr( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
+		
+		if ( !(pPaq  = paquetes_newPaqLogin_Usr( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
 			return ERROR;
 	
 		nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
@@ -540,7 +547,7 @@ int MSH_Login_Send (tSocket *pSocket, char msj[15], int isPwd)
 		/*Mando el Pwd al ADS*/
 			Log_log( log_debug, "envio Password al ADS" );
 			
-			if ( !(pPaq  = paquetes_newPaqLogin_Pwd( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
+			if ( !(pPaq  = paquetes_newPaqLogin_Pwd( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
 				return ERROR;
 			
 			nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
@@ -560,10 +567,13 @@ int MSH_Exec_Prog (tSocket *pSocket, char prog[30])
 	
 	memset( szIP, 0, 4 );
 	
+	if (ReducirIP(MShell.m_ADS_IP,szIP) == ERROR)
+			return ERROR;
+	
 	/*Mando el programa al ADS*/
 	Log_log( log_debug, "envio nombre del programa al ADS" );
 	
-	if ( !(pPaq  = paquetes_newPaqExec_Prog( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),prog )) )
+	if ( !(pPaq  = paquetes_newPaqExec_Prog( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),prog )) )
 		return ERROR;
 	
 	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
@@ -583,10 +593,13 @@ int MSH_Logout (tSocket *pSocket)
 	
 	memset( szIP, 0, 4 );
 	
+	if (ReducirIP(MShell.m_ADS_IP,szIP) == ERROR)
+			return ERROR;
+	
 	/*Mando el Ping al ADS*/
 	Log_log( log_debug, "envio Aviso de Logout al ADS" );
 	
-	if ( !(pPaq  = paquetes_newPaqLogout( MShell.m_ADS_IP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+	if ( !(pPaq  = paquetes_newPaqLogout( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
 	
 	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
