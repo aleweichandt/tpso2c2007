@@ -45,11 +45,11 @@ lib/DatosPCBs.o : ADP/DatosPCBs.c ADP/DatosPCBs.h
 #	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/paquetesGeneral.o" "lib/paquetesACR.o" "incGeneral/Sockets/paquetesACR.c"
 
 #ACR ---------------------------------------------
-ACR : librerias lib/DatosPpcbACR.o lib/ACRLib.o ACR/ACR.c ACR/ACR.h
-	gcc $(GCC_DEBUG) $(GCC_ANSI) -Lefence -lpthread -o"acr" $(LIBRERIAS) "lib/ACRLib.o" "ACR/ACR.c"
+ACR : librerias lib/ACRLib.o ACR/ACR.c ACR/ACR.h lib/DatosPpcbACR.o
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -Lefence -lpthread -o"acr" $(LIBRERIAS) "lib/ACRLib.o" "lib/DatosPpcbACR.o" "ACR/ACR.c"
 
 lib/ACRLib.o :lib/DatosPpcbACR.o ACR/ACRLib.c ACR/ACRLib.h
-	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -Lefence -o"lib/ACRLib.o" "ACR/ACRLib.c"
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -Lefence -o"lib/ACRLib.o" "lib/DatosPpcbACR.o" "ACR/ACRLib.c"
 
 lib/DatosPpcbACR.o : ACR/DatosPpcbACR.c ACR/DatosPpcbACR.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosPpcbACR.o" "ACR/DatosPpcbACR.c"
