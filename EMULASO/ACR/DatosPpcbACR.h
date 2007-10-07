@@ -24,7 +24,8 @@ typedef enum tActividad
 
 typedef struct tPpcbAcr 
 {
-	long pid;
+	long pid;					/*asignado por el sistema*/
+	int  pidChild;				/*asignado por el fork*/
 	char szUsuario[LEN_USUARIO];
 	char szComando[LEN_COMANDO_EJEC];
 	long lIdSesion;				/*23/09/2007	GT	TODO: Verificar con el ADS su tipo de datos*/
