@@ -231,7 +231,7 @@ void MSH_ConfirmarConexion( tSocket* sockIn )
 		
 		Log_log( log_debug, "Conexion establecida con el ADS!" );
 		sockIn->callback = &MSH_AtenderADS;
-		if(!MSH_Login_Send(sockIn,MShell.m_Usr_Name,0))
+		if(MSH_Login_Send(sockIn,MShell.m_Usr_Name,0)==ERROR)
 		{
 			Log_log( log_error, "MShell No Envio Usuario a ADS!!" );
 			/*break;-*/
@@ -277,7 +277,8 @@ void MSH_AtenderADS( tSocket* sockIn )
 	if ( IS_PAQ_USR_ERROR ( paq ) )
 	{/*Si el ADS me responde Usr_Error no inicia sesion!*/
 		Log_log( log_debug, "ADS rechaza usuario!" );
-		if(MSH_Logout(sockIn)){
+		ventana_Print( MShell.m_pwRemoto, "Usuario invalido.");
+		if(MSH_Logout(sockIn)==OK){
 			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
 			ventana_Print( MShell.m_pwRemoto, "se cierra conexion con ADS" );
 		}
@@ -324,7 +325,8 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	if ( IS_PAQ_PWD_ERROR ( paq ) )
 	{/*Si el ADS me responde Pwd_Error no inicia sesion!*/
 		Log_log( log_debug, "ADS rechaza password!" );
-		if(MSH_Logout(sockIn)){
+		ventana_Print( MShell.m_pwRemoto, "Password Invalida");
+		if(MSH_Logout(sockIn)==OK){
 			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
 			ventana_Print( MShell.m_pwRemoto, "se cierra conexion con ADS" );
 		}
@@ -411,7 +413,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			if( strcmp ( p, "exec" ) == 0 )
 			{
 				p=strtok(NULL," ");
-				if(!MSH_Exec_Prog(MShell.m_ListaSockets[ SOCK_ADS ],p))
+				if(MSH_Exec_Prog(MShell.m_ListaSockets[ SOCK_ADS ],p)==ERROR)
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
@@ -419,7 +421,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			}
 			if( strcmp ( p, "logout" ) == 0 )
 			{
-				if(!MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ]))
+				if(MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ])==ERROR)
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
@@ -430,7 +432,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			}
 			if( strcmp ( p, "exit" ) == 0 )
 			{
-				if(!MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ]))
+				if(MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ])==ERROR)
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
@@ -472,7 +474,7 @@ void MSH_ProcesarTecladoIfUsrOk(tSocket* sockIn)
 		if (!cant || !strlen(cmd)) 
 			break;
 		
-		if(!MSH_Login_Send(MShell.m_ListaSockets[ SOCK_ADS ],cmd,1))
+		if(MSH_Login_Send(MShell.m_ListaSockets[ SOCK_ADS ],cmd,1)==ERROR)
 		{
 			Log_log( log_error, "MShell No Envio Password a ADS!!" );
 			break;
@@ -590,9 +592,10 @@ int MSH_Logout (tSocket *pSocket)
 int MSH_GetKey ()
 {
 	FILE *f;
-	char *p=malloc(21);
+	char *p=malloc(LEN_PATH_USUARIOS +20);
 	
 	strcpy(p,MShell.m_Usr_Path);
+	strcat(p,"/");
 	strcat(p,MShell.m_Usr_Name);
 	strcat(p,".key");
 	
