@@ -58,9 +58,9 @@ void 	MSH_ConfirmarConexion( tSocket* sockIn );
 void 	MSH_AtenderADS ( tSocket *sockIn );
 void 	MSH_AtenderADSEncript ( tSocket *sockIn ); /*para los mensajes encriptados */
 
-int 	MSH_Login_Send(char msj[15], int isPwd);
-int 	MSH_Exec_Prog(char prog[30]);
-int 	MSH_Logout();
+int 	MSH_Login_Send(tSocket *pSocket,char msj[15], int isPwd);
+int 	MSH_Exec_Prog(tSocket *pSocket,char prog[30]);
+int 	MSH_Logout(tSocket *pSocket);
 
 int 	MSH_GetKey();
 #endif /*MSHELLLIB_H_*/
