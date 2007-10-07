@@ -19,7 +19,9 @@ int ACR_Init()
 		
 		Log_log( log_info, "Inicio de Aplicacion" );
 		
-				
+		/*inicializa contadores*/
+		lContProcesos = 0;
+		
 		if ( ACR_LeerConfig() == ERROR )
 		{
 			Log_log( log_error, "Error leyendo la configuracion" ); 
@@ -78,7 +80,7 @@ void ACR_Salir()
 	
 	
 	Log_log(log_info,"Fin de la ejecucion");
-	pantalla_Clear();
+	/*pantalla_Clear();*/
 	exit(EXIT_SUCCESS);
 }
 
@@ -409,7 +411,8 @@ void ACR_AtenderADS ( tSocket *sockIn )
 	unsigned short int puerto;
 	char 		szNomProg[LEN_COMANDO_EJEC];
 	char 		szUsuario[LEN_USUARIO];
-	int			idSesion;
+	int			idSesion, pidChild;
+	long		lpcb_id;
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -432,9 +435,16 @@ void ACR_AtenderADS ( tSocket *sockIn )
 		if(ExistFile(ACR.sz_programPath,szNomProg)==0)
 		{	/*existe el programa*/
 			Log_printf(log_info,"Existe el programa %s en el directorio",szNomProg);
+			
 			/* Crear el ppcb */
-			/*ACR_CrearProceso();*/	
-			tmp = paquetes_newPaqProgExecutingAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,szNomProg,idSesion);
+			lpcb_id = ++lContProcesos;
+			if ( (pidChild = ACR_ForkPPCBInicial( lpcb_id, szNomProg, szUsuario, idSesion )) != ERROR  &&
+				ACR_CrearPPCBInicial( lpcb_id, pidChild ) == OK ){
+				tmp = paquetes_newPaqProgExecutingAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,szNomProg,idSesion);
+			}else{
+				Log_printf(log_error,"Existe el programa %s en el directorio pero error creandolo",szNomProg);
+				tmp = paquetes_newPaqNoProgAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,szNomProg,idSesion);		
+			}
 		}else
 		{	/*no existe el programa*/
 			Log_printf(log_info,"No existe el programa %s en el directorio",szNomProg);
@@ -528,13 +538,13 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 {
 	int 			len; 
 	tPaqueteArch* 	paq ; 
-	tPaquete* 		paq2 ;
 	FILE*			arch;
 	char 			*tmp;
 	char			buffer [ PAQUETE_ARCH_MAX_TAM ];
 	char			szPathArch[15];
 	unsigned char	szIP[4];
 	long			lpcb_id;
+	int 			pidChild;
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_ARCH_MAX_TAM );
 	
@@ -581,8 +591,8 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 		Log_log( log_debug, "envio migrar ok" );
 		ReducirIP( ACR.sz_ACR_IP, szIP );
 		
-		if ( ACR_ForkPPCB( lpcb_id ) == OK  &&
-			ACR_CrearPPCB( lpcb_id, sockIn ) == OK ){
+		if ( (pidChild = ACR_ForkPPCB( lpcb_id )) != ERROR  &&
+			ACR_CrearPPCB( lpcb_id, pidChild ) == OK ){
 			
 			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarOKAsStr( szIP, _ID_ACR_, ACR.usi_ACR_Port ), 
 					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
@@ -625,17 +635,41 @@ int ACR_ForkPPCB( long lpcbid )
         
         return ERROR;
   	}
-  	else if( pid ) 
-  	{
-  		Log_printf(log_debug,"El PID del PCB es: %d ", pid );
-  		return OK;
-    }
+  	/*else if( pid )*/ 
+	Log_printf(log_debug,"El PID del PCB es: %d ", pid );
+	return pid;
 
 }
 
+/**********************************************************/
+int ACR_ForkPPCBInicial( long lpcb_id, char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion)
+{
+	int pid;
+	char szPCB_ID[10], szSesionId[10], szPuerto[10];
+	
+	sprintf( szPCB_ID, "%ld", lpcb_id );
+	sprintf( szSesionId, "%d", idSesion );
+	sprintf( szPuerto, "%d", ACR.usi_ACR_Port);
+	
+	Log_printf(log_debug,"Voy a hacer el fork del PCB");
+	pid = fork();
+    
+    if( !pid )
+    {
+       	Log_printf(log_debug,"Voy a instanciar el PCB");
+    	execl( "ppcb", szPCB_ID, szUsuario, szNomProg, szSesionId, ACR.sz_ACR_IP, szPuerto,ACR.sz_programPath, NULL);
+        Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
+        Log_printf(log_debug,"Error en exec: %s", strerror(errno));
+        
+        return ERROR;
+  	}
+  	/*else if( pid )*/ 
+	Log_printf(log_debug,"El PID del PCB es: %d ", pid );
+	return pid;
+}
 
 /**********************************************************/
-int	ACR_CrearPPCB( long lpcbid, tSocket* pSock )
+int	ACR_CrearPPCB( long lpcbid, int pidChild )
 {
 	char		szPathArch[15];
 	tPpcbAcr	*ppcb =NULL;
@@ -654,6 +688,7 @@ int	ACR_CrearPPCB( long lpcbid, tSocket* pSock )
 	do
 	{
 		ppcb->pid = lpcbid;	/*PPCB ID*/
+		ppcb->pidChild = pidChild;	/*process id*/
 		
 		/*Levanto la configuracion*/		
 		if ( !(cfg = config_Crear( szPathArch, _PPCB_ )) ) 
@@ -680,8 +715,8 @@ int	ACR_CrearPPCB( long lpcbid, tSocket* pSock )
 		config_Destroy(cfg);
 
 		ppcb->sActividad = Estado_Inactivo;
-		ppcb->sFechaInactvdad = time(NULL);
-		/*ppcb->socket=;   			nada ! Recien cuando se conecte desde mi nodo*/
+		/*ppcb->sFechaInactvdad = time(NULL);	Esto mejor hacerlo cuando el ppcb pida conexion*/
+		ppcb->socket= NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
 		
 		lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);
 		
@@ -693,6 +728,54 @@ int	ACR_CrearPPCB( long lpcbid, tSocket* pSock )
 	return ERROR;
 	
 }
+
+/**********************************************************************/
+int ACR_CrearPPCBInicial( long lpcb_id, int pidChild, char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion)
+{
+	char		szPathArch[56+1];
+	tPpcbAcr	*ppcb =NULL;
+	FILE		*arch;
+	
+	if ( !( ppcb = malloc(sizeof(tPpcbAcr)) ) )
+	{
+		Log_logLastError("Creando datos de PPCB en ACR");
+		return ERROR;
+	}
+	
+	do
+	{
+		ppcb->pid = lpcb_id;	/*PPCB ID*/
+		ppcb->pidChild = pidChild;	/*process id*/
+		
+		strncpy( ppcb->szUsuario, szUsuario, LEN_USUARIO );	/*USUARIO*/
+		
+		strncpy( ppcb->szComando, szNomProg, LEN_COMANDO_EJEC );	/*COMANDO que lo EJECUTO*/
+				
+		ppcb->lIdSesion = idSesion;		/*ID de SESION*/
+		
+		sprintf(szPathArch,"%s/%s",ACR.sz_programPath,szNomProg);
+		
+		if( !(arch = fopen( szPathArch, "r" )) ){
+			Log_logLastError("Abriendo archivo emu");
+			break;
+		}
+		fscanf( arch, "MEM %d", &(ppcb->iMemoria));	/*cantidad de MEMORIA*/
+		fclose(arch);
+		
+		ppcb->sActividad = Estado_Inactivo;
+		/*ppcb->sFechaInactvdad = time(NULL);	Esto mejor hacerlo cuando el ppcb pida conexion*/
+		ppcb->socket=NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
+		
+		lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);
+		
+		
+		return OK;
+		
+	}while(0);
+	
+	return ERROR;	
+}
+
 /**********************************************************************/
 void ACR_CerrarConexion( tSocket *sockIn )
 {

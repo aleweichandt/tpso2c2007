@@ -16,10 +16,13 @@
 #include "../incGeneral/Sockets/paquetesGeneral.h"
 #include "../incGeneral/log.h"
 #include "../incGeneral/libConf.h"
+#include "../incGeneral/FindFile.h"
 #include "MatrizRecursos.h"
 #include "DatosRecurso.h"
 #include "DatosPpcbACR.h"
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define ALRM_T 1				/*Periodo en segundos para la alarma*/
 
@@ -43,17 +46,20 @@ typedef struct
 	
 	tSocket				*psocketADS;					/*Comunicacion con ADS*/
 	t_nodo				*t_ListaSocketAdp;				/*Comunicacion con ADPs*/
-	tListaPpcbAcr		t_ListaPpcbPend;					/*Comunicación con PPCBs*/
+	tListaPpcbAcr		t_ListaPpcbPend;				/*Comunicación con PPCBs*/
 	
 } tACR;
 
 /* "Objeto" Publico */
 tACR 	ACR;
 
+long	lContProcesos;
+
 /* Prototipos */
 int 	ACR_Init();
 void 	ACR_Salir();
 int 	ACR_LeerConfig();
+int 	ACR_LeerConfigRuntime();
 
 void 	ACR_ProcesarSeniales( int senial );
 void 	ACR_SenialTimer( int senial );
@@ -66,6 +72,8 @@ void 	ACR_AtenderADP ( tSocket *sockIn );
 void 	ACR_AtenderPPCB ( tSocket *sockIn );
 void	ACR_RecibirArchivo( tSocket *sockIn );
 int		ACR_ForkPPCB( long lpcbid );
+int 	ACR_ForkPPCBInicial( long lpcb_id, char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion);
+int		ACR_CrearPPCB( long lpcbid, int pidChild );
 
 void 	ACR_CerrarConexion( tSocket *sockIn );
 void 	ACR_DesconectarADS(tSocket *sockIn);
