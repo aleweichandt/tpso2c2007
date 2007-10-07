@@ -509,18 +509,20 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 		Log_log( log_debug, "Llega un Migrar!" );
 		
 		memcpy( &lpcb_id, paq->msg, sizeof(long) );
+		bzero(szPathArch,sizeof(szPathArch));
+		
 		ArmarPathPCBConfig( szPathArch, lpcb_id );
 		
-		g_lpcb_id = lpcb_id;
 		
 		if ( (arch = fopen( szPathArch, "wb+" )) )
 		{
 			sockIn->callback = &ADP_RecibirArchivo;
-			sockIn->extra = arch;
+			sockIn->extra = (void*)lpcb_id;
+			fclose(arch);
 		}
 		else
 		{
-			Log_log( log_error, "No pude abrir el archivo de la migracion" );
+			Log_logLastError( "No pude abrir el archivo de la migracion" );
 		}
 	}
 	
@@ -535,9 +537,12 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	int 			len; 
 	tPaqueteArch* 	paq ; 
 	tPaquete* 		paq2 ;
+	FILE*			arch;
 	char 			*tmp;
-	char			buffer [ PAQUETE_ARCH_MAX_TAM ]; 
+	char			buffer [ PAQUETE_ARCH_MAX_TAM ];
+	char			szPathArch[512];	 
 	unsigned char	szIP[4];
+	long			lpcb_id;
 
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_ARCH_MAX_TAM );
@@ -548,49 +553,53 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	
 		return;
 	}
-	else if ( len != PAQUETE_MAX_TAM )
-	{/*Puede ser el paquete FIN_MIGRAR*/
-		paq2 = paquetes_CharToPaq( buffer );
-		
-		if ( IS_PAQ_FIN_MIGRAR( paq2 ) )
-		{
-			if ( paq2 ) 
-				paquetes_destruir( paq2 );
-			
-			Log_log( log_debug, "llega un fin migrar" );
-			
-			fclose( (FILE*) sockIn->extra );
-			sockIn->callback = 	&ADP_AtenderPCB;
-			
-			/*Envio el msj de migracion OK*/
-			Log_log( log_debug, "envio migrar ok" );
-			ReducirIP( ADP.m_IP, szIP );
-			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarOKAsStr( szIP, _ID_ADP_, ADP.m_Port ), 
-					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
-			{
-				Log_logLastError("enviando migrar_ok");
-			}
-			else
-			{
-				if ( ADP_ForkearPCB( g_lpcb_id ) == OK )
-					ADP_CrearPCB( g_lpcb_id, sockIn );/*Lo crea y lo agrega a la lista de listos*/
-			}
-			
-			g_lpcb_id = 0;			
-		}
-	}
-	else if( len != PAQUETE_ARCH_MAX_TAM )
+	
+	
+	if( len != PAQUETE_ARCH_MAX_TAM )
 	{ 
-		Log_log( log_warning, "Atencion no recibi el largo fijo! de paquete" ); 
+		Log_printf(log_warning,
+			"Atencion no recibi el largo fijo de paquete. Me llega %d en vez de %d al transferir",
+			len, PAQUETE_ARCH_MAX_TAM ); 
 	}
 	
 	paq = paquetes_CharToPaqArch(buffer);
 
 	if ( IS_PAQ_ARCHIVO( paq ) )
-	{/*Me llega el paquete migrar, cambio el handshake para recibir el archivo del pcb data*/
-		Log_log( log_debug, "me llega una paquete archivo" );
+	{/*Llega el paq archivo -> persisto el contenido*/
+		Log_log( log_debug, "Llega un PAQ_ARCHIVO" );
 		
-		fprintf( (FILE*)sockIn->extra, "%s", paq->msg );
+		bzero(szPathArch,sizeof(szPathArch));
+		lpcb_id = (long)sockIn->extra;
+		ArmarPathPCBConfig( szPathArch, lpcb_id );
+		
+		if ( (arch = fopen( szPathArch, "ab+" )) ){
+			fprintf( arch, "%s", paq->msg );
+			fclose(arch);
+		}else{
+			Log_logLastError( "No pude abrir el archivo de la migracion" );
+		}
+	}
+	else if ( IS_PAQ_FIN_MIGRAR( paq ) )
+	{
+		Log_log( log_debug, "llega un PAQ_FIN_MIGRAR" );
+		lpcb_id = (long)sockIn->extra;
+		sockIn->callback = 	&ADP_AtenderPCB;
+		
+		/*Envio el msj de migracion OK*/
+		Log_log( log_debug, "envio migrar ok" );
+		ReducirIP( ADP.m_IP, szIP);
+		if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarOKAsStr( szIP, _ID_ADP_, ADP.m_Port ), 
+				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError("enviando migrar_ok");
+		}
+		else
+		{
+			if ( ADP_ForkearPCB( g_lpcb_id ) == OK )
+				ADP_CrearPCB( g_lpcb_id, sockIn );/*Lo crea y lo agrega a la lista de listos*/
+		}
+		
+		
 	}
 	
 	if ( paq ) 

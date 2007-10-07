@@ -42,7 +42,8 @@ typedef struct
 	unsigned int		ui_ultimoSocket;
 	
 	tSocket				*psocketADS;					/*Comunicacion con ADS*/
-	t_nodo*				t_ListaSocketAdp;				/*Comunicacion con ADPs*/
+	t_nodo				*t_ListaSocketAdp;				/*Comunicacion con ADPs*/
+	tListaPpcbAcr		t_ListaPpcbPend;					/*Comunicación con PPCBs*/
 	
 } tACR;
 
@@ -63,6 +64,9 @@ void 	ACR_HandShake( tSocket* sockIn );
 void 	ACR_AtenderADS ( tSocket *sockIn );
 void 	ACR_AtenderADP ( tSocket *sockIn );
 void 	ACR_AtenderPPCB ( tSocket *sockIn );
+void	ACR_RecibirArchivo( tSocket *sockIn );
+int		ACR_ForkPPCB( long lpcbid );
+
 void 	ACR_CerrarConexion( tSocket *sockIn );
 void 	ACR_DesconectarADS(tSocket *sockIn);
 void 	ACR_DesconectarADP(tSocket *sockIn);

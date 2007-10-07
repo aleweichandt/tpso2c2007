@@ -10,8 +10,10 @@
 #ifndef DATOSPPCBACR_
 #define DATOSPPCBACR_
 
+#include <time.h>
 #include "../incGeneral/incGeneral.h"
 #include "../incGeneral/Estructuras/estructuras.h"
+#include "../incGeneral/Sockets/conexiones.h"
 
 typedef enum tActividad
 {
@@ -38,13 +40,13 @@ typedef struct tPpcbAcr
 #define tListaPpcbAcr t_nodo*
 
 void			PpcbAcr_IniciarLista	(tListaPpcbAcr lista);
-int 			PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, const long pid, const char *nombre);
+int 			PpcbAcr_AgregarPpcb		(tListaPpcbAcr *lista, const long pid);
 void			PpcbAcr_EliminarPpcb	(tListaPpcbAcr *lista, const long pid);
 void			PpcbAcr_EliminarTodas	(tListaPpcbAcr *lista);
 tPpcbAcr*		PpcbAcr_BuscarTrans		(tListaPpcbAcr *lista, const long pid, int *pos);
 tPpcbAcr*		PpcbAcr_Datos			(tListaPpcbAcr lista);
 tListaPpcbAcr	PpcbAcr_Siguiente		(tListaPpcbAcr lista);
 
-int				comparaPpcbAcr		( const void *trf1, const void *trf2 );
+int 			comparaPpcbAcr			( const void *ppcb1, const void *ppcb2 );
 
 #endif /*DATOSPPCBACR_*/

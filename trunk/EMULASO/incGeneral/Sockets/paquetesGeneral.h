@@ -229,7 +229,7 @@ typedef struct
 char IS_PAQ_MIGRAR ( tPaquete *paq );
 char IS_PAQ_MIGRAR_OK ( tPaquete *paq );
 char IS_PAQ_MIGRAR_FAULT ( tPaquete *paq );
-char IS_PAQ_FIN_MIGRAR ( tPaquete *paq );
+char IS_PAQ_FIN_MIGRAR ( tPaqueteArch *paq );
 char IS_PAQ_ARCHIVO ( tPaqueteArch *paq );
 
 tPaquete* paquetes_newPaqMigrate( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
@@ -237,7 +237,7 @@ tPaquete* paquetes_newPaqMigrate( unsigned char IP[4], unsigned char id_Proceso,
 tPaquete* paquetes_newPaqMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long lPCB_ID );
 tPaquete* paquetes_newPaqMigrarOK( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqMigrarFault( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
-tPaquete* paquetes_newPaqFinMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaqueteArch* paquetes_newPaqFinMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaqueteArch* paquetes_newArchivo( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char szArch[ MAX_PAQ_ARCH ] );
 
 char* paquetes_newPaqMigrateAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
