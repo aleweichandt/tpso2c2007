@@ -445,7 +445,7 @@ tPaquete* paquetes_newPaqNoProg( unsigned char IP[4], unsigned char id_Proceso, 
 	if ( !(paq = paquetes_Crear() ) )
 		return NULL;
 
-	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PROG_EXECUTING, puerto );
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_NO_PROG, puerto );
 	
 	memcpy( &(paq->msg[PE_POS_NOM_PROG]), szNomProg, LEN_COMANDO_EJEC  ); 
 	memcpy( &(paq->msg[PE_POS_ID_SS]), &idSesion, sizeof( int ) );

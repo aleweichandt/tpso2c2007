@@ -4,7 +4,7 @@
 <PATH_USU>=./claves
 %ADS%
 <ACR_IP>=127.0.0.1
-<ACR_PORT>=92000
+<ACR_PORT>=9502
 <PATH_USU>=./usuarios
 <PATH_KEY_USU>=./claves
 %ADP%
@@ -17,8 +17,8 @@
 %ACR%
 <ACR_IP>=127.0.0.1
 <ACR_PORT>=9502
-<PATH_PROG>=/home/g/emulaso/emus
-<PATH_USU>=/home/g/emulaso/usr
+<PATH_PROG>=./
+<PATH_USU>=./usuarios
 <LIFE_TIME_PPCB>=15
 <IMPRESORA>=3
 <DISCO>=5
