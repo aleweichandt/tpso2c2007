@@ -21,6 +21,8 @@
 #include "DatosRecurso.h"
 #include "DatosPpcbACR.h"
 #include <signal.h>
+#include <unistd.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -63,6 +65,8 @@ int 	ACR_LeerConfigRuntime();
 
 void 	ACR_ProcesarSeniales( int senial );
 void 	ACR_SenialTimer( int senial );
+void 	ACR_SacarTimer(void);
+void 	ACR_PonerTimer(void);
 
 int 	ACR_ConectarACR();
 void 	ACR_AceptarConexion( tSocket* sockIn );
@@ -71,9 +75,13 @@ void 	ACR_AtenderADS ( tSocket *sockIn );
 void 	ACR_AtenderADP ( tSocket *sockIn );
 void 	ACR_AtenderPPCB ( tSocket *sockIn );
 void	ACR_RecibirArchivo( tSocket *sockIn );
+void 	ACR_ControlarPendientes(void);
+void	ACR_DeterminarNodo(tPpcbAcr* tPpcb);
+void	ACR_MigrarProceso( tPpcbAcr* tPpcb, unsigned char ipIdeal[4], unsigned short puertoIdeal);
 int		ACR_ForkPPCB( long lpcbid );
 int 	ACR_ForkPPCBInicial( long lpcb_id, char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion);
 int		ACR_CrearPPCB( long lpcbid, int pidChild );
+int		ACR_CrearPPCBInicial( long lpcb_id, int pidChild, char szNomProg[LEN_COMANDO_EJEC], char szUsuario[LEN_USUARIO], int idSesion);
 
 void 	ACR_CerrarConexion( tSocket *sockIn );
 void 	ACR_DesconectarADS(tSocket *sockIn);

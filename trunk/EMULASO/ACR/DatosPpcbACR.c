@@ -22,7 +22,7 @@ int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, const long pid)
 	tPpcbAcr* transfAde = malloc(sizeof(tPpcbAcr));
 	transfAde->pid = pid;
 	lista_insertar(lista, transfAde, sizeof(tPpcbAcr), &comparaPpcbAcr, _SIN_REPET_ );
-	PpcbAcr_BuscarTrans(lista,pid,&pos);
+	PpcbAcr_BuscarPpcb(lista,pid,&pos);
 	return pos;
 }
 
@@ -43,7 +43,7 @@ void PpcbAcr_EliminarTodas(tListaPpcbAcr *lista)
 }
 
 /*********************************************************/
-tPpcbAcr*	PpcbAcr_BuscarTrans	(tListaPpcbAcr *lista, const long pid, int *pos)
+tPpcbAcr*	PpcbAcr_BuscarPpcb	(tListaPpcbAcr *lista, const long pid, int *pos)
 {
 	unsigned int cantBytes;
 	tListaPpcbAcr listaAux = *lista;
@@ -78,6 +78,13 @@ tListaPpcbAcr	PpcbAcr_Siguiente	(tListaPpcbAcr lista)
 }
 
 /*********************************************************/
+tPpcbAcr* PpcbAcr_ObtenerPpcbXSock( tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbSockIn )
+{
+	tListaPpcbAcr tmp = lista_buscar( lstppcb, ppcbSockIn, &compararPpcbXSock );
+	return (tmp? tmp->datos : NULL);
+}
+
+/*********************************************************/
 int comparaPpcbAcr( const void *ppcb1, const void *ppcb2 )
 {
 	tPpcbAcr *ppcbAcr1 = (tPpcbAcr*) ppcb1,
@@ -85,3 +92,18 @@ int comparaPpcbAcr( const void *ppcb1, const void *ppcb2 )
 			   
 	return (int)(ppcbAcr1->pid - ppcbAcr2->pid); 
 }
+
+/*********************************************************/
+int compararPpcbXSock( const void *ppcb1, const void *ppcb2 )
+{
+	tPpcbAcr	*ppcbAcr1 = (tPpcbAcr*) ppcb1,
+				*ppcbAcr2 = (tPpcbAcr*) ppcb2;
+						
+	if ( ppcbAcr1->socket == ppcbAcr2->socket )
+	{
+		return 0;
+	}
+	
+	return 1;	
+}
+
