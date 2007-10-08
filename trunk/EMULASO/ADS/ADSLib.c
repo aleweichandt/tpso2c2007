@@ -348,10 +348,12 @@ void ADS_AtenderACR ( tSocket *sockIn )
 		unsigned char idProceso;
 		unsigned short int puerto;
 		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
-		int idSesion;		
+		int idSesion;	
+		tSocket sock;
 		
 		paquetes_ParsearPaqNoProg(buffer,ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
-		nSend = conexiones_sendBuff( idSesion, (const char*)paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		sock.descriptor = idSesion;
+		nSend = conexiones_sendBuff( &sock, (const char*)AplicarXorEnString((char *)paquetes_PaqToChar( paq ),ADS_GetClaveByConnId(idSesion, ADS.m_PathClavesUsuarios) ), PAQUETE_MAX_TAM );
 		if ( nSend != PAQUETE_MAX_TAM )
 		{
 			Log_logLastError( "Error enviando no_existe_programa al MSHELL" );
@@ -364,10 +366,12 @@ void ADS_AtenderACR ( tSocket *sockIn )
 		unsigned char idProceso;
 		unsigned short int puerto;
 		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
-		int idSesion;		
+		int idSesion;
+		tSocket sock;
 		
 		paquetes_ParsearPaqProgExecuting(buffer,ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
-		nSend = conexiones_sendBuff( idSesion, (const char*)paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		sock.descriptor = idSesion;
+		nSend = conexiones_sendBuff( &sock, (const char*)AplicarXorEnString((char *)paquetes_PaqToChar( paq ),ADS_GetClaveByConnId(idSesion, ADS.m_PathClavesUsuarios) ), PAQUETE_MAX_TAM );
 		if ( nSend != PAQUETE_MAX_TAM )
 		{
 			Log_logLastError( "Error enviando programa_ejecutando al MSHELL" );
