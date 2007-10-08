@@ -83,7 +83,7 @@ int ADS_Init( )
 		if ( ADS_ConectarACR() == ERROR )
 		{
 			Log_log( log_error, "Error conectandose con el ACR!" );
-			/*break; TODO: descomentar cuando pueda conectarme al ACR*/
+			break;
 		}
 		
 		signal(SIGALRM, ADS_ProcesarSeniales);
@@ -188,7 +188,7 @@ int ADS_ConectarACR()
 	/*Mando el Ping al ACR*/
 	Log_log( log_debug, "envio Ping para conectarme con ACR" );
 	
-	if ( !(pPaq  = paquetes_newPaqPing( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+	if ( !(pPaq  = paquetes_newPaqPing( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
 	
 	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
@@ -341,6 +341,38 @@ void ADS_AtenderACR ( tSocket *sockIn )
 	
 	paq = paquetes_CharToPaq(buffer);
 
+	if(IS_PAQ_NO_PROG(paq))
+	{
+		int nSend;
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;
+		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
+		int idSesion;		
+		
+		paquetes_ParsearPaqNoProg(buffer,ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
+		nSend = conexiones_sendBuff( idSesion, (const char*)paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		if ( nSend != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError( "Error enviando no_existe_programa al MSHELL" );
+		}
+	}
+	else if(IS_PAQ_PROG_EXECUTING(paq))
+	{
+		int nSend;
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;
+		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
+		int idSesion;		
+		
+		paquetes_ParsearPaqProgExecuting(buffer,ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
+		nSend = conexiones_sendBuff( idSesion, (const char*)paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		if ( nSend != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError( "Error enviando programa_ejecutando al MSHELL" );
+		}
+	}
 	
 	if ( paq ) 
 		paquetes_destruir( paq );
