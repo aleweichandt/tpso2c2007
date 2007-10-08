@@ -334,19 +334,33 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
 		}
 	}
-/*	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
+	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
 	{/*Si el ADS ejecuta el programa!*/
-/*		memset(tmp,0,50);
-		strcpy(tmp,paq->msg);
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;
+		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
+		int idSesion;		
+				
+		paquetes_ParsearPaqProgExecuting(AplicarXorEnString(buffer,key),ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
+		tmp=malloc(strlen(nombreProgrma)+20);
+		strcpy(tmp,nombreProgrma);
 		strcat(tmp," se esta ejecutando");
 		ventana_Print( MShell.m_pwRemoto, tmp );
 		Log_log( log_debug, "ADS acepta exec!" );
 	}
 	if ( IS_PAQ_NO_PROG ( paq ) )
 	{/*Si el ADS no ejecuta el programa!*/
-/*		memset(tmp,0,50);
-		strcpy(tmp,paq->msg);
-		strcat(tmp," o se ejecuto, o no es un programa");
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;
+		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
+		int idSesion;		
+				
+		paquetes_ParsearPaqNoProg(AplicarXorEnString(buffer,key),ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
+		tmp=malloc(strlen(nombreProgrma)+35);
+		strcpy(tmp,nombreProgrma);
+		strcat(tmp," no se ejecuto, o no es un programa");
 		ventana_Print( MShell.m_pwRemoto, tmp );
 		Log_log( log_debug, "ADS rechaza exec!" );
 	}
@@ -367,7 +381,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	if ( IS_PAQ_PRINT ( paq ) )
 	{/*Si el ADS envia un print!*/
 		Log_log( log_debug, "ADS envio un print!" );
-		ventana_Print( MShell.m_pwRemoto, "Mensaje recibido:\n" );
+		ventana_Print( MShell.m_pwRemoto, "Mensaje recibido:" );
 		ventana_Print( MShell.m_pwRemoto, paq->msg );
 	}	
 				
