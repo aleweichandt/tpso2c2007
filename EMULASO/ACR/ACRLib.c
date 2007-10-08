@@ -195,12 +195,22 @@ void ACR_SenialTimer( int senial )
 	{
 		Log_log( log_info, "Recibo senial SIGALRM");
 		
+		ACR_ControlarPendientes();
 		
-		signal(SIGALRM, ACR_SenialTimer);
-		alarm(ALRM_T);		
+		ACR_PonerTimer();
 	}else{
 		Log_log(log_warning, "Recibi otra senial en el handler del ALRM");
 	}
+}
+
+void ACR_SacarTimer(void){
+	signal(SIGALRM, ACR_SenialTimer);
+	alarm(0);	
+}
+
+void ACR_PonerTimer(void){
+	signal(SIGALRM, ACR_SenialTimer);
+	alarm(ALRM_T);
 }
 
 /**********************************************************************/
@@ -321,6 +331,46 @@ void ACR_HandShake( tSocket* sockIn )
 }
 
 /**********************************************************************/
+void ACR_ControlarPendientes(void)
+{
+	tListaPpcbAcr 	Lista = ACR.t_ListaPpcbPend;
+	tPpcbAcr		*ppcb = NULL;
+	time_t			now = time(NULL);
+	
+	while( Lista )
+	{
+		ppcb = PpcbAcr_Datos( Lista );
+		
+		if ( ppcb->sActividad == Estado_Inactivo &&
+				difftime( now, ppcb->sFechaInactvdad ) > (double)ACR.i_maxLifeTimePPCB )
+		{
+			Log_printf(log_info,
+				"Se elimina PPCB id:%ld %s de %s, de LPendientes por timeout",
+				ppcb->pid, ppcb->szComando, ppcb->szUsuario);
+			
+			/*Elimino el proceso PPCB*/
+			PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
+			kill( ppcb->pidChild, SIGTERM );
+			Lista = ACR.t_ListaPpcbPend;
+			continue;
+			
+		}else if ( ppcb->sActividad == Estado_Inactivo )
+		{
+			Log_printf(log_info,
+				"Intento reubicar PPCB id:%ld %s de %s, en nodo de ejecucion",
+				ppcb->pid, ppcb->szComando, ppcb->szUsuario);
+			
+			ACR_DeterminarNodo(ppcb);
+			break;	/*se termina para asegurar que el ppcb migre exitosamente o muera*/
+		}
+		
+		Lista = PpcbAcr_Siguiente( Lista );
+	}
+	
+	/*No hay Pendientes*/
+}
+
+/**********************************************************************/
 void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 {
 	unsigned int 	alpe;
@@ -392,8 +442,8 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 		Log_printf(log_info,"se encontro un nodo para migrar el ppcb id: %d, en IP: %s puerto %ud",
 			tPpcb->pid,szIpAmplia,puertoIdeal);
 		
-		/*TODO: migrar PCB a nodo*/
-		/*ACR_MigrarProceso(tPpcb,szIpAmplia,puertoIdeal);*/
+		/*migrar PCB a nodo*/
+		ACR_MigrarProceso(tPpcb,ipIdeal,puertoIdeal);
 	}
 	
 }
@@ -439,7 +489,7 @@ void ACR_AtenderADS ( tSocket *sockIn )
 			/* Crear el ppcb */
 			lpcb_id = ++lContProcesos;
 			if ( (pidChild = ACR_ForkPPCBInicial( lpcb_id, szNomProg, szUsuario, idSesion )) != ERROR  &&
-				ACR_CrearPPCBInicial( lpcb_id, pidChild ) == OK ){
+				ACR_CrearPPCBInicial( lpcb_id, pidChild, szNomProg, szUsuario, idSesion ) == OK ){
 				tmp = paquetes_newPaqProgExecutingAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,szNomProg,idSesion);
 			}else{
 				Log_printf(log_error,"Existe el programa %s en el directorio pero error creandolo",szNomProg);
@@ -492,6 +542,8 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 	char			szPathArch[15]; 
 	long			lpcb_id;
 	FILE*			arch;
+	tPpcbAcr		*ppcbEncontrado;
+	tPpcbAcr		ppcbAux;
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -526,7 +578,18 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
 		}
 	}
-
+	else if ( IS_PAQ_MIGRAR_OK( paq ) )
+	{
+		Log_log(log_debug,"Llega PAQ_MIGRAR_OK");
+		
+		if ( (ppcbEncontrado = PpcbAcr_ObtenerPpcbXSock(&ACR.t_ListaPpcbPend,&ppcbAux)) ){
+			/*Migro exitosamente entonces deja de ser inactivo*/
+			ppcbEncontrado->sActividad = Estado_Activo;
+			ppcbEncontrado->sFechaInactvdad = time (NULL);
+		}else{
+			Log_log(log_warning,"Se recibio MIGRAR_OK pero no se encontro PPCB asociado para adminsitrar");
+		}
+	}
 
 	if( paq )
 		paquetes_destruir(paq);	
@@ -613,6 +676,24 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 	if ( paq ) 
 		paquetes_Archdestruir( paq );
 	
+}
+/**********************************************************/
+void ACR_MigrarProceso( tPpcbAcr* tPpcb, unsigned char ipIdeal[4], unsigned short puertoIdeal)
+{
+	char 	*tmp;
+	int		nSend;
+	unsigned char	ip[4];
+	
+	ReducirIP(ACR.sz_ACR_IP,ip);
+	
+	tmp = paquetes_newPaqMigrateAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port, ipIdeal, puertoIdeal);
+		
+	nSend = conexiones_sendBuff( tPpcb->socket, tmp, PAQUETE_MAX_TAM );
+	
+	if( nSend == (int)NULL || nSend == ERROR )
+	{
+		Log_printf(log_error,"Ocurrio un error en envío de PAQ_MIGRATE");
+	}
 }
 
 /**********************************************************/

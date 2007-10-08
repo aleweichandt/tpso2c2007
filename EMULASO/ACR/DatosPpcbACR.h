@@ -44,10 +44,12 @@ void			PpcbAcr_IniciarLista	(tListaPpcbAcr lista);
 int 			PpcbAcr_AgregarPpcb		(tListaPpcbAcr *lista, const long pid);
 void			PpcbAcr_EliminarPpcb	(tListaPpcbAcr *lista, const long pid);
 void			PpcbAcr_EliminarTodas	(tListaPpcbAcr *lista);
-tPpcbAcr*		PpcbAcr_BuscarTrans		(tListaPpcbAcr *lista, const long pid, int *pos);
+tPpcbAcr*		PpcbAcr_BuscarPpcb		(tListaPpcbAcr *lista, const long pid, int *pos);
 tPpcbAcr*		PpcbAcr_Datos			(tListaPpcbAcr lista);
 tListaPpcbAcr	PpcbAcr_Siguiente		(tListaPpcbAcr lista);
+tPpcbAcr* 		PpcbAcr_ObtenerPpcbXSock(tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbSockIn );
 
 int 			comparaPpcbAcr			( const void *ppcb1, const void *ppcb2 );
+int 			compararPpcbXSock		( const void *ppcb1, const void *ppcb2 );
 
 #endif /*DATOSPPCBACR_*/

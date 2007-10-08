@@ -20,7 +20,9 @@ int main(int argc, char *argv[])
 	{		
 	 	conexiones_aguardarConexion( ACR.t_ListaSockets, 
 	 								&(ACR.ui_ultimoSocket) );
-	 								
+		ACR_SacarTimer();
+	 	ACR_ControlarPendientes();
+	 	ACR_PonerTimer();
 		ACR_LeerConfigRuntime();
 	}
 	
