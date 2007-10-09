@@ -93,6 +93,8 @@ int ADS_Init( )
 		
 		signal(SIGALRM, ADS_ProcesarSeniales);
 		signal(SIGCHLD, ADS_ProcesarSeniales);
+		signal(SIGUSR1, ADS_ProcesarSeniales);
+		
 		/*tests*/
 		if(0)
 		{
