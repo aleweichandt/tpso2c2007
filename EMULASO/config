@@ -3,10 +3,13 @@
 <ADS_PORT>=9150
 <PATH_USU>=./claves
 %ADS%
+<ADS_IP>=127.0.0.1
+<ADS_PORT>=9150
 <ACR_IP>=127.0.0.1
 <ACR_PORT>=9502
 <PATH_USU>=./usuarios
 <PATH_KEY_USU>=./claves
+<PATH_ESTADO>=./estado
 %ADP%
 <ACP_IP>=127.0.0.1
 <ACP_PORT>=93000

@@ -30,6 +30,11 @@ void ADS_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR1 )
 	{
+		Log_log( log_warning, "Recibo senial SIGUSR1");
+		ImprimirUsuariosADS(&(ADS.m_ListaUsuarios), ADS.m_PatchArchivoEstado);
+		Log_log( log_info, "se imprimio el estado del ADS");
+		
+		signal( SIGUSR1, ADS_ProcesarSeniales );
 	}
 	else if ( senial == SIGUSR2 )
 	{
@@ -143,16 +148,18 @@ int ADS_LeerConfig()
 		ADS.m_ACR_Port = config_GetVal_Int( cfg, _ADS_, "ACR_PORT" );
 		
 		/*Levanto la configuracion*/
-		if ( (tmp = config_GetVal( cfg, _MSHELL_, "ADS_IP" ) ) )
+		if ( (tmp = config_GetVal( cfg, _ADS_, "ADS_IP" ) ) )
 		{
 			strncpy( ADS.m_IP, tmp, LEN_IP );
 		}
 		
-		ADS.m_Port = config_GetVal_Int( cfg, _MSHELL_, "ADS_PORT" );
+		ADS.m_Port = config_GetVal_Int( cfg, _ADS_, "ADS_PORT" );
 		
 		strcpy(ADS.m_PathUsuarios, config_GetVal( cfg, _ADS_, "PATH_USU"));
 		
 		strcpy(ADS.m_PathClavesUsuarios, config_GetVal( cfg, _ADS_, "PATH_KEY_USU"));
+		
+		strcpy(ADS.m_PatchArchivoEstado, config_GetVal( cfg, _ADS_, "PATH_ESTADO"));
 
 		config_Destroy(cfg);
 
@@ -533,11 +540,24 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 		else if(IS_PAQ_EXEC_PROG(paq))/*TODO: verificar q info necesita el ACR*/
 		{
 			int nSend;
-			
-			nSend = conexiones_sendBuff( ADS.m_ListaSockets[SOCK_ACR], (const char*)paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
-			if ( nSend != PAQUETE_MAX_TAM )
+			tUsuarioADS* usr;
+			int pos;
+			if ( (usr = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor, &pos))==NULL)
 			{
 				Log_logLastError( "Error enviando Exec al ACR" );
+			}
+			else
+			{
+				tPaquete* paqSend = NULL;
+				unsigned char ip[4] = {'\0'}; 
+				
+				ReducirIP(ADS.m_IP, ip);
+				paqSend = paquetes_newPaqExecProg(ip, getpid(),ADS.m_ACR_Port, paq->msg, usr->Usuario, usr->IdConeccion);
+				nSend = conexiones_sendBuff( ADS.m_ListaSockets[SOCK_ACR], (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
+				if ( nSend != PAQUETE_MAX_TAM )
+				{
+					Log_logLastError( "Error enviando Exec al ACR" );
+				}
 			}
 		}
 		

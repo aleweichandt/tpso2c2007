@@ -90,3 +90,26 @@ int compararUsuariosADS( const void *usr1, const void *usr2 )
 			   
 	return (int)(usrADS1->IdConeccion - usrADS2->IdConeccion); 
 }
+/**********************************************************/
+int ImprimirUsuariosADS(tListaUsuariosADS *lista, char* szPathArchivoEstado)
+{
+	unsigned int cantBytes;
+	tListaUsuariosADS listaAux = *lista;
+	tUsuarioADS *usrADS = NULL;
+	FILE *fp;
+	
+	if( ( fp = fopen( szPathArchivoEstado, "a+" ) ) == NULL )
+	{
+		printf("Error al abrir/crear el archivo de Estado\n");
+		return ERROR;
+	}
+	while(listaAux)
+	{
+		usrADS = (tUsuarioADS*)nodo_datos(listaAux,&cantBytes);
+		fprintf(fp, "IdSesion = %d   Usuario = %s,   Mshell = %s", 
+				usrADS->IdConeccion, usrADS->Usuario, usrADS->MshellAsociado);
+		listaAux = listaAux->sgte;
+	}
+	close(fp);
+	return OK;
+}

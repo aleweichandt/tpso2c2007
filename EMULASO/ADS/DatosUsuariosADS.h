@@ -29,4 +29,5 @@ tUsuarioADS*		UsuariosADS_Datos			(tListaUsuariosADS lista);
 tListaUsuariosADS	UsuariosADS_Siguiente		(tListaUsuariosADS lista);
 
 int				compararUsuariosADS		( const void *usr1, const void *usr2 );
+int 			ImprimirUsuariosADS		(tListaUsuariosADS *lista, char* pathArchivoEstado);
 #endif /*DATOSUSUARIOS_H_*/
