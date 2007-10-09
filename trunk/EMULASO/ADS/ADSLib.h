@@ -43,6 +43,8 @@ typedef struct
 	
 	char				m_PathClavesUsuarios[LEN_PATH_USUARIOS];
 	
+	char 				m_PatchArchivoEstado[LEN_PATH_USUARIOS];
+	
 } tADS;
 
 /* "Objeto" Publico */
