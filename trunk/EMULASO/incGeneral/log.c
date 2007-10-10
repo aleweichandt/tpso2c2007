@@ -94,3 +94,7 @@ void Log_logLastError( const char* msg )
 	}
 
 }
+
+void Log_Cerrar(){
+	fclose(fp);	
+}
