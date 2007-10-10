@@ -7,7 +7,7 @@ GCC_DEBUG = -O0 -g3 -DNCOMP_DEBUG
 LIBRERIAS = lib/incGeneral.o lib/log.o lib/infoControl.o lib/estructuras.o lib/libConf.o lib/conexiones.o lib/paquetesGeneral.o lib/ventanas.o lib/DatosUsuariosADS.o lib/FindFile.o
 
 
-all : librerias MSHELL ADS ADP ACR
+all : librerias MSHELL ADS ADP ACR PPCB
 	@echo 'Compilacion finalizada.'
 
 .PHONY : clean
@@ -54,6 +54,13 @@ lib/ACRLib.o : ACR/ACRLib.c ACR/ACRLib.h
 lib/DatosPpcbACR.o : ACR/DatosPpcbACR.c ACR/DatosPpcbACR.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosPpcbACR.o" "ACR/DatosPpcbACR.c"
 
+#PPCB ---------------------------------------------
+PPCB : librerias lib/PPCBLib.o PPCB/PPCB.c PPCB/PPCB.h lib/Stack.o
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -lpthread -o"ppcb" $(LIBRERIAS) "lib/PPCBLib.o" "lib/Stack.o" "PPCB/PPCB.c"
+
+lib/PPCBLib.o : PPCB/PPCBLib.c PPCB/PPCBLib.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/PPCBLib.o" "PPCB/PPCBLib.c"
+
 
 #Librerias -------------------------------------
 librerias : $(LIBRERIAS)
@@ -87,3 +94,6 @@ lib/ventanas.o : incGeneral/ventanas.c incGeneral/ventanas.h
 
 lib/FindFile.o: incGeneral/FindFile.c incGeneral/FindFile.h
 	gcc $(GCC_DEBUG) $(GCC_NOCHECK) -c -o"lib/FindFile.o" "incGeneral/FindFile.c"
+
+lib/Stack.o : incGeneral/Estructuras/Stack.c incGeneral/Estructuras/Stack.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/Stack.o" "incGeneral/Estructuras/Stack.c"
