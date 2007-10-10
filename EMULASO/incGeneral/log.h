@@ -21,5 +21,6 @@ void Log_log( char nivel, const char *pszMsj );
 const char* log_GetNivelLog();
 void Log_printf( char nivel, const char* fmt, ... );
 void Log_logLastError( const char* msg );
+void Log_Cerrar();
 
 #endif

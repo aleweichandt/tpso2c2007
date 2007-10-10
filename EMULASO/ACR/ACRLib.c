@@ -77,9 +77,10 @@ void ACR_Salir()
 	lista_destruir( &ACR.t_ListaSocketAdp );
 	
 	conexiones_CerrarLista( 0, &ACR.ui_ultimoSocket, ACR.t_ListaSockets );
-	
+	free(ACR.t_ListaSockets);
 	
 	Log_log(log_info,"Fin de la ejecucion");
+	Log_Cerrar();
 	/*pantalla_Clear();*/
 	exit(EXIT_SUCCESS);
 }
