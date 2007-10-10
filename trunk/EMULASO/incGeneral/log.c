@@ -96,5 +96,6 @@ void Log_logLastError( const char* msg )
 }
 
 void Log_Cerrar(){
+	Log_log(log_info, "\nFin de ejecucion.");
 	fclose(fp);	
 }

@@ -17,8 +17,6 @@ int ACR_Init()
 	{
 		Log_Inicializar( _ACR_ , "1" );
 		
-		Log_log( log_info, "Inicio de Aplicacion" );
-		
 		/*inicializa contadores*/
 		lContProcesos = 0;
 		
@@ -184,7 +182,12 @@ void ACR_ProcesarSeniales( int senial )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
 		wait( &nstateChld );
-		Log_log( log_warning, "Murio un proc hijo");
+		if(  WIFEXITED(nstateChld) ){
+			Log_printf( log_warning, "Murio un proc hijo en forma normal. ExitStatus: %d",
+						WEXITSTATUS(nstateChld));
+		}else{
+			Log_log( log_warning, "Murio un proc hijo en forma Anormal");
+		}
 		signal( SIGCHLD, ACR_ProcesarSeniales );
 	}
 }
@@ -194,7 +197,7 @@ void ACR_SenialTimer( int senial )
 {
 	if ( senial == SIGALRM ) /*Timer*/
 	{
-		Log_log( log_info, "Recibo senial SIGALRM");
+		/*Log_log( log_info, "Recibo senial SIGALRM");*/
 		
 		ACR_ControlarPendientes();
 		
@@ -491,6 +494,7 @@ void ACR_AtenderADS ( tSocket *sockIn )
 			lpcb_id = ++lContProcesos;
 			if ( (pidChild = ACR_ForkPPCBInicial( lpcb_id, szNomProg, szUsuario, idSesion )) != ERROR  &&
 				ACR_CrearPPCBInicial( lpcb_id, pidChild, szNomProg, szUsuario, idSesion ) == OK ){
+				Log_printf(log_info,"Se creo pid:%ld,prog:%s,usr:%s,sesion:%d",lpcb_id,szNomProg,szUsuario,idSesion);
 				tmp = paquetes_newPaqProgExecutingAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,szNomProg,idSesion);
 			}else{
 				Log_printf(log_error,"Existe el programa %s en el directorio pero error creandolo",szNomProg);
@@ -739,7 +743,7 @@ int ACR_ForkPPCBInicial( long lpcb_id, char szNomProg[LEN_COMANDO_EJEC], char sz
     if( !pid )
     {
        	Log_printf(log_debug,"Voy a instanciar el PCB");
-    	execl( "ppcb", szPCB_ID, szUsuario, szNomProg, szSesionId, ACR.sz_ACR_IP, szPuerto,ACR.sz_programPath, NULL);
+    	execl( "ppcb", "ppcb", szPCB_ID, szUsuario, szNomProg, szSesionId, ACR.sz_ACR_IP, szPuerto,ACR.sz_programPath, NULL);
         Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
         Log_printf(log_debug,"Error en exec: %s", strerror(errno));
         
@@ -850,7 +854,8 @@ int ACR_CrearPPCBInicial( long lpcb_id, int pidChild, char szNomProg[LEN_COMANDO
 		
 		lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);
 		
-		
+		Log_printf(log_info,"Se creo el PPCB en ACR[id:%d %s idSesion:%d MEM:%d]",
+					lpcb_id,szNomProg,idSesion,ppcb->iMemoria);
 		return OK;
 		
 	}while(0);

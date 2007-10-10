@@ -103,9 +103,9 @@ int ADS_Init( )
 			int i;
 			tUsuarioADS * usr;
 			strcpy(str2,ADS_BuscarUsuario("/home/miguel/emulaso/usuarios", "miguel"));
-			UsuariosADS_AgregarUsr(&ADS.m_ListaUsuarios, 2, "", str2, ESPERANDO_PASS);
+			UsuariosADS_AgregarUsr(&ADS.m_ListaUsuarios, 2, (unsigned char*)"", str2, ESPERANDO_PASS);
 			usr = UsuariosADS_BuscarUsr(&ADS.m_ListaUsuarios, 2, &i);
-			UsuariosADS_AgregarUsr(&ADS.m_ListaUsuarios, 1, "", str2, ESPERANDO_PASS);
+			UsuariosADS_AgregarUsr(&ADS.m_ListaUsuarios, 1, (unsigned char*)"", str2, ESPERANDO_PASS);
 			ADS_GetClaveByConnId(2, "/home/miguel/emulaso/claves");
 			AplicarXorEnString(str2, ADS_GetClaveByConnId(2, "/home/miguel/emulaso/claves"));
 			AplicarXorEnString(str2, ADS_GetClaveByConnId(2, "/home/miguel/emulaso/claves"));
@@ -554,7 +554,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 				unsigned char ip[4] = {'\0'}; 
 				
 				ReducirIP(ADS.m_IP, ip);
-				paqSend = paquetes_newPaqExecProg(ip, getpid(),ADS.m_ACR_Port, paq->msg, usr->Usuario, usr->IdConeccion);
+				paqSend = paquetes_newPaqExecProg(ip, _ID_ADS_ ,ADS.m_ACR_Port, paq->msg, usr->Usuario, usr->IdConeccion);
 				nSend = conexiones_sendBuff( ADS.m_ListaSockets[SOCK_ACR], (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
 				if ( nSend != PAQUETE_MAX_TAM )
 				{
