@@ -23,9 +23,9 @@
 #include <unistd.h>
 
 
-#define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
-#define SOCK_ACR 		2
-#define SOCKS_OCUPADOS 	2
+#define SOCK_ACR 		0
+#define SOCK_ADP 		1
+
 #define MALLOC_SOCKS_INI	2	/* Cantidad de mem para sockets reservada al inicio */
 
 #define _TIMER_AVERAGE_		5 /*segs*/
@@ -83,6 +83,7 @@ void 	PCB_AceptarConexion( tSocket* sockIn );
 void 	PCB_ConfirmarConexion( tSocket* sockIn );
 void 	PCB_HandShake( tSocket* sockIn );
 void 	PCB_AtenderACR ( tSocket *sockIn );
+void 	PCB_AtenderADP ( tSocket *sockIn );
 void 	PCB_CerrarConexion( tSocket *sockIn );
 
 

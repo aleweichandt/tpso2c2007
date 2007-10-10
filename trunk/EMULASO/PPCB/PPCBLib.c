@@ -14,9 +14,6 @@
  /*Variables privadas*/
 
 sigset_t 		conjunto_seniales;
-long 			g_lTime1 = 0;
-long 			g_lTime2 = 0;
-long			g_lpcb_id = 0;
 
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
@@ -38,6 +35,9 @@ void PCB_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR1 )
 	{
+		
+		signal(SIGUSR1, PCB_ProcesarSeniales);
+		
 	}
 	else if ( senial == SIGUSR2 )
 	{
@@ -52,13 +52,92 @@ void PCB_ProcesarSeniales( int senial )
 	else if ( senial == SIGCHLD )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
-		wait( &nstateChld );
-		Log_log( log_warning, "Certifico que murio un proc hijo(ADT)");
-		signal( SIGCHLD, PCB_ProcesarSeniales );
+		
 	}
 }
 
 
+/**********************************************************************/
+int createPCBConfig(char *argv[]) {
+
+	FILE *cfgFile;
+	FILE *cfgCode;
+	int line=0;
+	char strBuff[50];
+		
+	do {
+		/*
+		%PPCB%
+		<ID>=1
+		<CREATORID>=Gonzalo
+		<CODE1>=MEM 10
+		<CODE2>SOL Impresora
+		<CODE3>OPER 15
+		<CODE4>DEV Impresora
+		<CODE5>IMP Ya Imprimi!!!
+		…
+		
+		<IPOINTER>=2
+		<ESTADO>=PENDIENTE
+		<STACK1>=A
+		<STACK2>=b
+		<STACK3>=15
+		…
+		<IP_ACR>=127.0.0.1
+		<PUERTO_ACR>=9000
+		
+		*/
+		
+		strcpy( PCB.ProgramPath, argv[7] );
+		
+		sprintf(strBuff, "config.ppcb%ld", PCB.PPCB_ID);
+		cfgFile = fopen(strBuff, "w+");
+		
+		sprintf(strBuff, "%s/%s", PCB.ProgramPath, argv[3] );
+		cfgCode = fopen(strBuff, "r+");
+		
+		
+		fprintf(cfgFile, "%PPCB%\n");
+		fprintf(cfgFile, "<ID>=%ld\n", PCB.PPCB_ID);
+		fprintf(cfgFile, "<CREATORID>=%s\n", argv[2]);
+		strcpy( PCB.User, argv[2] );
+		
+		fprintf(cfgFile, "<COMANDO>=%s\n", argv[3]);
+		strcpy( PCB.ProgName, argv[3] );
+		
+		fprintf(cfgFile, "<SESIONID>=%s\n", argv[4]);
+		PCB.SessionID = atoi (argv[4]);
+		
+		while (!feof(cfgCode)) {
+			fgets(strBuff, 200, cfgCode);
+			strncpy(PCB.Code[line], strBuff,20 );
+			fprintf(cfgFile, "<CODE%d>=%s\n", line+1, strBuff);
+			line++;
+		}
+		
+		fprintf(cfgFile, "<IPOINTER>=%d\n", 0);
+		PCB.IP = 0;
+		
+		fprintf(cfgFile, "<ESTADO>=%s\n", "PENDIENTE");
+		PCB.State = PENDIENTE;
+		
+		fprintf(cfgFile,"<IP_ACR>=%s\n", argv[5]);
+		
+		fprintf(cfgFile,"<PUERTO_ACR>=%s\n", argv[6]);
+		
+		fclose(cfgCode);
+		fclose(cfgFile);
+		
+		return OK;
+		
+	} while (0);
+	
+	return ERROR;
+	
+	
+	
+
+}
 /**********************************************************************/
 int PCB_Init(int argc, char *argv[] )
 {
@@ -68,9 +147,9 @@ int PCB_Init(int argc, char *argv[] )
 
 		Log_log( log_debug, "Inicio de Aplicacion" );
 		
-		if ( argc == 2) {
+		PCB.PPCB_ID = atol (argv[1]);
 			
-			PCB.PPCB_ID = atol (argv[1]);
+		if ( argc == 2) {
 			
 			if ( PCB_LeerConfig() == ERROR )
 			{
@@ -79,6 +158,11 @@ int PCB_Init(int argc, char *argv[] )
 			}
 					
 		} else if ( argc == 8) {
+			
+			if ( createPCBConfig(argv) == ERROR){
+				Log_log( log_error, "Error creando la configuracion" ); 
+				break;
+			}
 			
 			
 		}
@@ -89,12 +173,8 @@ int PCB_Init(int argc, char *argv[] )
 		memset( PCB.m_ListaSockets, 0, MALLOC_SOCKS_INI * sizeof(tSocket*) );
 		
 		/*Creo el socket de escucha*/
-		if ( ! (PCB.m_ListaSockets[ SOCK_ESCUCHA ] = conexiones_crearSockEscucha( &PCB.m_Port, 10,  
-														&PCB_AceptarConexion )) )
-			break;
-		
 			
-		PCB.m_ultimoSocket = SOCK_ESCUCHA;
+		/*PCB.m_ultimoSocket = SOCK_ESCUCHA; */
 		
 		if ( PCB_ConectarConACR() == ERROR )
 		{
@@ -134,9 +214,9 @@ int PCB_LeerConfig()
 	
 	do
 	{		
-		sprintf(strConfig, "config.ppcb%s", PCB.PPCB_ID);
+		sprintf(strConfig, "config.ppcb%ld", PCB.PPCB_ID);
 		
-		if ( !(cfg = config_Crear( PCB.PPCB_ID, _PPCB_ )) ) 
+		if ( !(cfg = config_Crear( strConfig, _PPCB_ )) ) 
 			break;
 		
 		
@@ -146,6 +226,13 @@ int PCB_LeerConfig()
 			strncpy( PCB.User, tmp, LEN_USUARIO );
 		}
 		
+		PCB.SessionID = config_GetVal_Int( cfg, _PPCB_, "SESIONID" );
+		
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )
+		{
+			strncpy( PCB.ProgName, tmp, LEN_COMANDO_EJEC );
+		}
+						
 		sprintf(strCode, "CODE%d", line);
 		
 		while ( (tmp = config_GetVal( cfg, _PPCB_, strCode) ) ) {
@@ -221,10 +308,11 @@ int PCB_ConectarConACR()
 	tSocket *pSocket;
 	tPaquete *pPaq;
 	int		nSend;
-	unsigned char szIP[4];
+	unsigned char szIP[4] = {'0','0','0','0'}; /* Por las dudas... estoy muy cansado y no se lo que hago.. ahora me voy al baño */
 	
 	memset( szIP, 0, 4 );
-	ReducirIP( PCB.m_IP, szIP );
+	/*ReducirIP( PCB.m_IP, szIP );*/
+	
 	
 	if ( !( pSocket = conexiones_ConectarHost( PCB.m_ACR_IP, PCB.m_ACR_Port,
 										 &PCB_ConfirmarConexion ) ) )
@@ -236,8 +324,11 @@ int PCB_ConectarConACR()
 	/*Mando el Ping al ACR*/
 	Log_log( log_debug, "envio Ping para conectarme con ACR" );
 	
-	if ( !(pPaq  = paquetes_newPaqPing( szIP, _ID_PPCB_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+	if ( !(pPaq  = paquetes_newPaqPing(szIP, _ID_PPCB_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
+	
+	memcpy(pPaq->msg,&PCB.PPCB_ID, sizeof(long)); /* Se le agrega el ID del PCB al mensaje del ping hacia el ACR, no queremos hacer otro paquete */
+	
 	
 	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
 	
@@ -276,6 +367,10 @@ void PCB_ConfirmarConexion( tSocket* sockIn )
 	{/*Si el ACR me responde pong la conexion queda establecida!*/
 		Log_log( log_debug, "Conexion establecida con el ACR!" );
 		sockIn->callback = &PCB_AtenderACR;
+	} else 	if ( IS_ADP_PAQ( paq ) &&  IS_PAQ_PONG ( paq ) )
+	{/*Si el ADP me responde pong la conexion queda establecida!*/
+		Log_log( log_debug, "Conexion establecida con el ACR!" );
+		sockIn->callback = &PCB_AtenderADP;
 	}
 	
 	if ( paq ) 
@@ -402,6 +497,56 @@ void PCB_AtenderACR ( tSocket *sockIn )
 		Log_log( log_debug, "el ACR me manda un GetPerformance" );
 
 		
+	} else if ( IS_PAQ_MIGRATE( paq) ) {
+		
+		/* MIGRAR HACIA EL ADP */
+		
+		
+	}
+
+
+
+	
+	if ( paq ) 
+		paquetes_destruir( paq );
+	
+}
+
+
+/**********************************************************/
+void PCB_AtenderADP ( tSocket *sockIn )
+/**/
+{
+	int 			len; 
+	tPaquete* 		paq ; 
+	char 			*tmp;
+	char			buffer [ PAQUETE_MAX_TAM ]; 
+	tIDMensaje		idMsj;
+	float 			fCargaProm = 0;
+	int 			CantPCB = 0;
+	char*			buffPaq;
+	int				nSend;
+	unsigned char	szIP[4] = {'\0','\0','\0','\0'};
+
+
+	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
+	
+	if ( ERROR == len || !len)
+	{
+		Log_log( log_debug, "Se cae conexion con ADP" );
+		PCB_CerrarConexion( sockIn );		
+	
+		return;
+	}
+	
+	paq = paquetes_CharToPaq(buffer);
+
+
+	if ( IS_PAQ_GET_PERFORMANCE( paq ) )
+	{/*Me pide la performance*/
+		Log_log( log_debug, "el ADPme manda un GetPerformance" );
+
+		
 	}
 
 
@@ -422,13 +567,13 @@ void PCB_Salir()
 	conexiones_CerrarLista( 0, &PCB.m_ultimoSocket, PCB.m_ListaSockets );
 	
 	Log_log(log_info,"Fin de la ejecucion");
-	pantalla_Clear();
+	/*pantalla_Clear(); */
 	exit(EXIT_SUCCESS);
 }
 
 /**********************************************************/
 void 	PCB_CerrarConexion( tSocket *sockIn )
-{/*Cerrar el socket correspondiente y tomar la accion correspondiente*/
+{/*MIGRAR AL ACR*/
 }
 
 /**********************************************************/
