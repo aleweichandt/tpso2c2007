@@ -111,11 +111,11 @@ int createPCBConfig(char *argv[]) {
 		while (!feof(cfgCode)) {
 			fgets(strBuff, 200, cfgCode);
 			strncpy(PCB.Code[line], strBuff,20 );
-			fprintf(cfgFile, "<CODE%d>=%s\n", line+1, strBuff);
+			fprintf(cfgFile, "<CODE%d>=%s", line+1, strBuff);
 			line++;
 		}
 		
-		fprintf(cfgFile, "<IPOINTER>=%d\n", 0);
+		fprintf(cfgFile, "\n<IPOINTER>=%d\n", 0);
 		PCB.IP = 0;
 		
 		fprintf(cfgFile, "<ESTADO>=%s\n", "PENDIENTE");
@@ -144,8 +144,6 @@ int PCB_Init(int argc, char *argv[] )
 	do
 	{
 		Log_Inicializar( _PPCB_, "1" );
-
-		Log_log( log_debug, "Inicio de Aplicacion" );
 		
 		PCB.PPCB_ID = atol (argv[1]);
 			
