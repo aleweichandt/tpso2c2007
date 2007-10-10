@@ -122,8 +122,10 @@ int createPCBConfig(char *argv[]) {
 		PCB.State = PENDIENTE;
 		
 		fprintf(cfgFile,"<IP_ACR>=%s\n", argv[5]);
+		strncpy( PCB.m_ACR_IP, argv[5], LEN_IP );
 		
 		fprintf(cfgFile,"<PUERTO_ACR>=%s\n", argv[6]);
+		PCB.m_ACR_Port = atoi(argv[6]);
 		
 		fclose(cfgCode);
 		fclose(cfgFile);
