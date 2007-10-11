@@ -21,7 +21,7 @@
 
 
 #define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
-#define SOCK_ACR 		2
+#define SOCK_ACR 		1
 #define SOCKS_OCUPADOS 	2
 #define MALLOC_SOCKS_INI	2	/* Cantidad de mem para sockets reservada al inicio */
 

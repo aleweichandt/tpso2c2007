@@ -402,11 +402,11 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 	unsigned int 	alpe;
 	tSocket* 		socket = NULL;
 	t_nodo* 		lista_aux = ACR.t_ListaSocketAdp;
-	unsigned char 	ip[4], ip2[4], ipIdeal[4], *pid;
+	unsigned char 	ip[4], ip2[4], ipIdeal[4], pid;
 	char 			* tmp, szIpAmplia[LEN_IP],	buffer [ PAQUETE_MAX_TAM ];
-	int 			*iMaxMem, *iCantPcb, iCantPcbIdeal, len;
-	float 			*fCargaProm, fCargaPromIdeal;
-	unsigned short int *puerto, puertoIdeal, bNodoIdeal;
+	int 			iMaxMem, iCantPcb, iCantPcbIdeal, len;
+	float 			fCargaProm, fCargaPromIdeal;
+	unsigned short int puerto, puertoIdeal, bNodoIdeal;
 	tPaquete		* paq;
 	
 	bNodoIdeal = FALSE;
@@ -435,18 +435,18 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 		if( IS_PAQ_INFO_PERFORMANCE(paq) )
 		{
 			Log_log(log_debug, "Recibo PAQ_INFO_PERFORMANCE");
-			paquetes_ParsearPaqInfoPerformance(buffer,ip2,pid,puerto,iMaxMem,fCargaProm,iCantPcb);
+			paquetes_ParsearPaqInfoPerformance(buffer,ip2,&pid,&puerto,&iMaxMem,&fCargaProm,&iCantPcb);
 			
-			if( *iCantPcb > 0 && *iMaxMem >= tPpcb->iMemoria ){
+			if( iCantPcb > 0 && iMaxMem >= tPpcb->iMemoria ){
 				Log_log(log_info,"Se tiene en cuenta info de performance");
 				/* Si se permiten mas ppcb y el nodo tiene suficiente memoria */	
-				if( *fCargaProm < fCargaPromIdeal ||
-						(*fCargaProm = fCargaPromIdeal && *iCantPcb > iCantPcbIdeal ) ){
+				if( fCargaProm < fCargaPromIdeal ||
+						(fCargaProm == fCargaPromIdeal && iCantPcb > iCantPcbIdeal ) ){
 					Log_log(log_info,"Nuevos valores ideales, se cambia el nodo");
-					fCargaPromIdeal = *fCargaProm;
-					iCantPcbIdeal = *iCantPcb;
+					fCargaPromIdeal = fCargaProm;
+					iCantPcbIdeal = iCantPcb;
 					memcpy(ipIdeal, ip2, 4);
-					puertoIdeal = *puerto;
+					puertoIdeal = puerto;
 					bNodoIdeal = TRUE; 
 				}
 			}
