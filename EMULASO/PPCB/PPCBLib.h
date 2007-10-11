@@ -60,6 +60,7 @@ typedef struct
 	tState State;
 	Stack stack;
 	char Code[20][20];
+	int	ultimaSentencia;
 	
 	
 } tPCB;
