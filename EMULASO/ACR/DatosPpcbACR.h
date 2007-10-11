@@ -24,12 +24,12 @@ typedef enum tActividad
 
 typedef struct tPpcbAcr 
 {
-	long pid;					/*asignado por el sistema*/
 	int  pidChild;				/*asignado por el fork*/
+	int iMemoria;
+	long pid;					/*asignado por el sistema*/
+	long lIdSesion;				/*23/09/2007	GT	TODO: Verificar con el ADS su tipo de datos*/
 	char szUsuario[LEN_USUARIO];
 	char szComando[LEN_COMANDO_EJEC];
-	long lIdSesion;				/*23/09/2007	GT	TODO: Verificar con el ADS su tipo de datos*/
-	int iMemoria;
 	
 	tActividad sActividad;		/* determina si está activo o si countdown de vida en el sistema */
 	time_t sFechaInactvdad;		/* instante de ingreso al sistema o de inactividad*/
@@ -41,7 +41,7 @@ typedef struct tPpcbAcr
 #define tListaPpcbAcr t_nodo*
 
 void			PpcbAcr_IniciarLista	(tListaPpcbAcr lista);
-int 			PpcbAcr_AgregarPpcb		(tListaPpcbAcr *lista, const long pid);
+int		 		PpcbAcr_AgregarPpcb		(tListaPpcbAcr *lista, tPpcbAcr *ppcb );
 void			PpcbAcr_EliminarPpcb	(tListaPpcbAcr *lista, const long pid);
 void			PpcbAcr_EliminarTodas	(tListaPpcbAcr *lista);
 tPpcbAcr*		PpcbAcr_BuscarPpcb		(tListaPpcbAcr *lista, const long pid, int *pos);

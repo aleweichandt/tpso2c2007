@@ -40,7 +40,11 @@ int ACR_Init()
 		ACR.ui_ultimoSocket = SOCK_ESCUCHA;
 		
 		/* inicializacion de la lista de sockets a adps*/
+		ACR.t_ListaSocketAdp = NULL;
 		lista_inic( &ACR.t_ListaSocketAdp );
+		
+		ACR.t_ListaPpcbPend = NULL;
+		lista_inic( &ACR.t_ListaPpcbPend );
 		
 		/*signals*/
 		signal(SIGALRM, ACR_SenialTimer);
@@ -103,6 +107,7 @@ int ACR_LeerConfig()
 		ACR.usi_ACR_Port = config_GetVal_Int( cfg, _ACR_, "ACR_PORT" );
 		
 		ACR.i_maxLifeTimePPCB = config_GetVal_Int(cfg, _ACR_, "LIFE_TIME_PPCB");
+		/*Log_printf(log_debug,"LIFE_TIME_PPCB:  %d",ACR.i_maxLifeTimePPCB);*/
 		
 		if ( (tmp = config_GetVal( cfg, _ACR_, "PATH_PROG" ) ) )
 		{
@@ -251,12 +256,14 @@ void ACR_AceptarConexion( tSocket* sockIn )
 /**********************************************************************/
 void ACR_HandShake( tSocket* sockIn )
 {
-	int 			len; 
+	int 			len, pos;
 	tPaquete* 		paq ; 
 	char 			*tmp;
 	char			buffer [ PAQUETE_MAX_TAM ]; 
-	unsigned char szIP[4];
-	int nSend, bSendPong = FALSE;
+	unsigned char 	szIP[4];
+	int 			nSend, bSendPong = FALSE;
+	long			ppcbid;
+	tPpcbAcr*		ppcb;
 	
 	
 	memset( szIP, 0, 4 );
@@ -306,9 +313,20 @@ void ACR_HandShake( tSocket* sockIn )
 		sockIn->onClose = &ACR_DesconectarPPCB;
 		sockIn->estado = estadoConn_escuchando;
 		
-		/*TODO: Determinar a que proceso pertenece para asociar el socket*/
-		
-		bSendPong = TRUE;
+		/*Determina a que proceso pertenece para asociar el socket*/
+		memcpy(&ppcbid,paq->msg,sizeof(long));
+		Log_printf(log_info,"Proceso PPCB id:%ld se identifica con socket",
+						ppcbid);
+		if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL )
+		{
+			Log_log(log_warning,"El Proceso que se conecto no es de los que administro, cierro conexion");
+			ACR_CerrarConexion(sockIn);
+			bSendPong = FALSE;
+		} else {
+			ppcb->socket = sockIn;
+			ppcb->sFechaInactvdad = time(NULL);	/*Seteo la fecha de inicio en el sistema para timeout*/
+			bSendPong = TRUE;
+		}
 	}
 	
 	
@@ -345,6 +363,11 @@ void ACR_ControlarPendientes(void)
 	{
 		ppcb = PpcbAcr_Datos( Lista );
 		
+		Log_printf(log_debug,"difftime de ppcb %ld es: %.2f, %d %d %d ",
+					ppcb->pid, difftime( now, ppcb->sFechaInactvdad ),
+					ppcb->sActividad, Estado_Inactivo,
+					ppcb->sActividad == Estado_Inactivo
+					);
 		if ( ppcb->sActividad == Estado_Inactivo &&
 				difftime( now, ppcb->sFechaInactvdad ) > (double)ACR.i_maxLifeTimePPCB )
 		{
@@ -353,8 +376,8 @@ void ACR_ControlarPendientes(void)
 				ppcb->pid, ppcb->szComando, ppcb->szUsuario);
 			
 			/*Elimino el proceso PPCB*/
-			PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 			kill( ppcb->pidChild, SIGTERM );
+			PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 			Lista = ACR.t_ListaPpcbPend;
 			continue;
 			
@@ -456,7 +479,7 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 void ACR_AtenderADS ( tSocket *sockIn )
 {
 	int 			len; 
-	tPaquete* 		paq ; 
+	tPaquete* 		paq = NULL ; 
 	char 			*tmp;
 	char			buffer [ PAQUETE_MAX_TAM ];
 	
@@ -801,10 +824,10 @@ int	ACR_CrearPPCB( long lpcbid, int pidChild )
 		config_Destroy(cfg);
 
 		ppcb->sActividad = Estado_Inactivo;
-		/*ppcb->sFechaInactvdad = time(NULL);	Esto mejor hacerlo cuando el ppcb pida conexion*/
+		ppcb->sFechaInactvdad = time(NULL);	/*Esto mejor hacerlo cuando el ppcb pida conexion, pero lo hago = porque evita error en ControlarPendientes*/
 		ppcb->socket= NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
 		
-		lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);
+		PpcbAcr_AgregarPpcb(&ACR.t_ListaPpcbPend, ppcb );
 		
 		
 		return OK;
@@ -849,10 +872,14 @@ int ACR_CrearPPCBInicial( long lpcb_id, int pidChild, char szNomProg[LEN_COMANDO
 		fclose(arch);
 		
 		ppcb->sActividad = Estado_Inactivo;
-		/*ppcb->sFechaInactvdad = time(NULL);	Esto mejor hacerlo cuando el ppcb pida conexion*/
+		ppcb->sFechaInactvdad = time(NULL);	/*Esto mejor hacerlo cuando el ppcb pida conexion*/
 		ppcb->socket=NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
 		
-		lista_insertar(&ACR.t_ListaPpcbPend, ppcb, sizeof(ppcb), &comparaPpcbAcr,_SIN_REPET_);
+		if( !PpcbAcr_AgregarPpcb(&ACR.t_ListaPpcbPend, ppcb ))
+		{
+			Log_printf(log_error,"insertando ppcb a la lista de pendientes");
+			break;
+		}
 		
 		Log_printf(log_info,"Se creo el PPCB en ACR[id:%d %s idSesion:%d MEM:%d]",
 					lpcb_id,szNomProg,idSesion,ppcb->iMemoria);
