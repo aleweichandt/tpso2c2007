@@ -47,6 +47,12 @@ void PCB_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGINT )
 	{			
+		Log_log( log_warning, "Recibo senial SIGINT");
+		PCB_Salir();
+	}
+	else if ( senial == SIGTERM )
+	{	
+		Log_log( log_warning, "Recibo senial SIGTERM");		
 		PCB_Salir();
 	}
 	else if ( senial == SIGCHLD )
@@ -184,6 +190,7 @@ int PCB_Init(int argc, char *argv[] )
 		
 		signal(SIGALRM, PCB_ProcesarSeniales);
 		signal(SIGCHLD, PCB_ProcesarSeniales);
+		signal(SIGTERM, PCB_ProcesarSeniales);
 	
 		return OK;
 		

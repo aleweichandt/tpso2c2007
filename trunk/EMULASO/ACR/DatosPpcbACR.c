@@ -16,14 +16,22 @@ void		PpcbAcr_IniciarLista	(tListaPpcbAcr lista)
 }
 
 /*********************************************************/
-int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, const long pid)
+int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, tPpcbAcr *ppcb )
 {
 	int pos;
-	tPpcbAcr* transfAde = malloc(sizeof(tPpcbAcr));
-	transfAde->pid = pid;
-	lista_insertar(lista, transfAde, sizeof(tPpcbAcr), &comparaPpcbAcr, _SIN_REPET_ );
-	PpcbAcr_BuscarPpcb(lista,pid,&pos);
-	return pos;
+
+	if ( !ppcb ) 
+		return (int)NULL;
+	
+	if (!*lista) 
+		lista_inic( lista );	
+
+	/*Si no lo encuentra lo agrega*/
+	if ( !lista_buscar( lista, ppcb, &comparaPpcbAcr ) )
+		lista_insertar( lista, ppcb, sizeof(tPpcbAcr), &comparaPpcbAcr, 1 );
+	
+	/*PpcbAcr_BuscarPpcb(lista,ppcb->pid,&pos);*/
+	return 1;
 }
 
 /*********************************************************/
@@ -55,10 +63,11 @@ tPpcbAcr*	PpcbAcr_BuscarPpcb	(tListaPpcbAcr *lista, const long pid, int *pos)
 	*pos = 0;
 	while(listaAux)
 	{
-		transfAde = (tPpcbAcr*)nodo_datos(*lista,&cantBytes);
+		transfAde = (tPpcbAcr*)nodo_datos(listaAux,&cantBytes);
 		if(comparaPpcbAcr ( (void*)&transfBuscada, (void*)transfAde ) == 0)
 			return transfAde; 
-		
+
+		listaAux = nodo_sgte( listaAux );		
 		++*pos;
 	}
 	return NULL;
