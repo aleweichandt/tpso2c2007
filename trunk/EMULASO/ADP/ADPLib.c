@@ -247,12 +247,12 @@ int ADP_LeerConfig()
 		ADP.m_ACR_Port = config_GetVal_Int( cfg, _ADP_, "ACR_PORT" );
 		
 		/*Levanto la configuracion*/
-		if ( (tmp = config_GetVal( cfg, _MSHELL_, "ADP_IP" ) ) )
+		if ( (tmp = config_GetVal( cfg, _ADP_, "ADP_IP" ) ) )
 		{
 			strncpy( ADP.m_IP, tmp, LEN_IP );
 		}
 		
-		ADP.m_Port = config_GetVal_Int( cfg, _MSHELL_, "ADP_PORT" );
+		ADP.m_Port = config_GetVal_Int( cfg, _ADP_, "ADP_PORT" );
 		
 		ADP.m_nMemDisp = ADP.m_nMemMax = config_GetVal_Int( cfg, _ADP_, "MAX_MEM" );
 		ADP.m_Q = config_GetVal_Int( cfg, _ADP_, "Q" );
@@ -454,12 +454,14 @@ void ADP_AtenderACR ( tSocket *sockIn )
 	{/*Me pide la performance*/
 		Log_log( log_debug, "el ACR me manda un GetPerformance" );
 
-		if ( fCargaProm = ADP_CalcularCargaPromReal() <= 0 )
-			fCargaProm = 1;
+		if ( (fCargaProm = ADP_CalcularCargaPromReal()) <= 0.0 )
+			fCargaProm = 1.0;
 		
 		CantPCB = (float)ADP.m_nMemMax / fCargaProm; 
+		Log_printf(log_debug,"CantPCB(%d) = ADP.m_nMemMax(%.5f) / fCargaProm(%.5f) = (%.5f)",
+					CantPCB,(float)ADP.m_nMemMax, fCargaProm, (float)ADP.m_nMemMax / fCargaProm);
 		ReducirIP( ADP.m_IP, szIP ); /*01-10-07:LAS: Esto lo tenia que reducir*/
-		
+		Log_printf(log_debug,"ip:%s,puerto=%d",ADP.m_IP,ADP.m_Port);
 		if( (buffPaq = paquetes_newPaqInfoPerformanceAsStr( szIP, _ID_ADP_, ADP.m_Port,
 											ADP.m_nMemMax, fCargaProm, CantPCB )) )
 		{
