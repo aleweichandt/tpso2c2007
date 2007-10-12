@@ -436,7 +436,8 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 		{
 			Log_log(log_debug, "Recibo PAQ_INFO_PERFORMANCE");
 			paquetes_ParsearPaqInfoPerformance(buffer,ip2,&pid,&puerto,&iMaxMem,&fCargaProm,&iCantPcb);
-			
+			Log_printf(log_debug,"iMaxMem=%d,fCargaProm=%.2f,iCantPcb=%d,condicional=%d",iMaxMem,fCargaProm,iCantPcb,
+						iCantPcb > 0 && iMaxMem >= tPpcb->iMemoria);
 			if( iCantPcb > 0 && iMaxMem >= tPpcb->iMemoria ){
 				Log_log(log_info,"Se tiene en cuenta info de performance");
 				/* Si se permiten mas ppcb y el nodo tiene suficiente memoria */	
@@ -445,7 +446,7 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 					Log_log(log_info,"Nuevos valores ideales, se cambia el nodo");
 					fCargaPromIdeal = fCargaProm;
 					iCantPcbIdeal = iCantPcb;
-					memcpy(ipIdeal, ip2, 4);
+					memcpy(ipIdeal, ip2, sizeof(unsigned char[4]));
 					puertoIdeal = puerto;
 					bNodoIdeal = TRUE; 
 				}
@@ -456,7 +457,7 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 		if( paq )
 			paquetes_destruir(paq);
 		
-		nodo_sgte( lista_aux );
+		lista_aux = nodo_sgte( lista_aux );
 		
 	}
 	
@@ -465,7 +466,7 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 	
 	if(bNodoIdeal){
 		/* se encontro un nodo para migrar el ppcb */	
-		Log_printf(log_info,"se encontro un nodo para migrar el ppcb id: %d, en IP: %s puerto %ud",
+		Log_printf(log_info,"se encontro un nodo para migrar el ppcb id: %d, en IP: %s puerto %d",
 			tPpcb->pid,szIpAmplia,puertoIdeal);
 		
 		/*migrar PCB a nodo*/
@@ -892,7 +893,7 @@ int ACR_CrearPPCBInicial( long lpcb_id, int pidChild, char szNomProg[LEN_COMANDO
 /**********************************************************************/
 void ACR_CerrarConexion( tSocket *sockIn )
 {
-	conexiones_CerrarSocket( ACR.t_ListaSockets, sockIn, &ACR.ui_ultimoSocket );	
+	conexiones_CerrarSocket( ACR.t_ListaSockets, sockIn, &ACR.ui_ultimoSocket );
 }
 
 /**********************************************************************/

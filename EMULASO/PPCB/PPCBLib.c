@@ -632,6 +632,8 @@ void PCB_Salir()
 /**********************************************************/
 void 	PCB_CerrarConexion( tSocket *sockIn )
 {/*MIGRAR AL ACR*/
+	/*11/10/2007	GT	TODO: verificar porque hay que conservar los lugares de los sockets*/
+	conexiones_CerrarSocket( PCB.m_ListaSockets, sockIn, &PCB.m_ultimoSocket );
 }
 
 /**********************************************************/

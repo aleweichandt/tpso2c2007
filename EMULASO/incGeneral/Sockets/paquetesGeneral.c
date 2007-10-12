@@ -43,7 +43,7 @@ tPaquete* paquetes_Crear()
 void paquetes_CargarIdMSg( tPaquete *paq, unsigned char IP[4], unsigned char id_Proceso, unsigned char id_Msg,
 								unsigned short int puerto )
 {
-	memcpy( paq->id.IP, IP, 4 );
+	memcpy( paq->id.IP, IP, sizeof(unsigned char[4]) );
 	paq->id.id_Proceso = id_Proceso;
 	paq->id.id_Msg = id_Msg;
 	paq->id.puerto = puerto;
@@ -542,12 +542,12 @@ tPaquete* paquetes_ParsearPaqInfoPerformance( const char* Buffer, unsigned char*
 	if ( !(paq = paquetes_CharToPaq( Buffer ) ) )
 		return NULL;
 	
-	memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
+	memcpy( IP, &(paq->id.IP), sizeof(unsigned char[4]) );
 	memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
 	memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
-	memcpy( nMaxMen, &(paq->msg[POS_MAX_MEM]), sizeof( nMaxMen ) ); 
-	memcpy( fCargaProm, &(paq->msg[POS_CARGA_PROM]), sizeof( fCargaProm ) );
-	memcpy( CantPCB, &(paq->msg[POS_CANT_PCB]), sizeof( CantPCB ) );
+	memcpy( nMaxMen, &(paq->msg[POS_MAX_MEM]), sizeof( int ) ); 
+	memcpy( fCargaProm, &(paq->msg[POS_CARGA_PROM]), sizeof( float ) );
+	memcpy( CantPCB, &(paq->msg[POS_CANT_PCB]), sizeof( int ) );
 	
 	return paq;		
 
