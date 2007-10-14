@@ -97,7 +97,7 @@ tPaquete* paquetes_CharToPaq( const char* buffer  )
 	if ( !(paq = paquetes_Crear() ) )
 		return NULL;
 	
-	memcpy( &paq->id.IP, &buffer, sizeof( paq->id.IP ) );
+	memcpy( &paq->id.IP, &(buffer[ POS_PAQ_IP ]), sizeof( paq->id.IP ) );
 	memcpy( &paq->id.puerto, &(buffer[ POS_PAQ_ID_PORT ]), sizeof( paq->id.puerto ) );
 	memcpy( &paq->id.id_Proceso, &(buffer[ POS_PAQ_ID_PROC ]), sizeof( paq->id.id_Proceso ) );
 	memcpy( &paq->id.id_Msg,  &(buffer[ POS_PAQ_ID_MSG ]), sizeof( paq->id.id_Msg ) );
