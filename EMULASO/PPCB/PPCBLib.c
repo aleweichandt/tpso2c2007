@@ -194,7 +194,8 @@ int createPCB(char *argv[]) {
 		PCB.m_ACR_Port = atoi(argv[6]);
 		
 		fclose(cfgCode);
-		
+		/* PARA PRUEBA */
+		PCB_ExecuteProgram();
 		return OK;
 		
 	} while (0);
@@ -221,7 +222,7 @@ int PCB_ExecuteProgram() {
 /**************************************************************/
 int PCB_ExecuteInstruction(int line) {
 	char sentence[20];
-	char instruction[20];
+	char instruction[5];
 	char parameter[20];
 	int (*executer)(char *);
 	int paramStart;
@@ -229,6 +230,9 @@ int PCB_ExecuteInstruction(int line) {
 	strncpy(sentence, PCB.Code[line], 20);
 	
 	strncpy(instruction, sentence, 4);
+	instruction[4] = '\0';
+	Log_printf( log_error, "Sentencia: %s", sentence );
+	Log_printf( log_error, "Comando: %s", instruction );
 	
 	if ( !strcmp("MEM ", instruction) ) {
 		executer = PCB_ExecuteMem;	
@@ -242,7 +246,7 @@ int PCB_ExecuteInstruction(int line) {
 		executer = PCB_ExecuteImp;	
 	} else if ( !strcmp("PUSH", instruction) ) {
 		executer = PCB_ExecutePush;	
-	} else if ( !strcmp("POP ", instruction) ) {
+	} else if ( !strcmp("POP", instruction) ) {
 		executer = PCB_ExecutePop;	
 	}  else {
 		Log_log( log_error, "Comando no reconocido, checkee el script");
