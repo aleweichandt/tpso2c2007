@@ -241,6 +241,8 @@ char IS_PAQ_ARCHIVO ( tPaqueteArch *paq );
 
 tPaquete* paquetes_newPaqMigrate( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto,
 									unsigned char IPDestino[4], unsigned short int puertoDestino );
+tPaquete* paquetes_ParsearPaqMigrate( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto,
+											unsigned char* IPDestino, unsigned short int* puertoDestino );
 tPaquete* paquetes_newPaqMigrar( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long lPCB_ID );
 tPaquete* paquetes_newPaqMigrarOK( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqMigrarFault( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );

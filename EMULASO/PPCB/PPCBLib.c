@@ -100,7 +100,7 @@ int createPCBConfig() {
 		fprintf(cfgFile, "<ID>=%ld\n", PCB.PPCB_ID);
 		fprintf(cfgFile, "<CREATORID>=%s\n", PCB.User);
 		fprintf(cfgFile, "<COMANDO>=%s\n",  PCB.ProgName);
-		fprintf(cfgFile, "<SESIONID>=%s\n", PCB.SessionID);
+		fprintf(cfgFile, "<SESIONID>=%d\n", PCB.SessionID);
 		
 		while( line < PCB.ultimaSentencia ) {
 			fprintf(cfgFile, "<CODE%d>=%s", line+1, PCB.Code[line]);
@@ -120,7 +120,7 @@ int createPCBConfig() {
 		
 		fprintf(cfgFile,"<IP_ACR>=%s\n",  PCB.m_ACR_IP);
 		
-		fprintf(cfgFile,"<PUERTO_ACR>=%s\n", PCB.m_ACR_Port);
+		fprintf(cfgFile,"<PUERTO_ACR>=%d\n", PCB.m_ACR_Port);
 		
 		fclose(cfgFile);
 		
@@ -173,6 +173,7 @@ int createPCB(char *argv[]) {
 		PCB.SessionID = atoi (argv[4]);
 		
 		while (!feof(cfgCode)) {
+			bzero(strBuff,sizeof(strBuff));
 			fgets(strBuff, 200, cfgCode);
 			strncpy(PCB.Code[line], strBuff,20 );
 			line++;
@@ -427,7 +428,7 @@ void PCB_ConfirmarConexion( tSocket* sockIn )
 		sockIn->callback = &PCB_AtenderACR;
 	} else 	if ( IS_ADP_PAQ( paq ) &&  IS_PAQ_PONG ( paq ) )
 	{/*Si el ADP me responde pong la conexion queda establecida!*/
-		Log_log( log_debug, "Conexion establecida con el ACR!" );
+		Log_log( log_debug, "Conexion establecida con el ADP!" );
 		sockIn->callback = &PCB_AtenderADP;
 	}
 	
