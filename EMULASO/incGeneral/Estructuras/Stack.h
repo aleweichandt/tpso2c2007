@@ -12,12 +12,12 @@
 
 typedef struct
 {
-    int v[TAM_MAX];
+    char v[TAM_MAX];
     int top;
 } Stack;
 
-void push(Stack *S, int val);
-int pop(Stack *S);
+void push(Stack *S, char val);
+char pop(Stack *S);
 void init(Stack *S);
 int full(Stack *S);
 void StackPrint(Stack *S);
