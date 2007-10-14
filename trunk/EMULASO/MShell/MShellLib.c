@@ -79,7 +79,7 @@ void MSH_CrearGraficos( int activarGraficos )
 	{
 		pantalla_Clear();
 		
-		MShell.m_pwRemoto  = ventana_Crear(X_REMOTO, 	Y_REMOTO, 	ANCHO_REMOTO, 	ALTO_REMOTO, 	1, "Remoto");
+		MShell.m_pwRemoto  = ventana_Crear(X_REMOTO, 	Y_REMOTO, 	ANCHO_LOCAL, 	ALTO_REMOTO, 	1, "Remoto");
 		MShell.m_pwLocal 	= ventana_Crear(X_LOCAL, 	Y_LOCAL, 	ANCHO_LOCAL, 	ALTO_LOCAL, 	0, "MSHell");
 	}
 	else
