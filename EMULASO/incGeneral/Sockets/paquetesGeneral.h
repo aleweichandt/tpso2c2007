@@ -83,6 +83,9 @@ typedef enum
 	PAQ_PWD_ERROR,
 	PAQ_PRINT,
 	
+	PAQ_END_SESION,
+	PAQ_END_SESION_OK,
+	
 	/* 24-09-07:LAS: Registro ACR-ADP*/
 	PAQ_GET_PERFORMANCE,
 	PAQ_INFO_PERFORMANCE,
@@ -123,6 +126,9 @@ char IS_PAQ_PRINT ( tPaquete *paq );
 char IS_PAQ_USR_NAME ( tPaquete *paq );
 char IS_PAQ_USR_PWD ( tPaquete *paq );
 
+char IS_PAQ_END_SESION ( tPaquete *paq );
+char IS_PAQ_END_SESION_OK( tPaquete *paq );
+
 /* --- */
 
 /* Prototipos publicos */
@@ -146,7 +152,8 @@ tPaquete* paquetes_newPaqUserNameOk( unsigned char IP[4], unsigned char id_Proce
 tPaquete* paquetes_newPaqUserNameInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqPasswordOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
-tPaquete* paquetes_newPaqADSLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion );
+tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion );
+tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion );
 
 void paquetes_ParsearUserName( const char *msg, char *szUserName );
 void paquetes_ParsearPassword(const char *msg, char *szPassword);
