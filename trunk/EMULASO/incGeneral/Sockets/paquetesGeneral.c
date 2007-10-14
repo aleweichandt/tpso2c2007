@@ -80,6 +80,8 @@ char IS_PAQ_PWD_ERROR ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PWD_ERRO
 char IS_PAQ_PRINT ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_PRINT); }
 char IS_PAQ_USR_NAME ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_NAME); }
 char IS_PAQ_USR_PWD ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_PWD); }
+char IS_PAQ_END_SESION ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_END_SESION); }
+char IS_PAQ_END_SESION_OK ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_END_SESION_OK); }
 
 /*******************************************************************/
 void paquetes_destruir( tPaquete* paq  )
@@ -188,14 +190,28 @@ tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id
 		return paq;
 }
 /*******************************************************************/
-tPaquete* paquetes_newPaqADSLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion )
+tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion )
 {
 	tPaquete *paq;
 		
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
-		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_LOGOUT, puerto );
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_END_SESION, puerto );
+		memcpy( paq->msg, &idConeccion, sizeof(idConeccion));
+		paq->msg_len = sizeof(idConeccion);
+		
+		return paq;
+}
+/*******************************************************************/
+tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion )
+{
+	tPaquete *paq;
+		
+		if ( !(paq = paquetes_Crear() ) )
+			return NULL;
+
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_END_SESION_OK, puerto );
 		memcpy( paq->msg, &idConeccion, sizeof(idConeccion));
 		paq->msg_len = sizeof(idConeccion);
 		
