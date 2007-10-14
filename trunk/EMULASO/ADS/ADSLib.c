@@ -524,7 +524,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			
 			ADS_CerrarConexion(sockIn);
 			
-			if ( !(paqSend  = paquetes_newPaqADSLogout( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),sockIn->descriptor )) )
+			if ( !(paqSend  = paquetes_newPaqEnd_Sesion( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),sockIn->descriptor )) )
 			{
 				Log_log( log_error, "Error enviando Logout al ACR" );
 			}
