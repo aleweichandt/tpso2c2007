@@ -18,10 +18,15 @@ sigset_t 		conjunto_seniales;
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
 \**************************************************/
-
-/*************************************************************************/
-
-
+int PCB_ExecuteProgram();
+int PCB_ExecuteInstruction(int line) ;
+int PCB_ExecuteMem(char *param);
+int PCB_ExecuteOper(char *param);
+int PCB_ExecuteSol(char *param);
+int PCB_ExecuteDev(char *param);
+int PCB_ExecuteImp(char *param);
+int PCB_ExecutePush(char *param);
+int PCB_ExecutePop(char *param);
 
 /**********************************************************/
 void PCB_ProcesarSeniales( int senial )
@@ -196,6 +201,129 @@ int createPCB(char *argv[]) {
 	
 	return ERROR;
 }
+/***********************************************************/
+int PCB_ExecuteProgram() {
+
+	FILE *cfgCode;
+	int line=0, i=0;
+	char strBuff[50];
+		
+	while ( PCB.IP < PCB.ultimaSentencia) {
+		
+		PCB_ExecuteInstruction(PCB.IP);
+		PCB.IP++;
+		
+		/* EscucharLLegadaDeMensajes(); */
+		
+	}
+	
+}
+/**************************************************************/
+int PCB_ExecuteInstruction(int line) {
+	char sentence[20];
+	char instruction[20];
+	char parameter[20];
+	int (*executer)(char *);
+	int paramStart;
+	
+	strncpy(sentence, PCB.Code[line], 20);
+	
+	strncpy(instruction, sentence, 4);
+	
+	if ( !strcmp("MEM ", instruction) ) {
+		executer = PCB_ExecuteMem;	
+	} else if ( !strcmp("OPER", instruction) ) {
+		executer = PCB_ExecuteOper;		
+	} else if ( !strcmp("SOL ", instruction) ) {
+		executer = PCB_ExecuteSol;	
+	} else if ( !strcmp("DEV ", instruction) ) {
+		executer = PCB_ExecuteDev;	
+	} else if ( !strcmp("IMP ", instruction) ) {
+		executer = PCB_ExecuteImp;	
+	} else if ( !strcmp("PUSH", instruction) ) {
+		executer = PCB_ExecutePush;	
+	} else if ( !strcmp("POP ", instruction) ) {
+		executer = PCB_ExecutePop;	
+	}  else {
+		Log_log( log_error, "Comando no reconocido, checkee el script");
+	}
+	
+	if ( sentence[3] = ' ' ) {
+		paramStart = 4;
+	} else if ( sentence[4] = ' ') {
+		paramStart = 5;
+	}
+	
+	executer(sentence+paramStart);
+	
+	return 0;
+}
+
+/**********************************************************************/
+int PCB_ExecuteMem(char *param) {
+	PCB.Mem = atoi(param);
+	Log_printf( log_info, "Se solicita Memoria: %s", param);
+	
+	return 0;
+}
+/**********************************************************************/
+int PCB_ExecuteOper(char *param) {
+	int cantSeg = atoi( param);
+	
+	Log_printf( log_info, "Se ejecuta una operacion de: %s segundos", param);
+	while (cantSeg > 0) {
+	
+		sleep(1);
+		cantSeg--;
+		 /* Escuchar Mensajesss de suspensiónnnn! */
+	
+	}
+	Log_log( log_info, "Se termino de ejecutar la operacion");
+	return 0;
+}
+/**********************************************************************/
+int PCB_ExecuteSol(char *param) {
+	
+	Log_printf( log_info, "Se solicita recurso: %s", param);
+	sleep(1);
+	
+	return 0;
+}
+/**********************************************************************/
+int PCB_ExecuteDev(char *param) {
+	
+	Log_printf( log_info, "Se devuelve recurso: %s", param);
+	sleep(1);
+	
+	return 0;
+}
+/**********************************************************************/
+int PCB_ExecuteImp(char *param) {
+	/* MENSAJE PRINT!!!!! */
+	Log_printf( log_info, "Se imprime: %s", param);
+	sleep(1);
+	
+	return 0;
+}
+/**********************************************************************/
+int PCB_ExecutePush(char *param) {
+	char value = param[0];
+	
+	push(&PCB.stack, value);
+	Log_printf( log_info, "Se inserta en la pila: %c", value);
+	
+	sleep(1);
+	return 0;
+}
+/**********************************************************************/
+int PCB_ExecutePop(char *param) {
+	char value = pop(&PCB.stack);
+	Log_printf( log_info, "Se poppea: %c", value);
+	
+	sleep(1);
+	return 0;
+}
+
 
 /**********************************************************************/
 int PCB_Init(int argc, char *argv[] )
@@ -428,7 +556,7 @@ void PCB_ConfirmarConexion( tSocket* sockIn )
 		sockIn->callback = &PCB_AtenderACR;
 	} else 	if ( IS_ADP_PAQ( paq ) &&  IS_PAQ_PONG ( paq ) )
 	{/*Si el ADP me responde pong la conexion queda establecida!*/
-		Log_log( log_debug, "Conexion establecida con el ADP!" );
+			Log_log( log_debug, "Conexion establecida con el ADP!" );
 		sockIn->callback = &PCB_AtenderADP;
 	}
 	
