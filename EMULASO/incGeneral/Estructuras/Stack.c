@@ -11,14 +11,14 @@
 #include<stdio.h>
 #include "Stack.h"
 
-void push(Stack *S, int val)
+void push(Stack *S, char val)
 {
     S->v[ S->top ] = val; 
    (S->top)++;    
 
 }
 
-int pop(Stack *S)
+char pop(Stack *S)
 {
     (S->top)--;
     return (S->v[S->top]);
@@ -45,7 +45,7 @@ void MyStackPrint(Stack *S)
        printf("Contenido: ");
        for (i=0;i<S->top;i++)
        {
-          printf("%d  ",S->v[i]); 
+          printf("%c  ",S->v[i]); 
        }
        printf("\n");
     }
