@@ -56,6 +56,7 @@ typedef struct
 	char ProgName[LEN_COMANDO_EJEC];
 	int SessionID;
 	int IP;
+	int Mem;
 	char ProgramPath[LEN_DIR];
 	tState State;
 	Stack stack;
