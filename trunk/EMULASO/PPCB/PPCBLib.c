@@ -231,8 +231,8 @@ int PCB_ExecuteInstruction(int line) {
 	
 	strncpy(instruction, sentence, 4);
 	instruction[4] = '\0';
-	Log_printf( log_error, "Sentencia: %s", sentence );
-	Log_printf( log_error, "Comando: %s", instruction );
+	Log_printf( log_info, "Sentencia: %s", sentence );
+	Log_printf( log_info, "Comando: %s", instruction );
 	
 	if ( !strcmp("MEM ", instruction) ) {
 		executer = PCB_ExecuteMem;	
@@ -252,9 +252,9 @@ int PCB_ExecuteInstruction(int line) {
 		Log_log( log_error, "Comando no reconocido, checkee el script");
 	}
 	
-	if ( sentence[3] = ' ' ) {
+	if ( sentence[3] == ' ' ) {
 		paramStart = 4;
-	} else if ( sentence[4] = ' ') {
+	} else if ( sentence[4] == ' ') {
 		paramStart = 5;
 	}
 	
@@ -315,7 +315,7 @@ int PCB_ExecutePush(char *param) {
 	
 	push(&PCB.stack, value);
 	Log_printf( log_info, "Se inserta en la pila: %c", value);
-	
+	MyStackPrint(&PCB.stack);
 	sleep(1);
 	return 0;
 }
