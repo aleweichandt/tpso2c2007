@@ -903,10 +903,11 @@ tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, un
 			return NULL;
 
 		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_END_SESION_OK, puerto );
-		memcpy( paq->msg, &idConeccion, sizeof(pid));
+		memcpy( paq->msg, &pid, sizeof(pid));
 		paq->msg_len = sizeof(pid);
 		
 		return paq;
 }
+char IS_PAQ_KILL ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_KILL); }
 
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
