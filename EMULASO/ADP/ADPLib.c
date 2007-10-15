@@ -535,6 +535,18 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
 		}
 	}
+	else if(IS_PAQ_PRINT(paq))
+	{/*me llega el print, se lo reenvio al ACR*/
+		int nSend;
+		
+		Log_log( log_debug, "Mando PRINT al ACR" );
+		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+					
+		if(nSend != PAQUETE_MAX_TAM)
+		{
+			Log_logLastError( "error al enviar PRINT al ACR" );
+		}
+	}
 	
 	if ( paq ) 
 		paquetes_destruir( paq );

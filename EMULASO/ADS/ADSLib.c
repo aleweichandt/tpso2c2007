@@ -390,6 +390,25 @@ void ADS_AtenderACR ( tSocket *sockIn )
 		Log_log( log_debug, "se cerro la sesion con exito" );
 		UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
 		
+	}else if(IS_PAQ_PRINT(paq))
+	{
+		int nSend;
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;		
+		int idSesion;
+		char nomProg[PRINT_LEN_NOM_PROG];
+		char msg[PRINT_LEN_MSG];
+		tSocket sock;
+		
+		paquetes_ParsearPaqPrint(buffer, ip, &idProceso, &puerto, &idProceso, nomProg, msg);
+		sock.descriptor = idSesion;
+		Log_log( log_debug, "Mando PRINT al Mshell" );
+		nSend = conexiones_sendBuff( &sock,  (const char*)AplicarXorEnString((char*)paquetes_PaqToChar( paq ), ADS_GetClaveByConnId(idSesion, ADS.m_PathClavesUsuarios)), PAQUETE_MAX_TAM );
+		if ( nSend != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError( "error enviando PRINT al Mshell" );
+		}
 	}
 	
 	if ( paq ) 

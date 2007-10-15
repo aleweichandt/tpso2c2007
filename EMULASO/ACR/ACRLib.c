@@ -583,6 +583,19 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	}
 		
 	paq = paquetes_CharToPaq( buffer );
+	
+	if(IS_PAQ_PRINT(paq))
+	{/*me llega el print, se lo reenvio al ADS*/
+		int nSend;
+		
+		Log_log( log_debug, "Mando PRINT al ADS" );
+		nSend = conexiones_sendBuff( ACR.psocketADS, (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+					
+		if(nSend != PAQUETE_MAX_TAM)
+		{
+			Log_logLastError("error al enviar PRINT al ADS" );
+		}
+	}
 
 	if( paq )
 		paquetes_destruir(paq);

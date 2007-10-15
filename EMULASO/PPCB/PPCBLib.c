@@ -305,10 +305,32 @@ int PCB_ExecuteDev(char *param) {
 /**********************************************************************/
 int PCB_ExecuteImp(char *param) {
 	/* MENSAJE PRINT!!!!! */
-	Log_printf( log_info, "Se imprime: %s", param);
-	sleep(1);
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
 	
-	return 0;
+	memset( szIP, 0, 4 );
+	
+	if (ReducirIP(PCB.m_IP,szIP) == ERROR)
+			return;
+	
+	Log_printf( log_info, "Se imprime: %s", param);
+	
+	pPaq = paquetes_newPaqPrint(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.SessionID, PCB.ProgName, param);
+	
+	Log_log( log_debug, "Mando PRINT al ADP" );
+	nSend = conexiones_sendBuff( PCB.m_ListaSockets[SOCK_ADP], (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	if ( nSend != PAQUETE_MAX_TAM )
+	{
+		Log_logLastError( "error enviando PRINT al ADP" );
+	}	
+	paquetes_destruir( pPaq );
+	
+	sleep(1);
+		
+	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
+
 }
 /**********************************************************************/
 int PCB_ExecutePush(char *param) {
@@ -369,6 +391,12 @@ int PCB_Init(int argc, char *argv[] )
 		if ( PCB_ConectarConACR() == ERROR )
 		{
 			Log_log( log_error, "No se pudo establecer conexion con el ACR" );
+			return ERROR;
+		}
+		
+		if ( PCB_ConectarConADP() == ERROR )
+		{
+			Log_log( log_error, "No se pudo establecer conexion con el ADP" );
 			return ERROR;
 		}
 		
@@ -488,6 +516,12 @@ int PCB_LeerConfig()
 		PCB.m_nLimite1 = config_GetVal_Int( cfg, _PCB_, "L1" );
 		PCB.m_nLimite2 = config_GetVal_Int( cfg, _PCB_, "L2" );
 		*/
+		
+		PCB.m_ADP_Port = config_GetVal_Int( cfg, _PPCB_, "PUERTO_ADP" );
+		if ( (tmp = config_GetVal( cfg, _PPCB_ , "IP_ADP" ) ) )
+		{
+			strncpy( PCB.m_ADP_IP, tmp, LEN_IP );
+		}
 		config_Destroy(cfg);
 
 		return OK;
@@ -532,6 +566,41 @@ int PCB_ConectarConACR()
 	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
 	
 	return ERROR;
+}
+/**********************************************************************/
+int PCB_ConectarConADP()
+{
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
+	
+	memset( szIP, 0, 4 );
+	
+	
+	
+	if ( !( pSocket = conexiones_ConectarHost( PCB.m_ADP_IP, PCB.m_ADP_Port,
+										 &PCB_ConfirmarConexion ) ) )
+		return ERROR;
+	
+	PCB.m_ListaSockets[ SOCK_ADP] = pSocket;
+	PCB.m_ultimoSocket = SOCK_ADP;
+	
+	/*Mando el Ping al ADP*/
+	Log_log( log_debug, "envio Ping para conectarme con ADP" );
+	
+	if ( !(pPaq  = paquetes_newPaqPing(szIP, _ID_PPCB_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+		return ERROR;
+	
+	memcpy(pPaq->msg,&PCB.PPCB_ID, sizeof(long)); /* Se le agrega el ID del PCB al mensaje del ping hacia el ACR, no queremos hacer otro paquete */
+	/*15-10-07: MA: lo anterior se lo pongo porque asi estaba en el ConectarConACR, talves el adp tambien lo usa o piensan usarlo*/
+	
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	
+	paquetes_destruir( pPaq );
+	
+	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
+	
 }
 
 /**********************************************************/
