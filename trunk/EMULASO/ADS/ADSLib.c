@@ -401,7 +401,7 @@ void ADS_AtenderACR ( tSocket *sockIn )
 		char msg[PRINT_LEN_MSG];
 		tSocket sock;
 		
-		paquetes_ParsearPaqPrint(buffer, ip, &idProceso, &puerto, &idProceso, nomProg, msg);
+		paquetes_ParsearPaqPrint(buffer, ip, &idProceso, &puerto, &idSesion, nomProg, msg);
 		sock.descriptor = idSesion;
 		Log_log( log_debug, "Mando PRINT al Mshell" );
 		nSend = conexiones_sendBuff( &sock,  (const char*)AplicarXorEnString((char*)paquetes_PaqToChar( paq ), ADS_GetClaveByConnId(idSesion, ADS.m_PathClavesUsuarios)), PAQUETE_MAX_TAM );
