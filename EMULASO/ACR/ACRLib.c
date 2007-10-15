@@ -532,6 +532,29 @@ void ACR_AtenderADS ( tSocket *sockIn )
 		conexiones_sendBuff(sockIn,tmp,PAQUETE_MAX_TAM);
 		Log_log(log_info,"Se envia respuesta el ADS");
 	}
+	else if( IS_PAQ_END_SESION(paq) ){
+		tPaquete* paqSend = NULL;
+		int nSend;
+		
+		ReducirIP(ACR.sz_ACR_IP,ip);
+		idSesion=atoi(paq->msg);
+		Log_log(log_debug,"me llega un paq END_SESION");
+		
+		if(ACR_LiberarRecursos(idSesion)==OK){
+			Log_printf(log_info,"Se liberaron los recursos de la sesion %i con exito",idSesion);
+			if ( !(paqSend  = paquetes_newPaqEnd_Sesion_Ok( ip, _ID_ACR_,ACR.usi_ACR_Port,idSesion )) )
+			{
+				Log_log( log_error, "Error creando paquete End_Sesion" );
+			}
+			nSend = conexiones_sendBuff( sockIn, (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
+			if ( nSend != PAQUETE_MAX_TAM )
+			{
+				Log_log( log_error,"Error enviando end_sesion_ok al ADS" );
+			}
+		}else{
+			Log_printf(log_error,"No se han liberado los recursos de la sesion %i",idSesion);
+		}
+	}
 	
 	if( paq )
 		paquetes_destruir(paq);
@@ -914,4 +937,8 @@ void ACR_DesconectarADP(tSocket *sockIn)
 void ACR_DesconectarPPCB(tSocket *sockIn)
 {
 	Log_log(log_warning,"Se cierra Socket PPCB");
+}
+/**********************************************************************/
+int ACR_LiberarRecursos(int idSesion){
+	return OK;
 }
