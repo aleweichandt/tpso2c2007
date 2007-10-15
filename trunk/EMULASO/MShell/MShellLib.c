@@ -380,9 +380,23 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	}*/
 	if ( IS_PAQ_PRINT ( paq ) )
 	{/*Si el ADS envia un print!*/
+		
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;		
+		int idSesion;
+		char nomProg[PRINT_LEN_NOM_PROG];
+		char msg[PRINT_LEN_MSG];
+		char msgPrint[PRINT_LEN_NOM_PROG + PRINT_LEN_MSG + 2] = {'\0'};
+		
+		paquetes_ParsearPaqPrint(AplicarXorEnString(buffer,key), ip, &idProceso, &puerto, &idSesion, nomProg, msg);
+		
 		Log_log( log_debug, "ADS envio un print!" );
-		ventana_Print( MShell.m_pwRemoto, "Mensaje recibido:" );
-		ventana_Print( MShell.m_pwRemoto, paq->msg );
+		
+		strcat(msgPrint, nomProg);
+		strcat(msgPrint, ":");
+		strcat(msgPrint, msg);
+		ventana_Print( MShell.m_pwRemoto, msgPrint );
 	}	
 				
 	if ( paq ) 

@@ -43,6 +43,9 @@ typedef struct
 	char 				m_ACR_IP[LEN_IP];
 	unsigned short int 	m_ACR_Port;
 	
+	char 				m_ADP_IP[LEN_IP];
+	unsigned short int 	m_ADP_Port;
+	
 	char 				m_IP[LEN_IP];
 	unsigned short int 	m_Port;
 
@@ -81,6 +84,7 @@ void 	PCB_ProcesarSeniales( int senial );
 void 	PCB_SenialTimer();
 
 int 	PCB_ConectarConACR();
+int 	PCB_ConectarConADP();
 void 	PCB_AceptarConexion( tSocket* sockIn );
 void 	PCB_ConfirmarConexion( tSocket* sockIn );
 void 	PCB_HandShake( tSocket* sockIn );

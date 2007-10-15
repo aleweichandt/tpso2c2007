@@ -311,17 +311,43 @@ tPaquete* paquetes_newPaqExec_Prog( unsigned char IP[4], unsigned char id_Proces
 }
 
 /*******************************************************************/
-tPaquete* paquetes_newPaqPrint( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char msg[30] )
+
+tPaquete* paquetes_newPaqPrint( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, 
+		int idSesion, 
+		char* szNomProg, 
+		char* szMsg)
 {
 	tPaquete *paq;
 	
 	if ( !(paq = paquetes_Crear() ) )
 		return NULL;
 
-	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_EXEC_PROG, puerto );
-	paquetes_CargarMSg( paq, msg );
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_PRINT, puerto );
+	memcpy( &(paq->msg[PRINT_POS_ID_SESION]), &idSesion, sizeof( int )); 
+	memcpy( &(paq->msg[PRINT_POS_NOM_PROG]), szNomProg, PRINT_LEN_NOM_PROG );
+	memcpy( &(paq->msg[PRINT_POS_MSG]), szMsg , PRINT_LEN_MSG );
 	
 	return paq;		
+}
+/*******************************************************************/
+tPaquete* paquetes_ParsearPaqPrint( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto,
+		int 	*idSesion, 
+		char	*szNomProg, 
+		char	*szMsg )
+{
+	tPaquete *paq;
+		
+		if ( !(paq = paquetes_CharToPaq( Buffer ) ) )
+			return NULL;
+		
+		memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
+		memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
+		memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
+		memcpy( idSesion, &(paq->msg[PRINT_POS_ID_SESION]),  sizeof( int )  ); 
+		memcpy( szNomProg, &(paq->msg[PRINT_POS_NOM_PROG]),  PRINT_LEN_NOM_PROG  );
+		memcpy( szMsg, &(paq->msg[PRINT_POS_MSG]), PRINT_LEN_MSG );
+		
+		return paq;		
 }
 
 /**************			PAQ_EXEC_PROG				****************/

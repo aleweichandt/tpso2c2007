@@ -147,7 +147,22 @@ tPaquete* paquetes_newPaqLogin_Pwd( unsigned char IP[4], unsigned char id_Proces
 tPaquete* paquetes_newPaqLogout( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqExit( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqExec_Prog( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char program_Name[30] );
-tPaquete* paquetes_newPaqPrint( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char msg[30] );
+/**************			PAQ_PRINT				****************/
+#define PRINT_LEN_NOM_PROG 		4
+#define PRINT_LEN_MSG			44
+#define PRINT_POS_ID_SESION 	0
+#define PRINT_POS_NOM_PROG		sizeof(int)
+#define PRINT_POS_MSG			PRINT_POS_NOM_PROG + PRINT_LEN_NOM_PROG
+
+tPaquete* paquetes_newPaqPrint( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, 
+		int idSesion, 
+		char* szNomProg, 
+		char* szMsg );
+tPaquete* paquetes_ParsearPaqPrint( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto,
+		int 	*idSesion, 
+		char	*szNomProg, 
+		char	*szMsg );
+/***************************************************************/
 /* ADS */
 tPaquete* paquetes_newPaqUserNameOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqUserNameInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
