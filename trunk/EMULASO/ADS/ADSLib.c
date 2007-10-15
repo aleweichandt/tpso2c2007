@@ -385,6 +385,11 @@ void ADS_AtenderACR ( tSocket *sockIn )
 		{
 			Log_logLastError( "Error enviando programa_ejecutando al MSHELL" );
 		}
+	}else if(IS_PAQ_END_SESION_OK(paq))
+	{
+		Log_log( log_debug, "se cerro la sesion con exito" );
+		UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
+		
 	}
 	
 	if ( paq ) 
@@ -535,7 +540,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 				Log_logLastError( "Error enviando Logout de un usuario al ACR" );
 			}
 			
-			UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
+			/*UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);*/
 			
 			paquetes_destruir( paqSend );
 		}
