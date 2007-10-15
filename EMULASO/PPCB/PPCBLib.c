@@ -388,16 +388,23 @@ int PCB_Init(int argc, char *argv[] )
 			
 		/*PCB.m_ultimoSocket = SOCK_ESCUCHA; */
 		
-		if ( PCB_ConectarConACR() == ERROR )
+		if ( argc == 8) 
 		{
-			Log_log( log_error, "No se pudo establecer conexion con el ACR" );
-			return ERROR;
+			if ( PCB_ConectarConACR() == ERROR )
+			{
+				Log_log( log_error, "No se pudo establecer conexion con el ACR" );
+				return ERROR;
+			}
+			PCB.m_ListaSockets[SOCK_ADP]->estado = estadoConn_standby;
 		}
-		
-		if ( PCB_ConectarConADP() == ERROR )
+		if ( argc == 2) 
 		{
-			Log_log( log_error, "No se pudo establecer conexion con el ADP" );
-			return ERROR;
+			if ( PCB_ConectarConADP() == ERROR )
+			{
+				Log_log( log_error, "No se pudo establecer conexion con el ADP" );
+				return ERROR;
+			}
+			PCB.m_ListaSockets[SOCK_ACR]->estado = estadoConn_standby;
 		}
 		
 		signal(SIGALRM, PCB_ProcesarSeniales);
@@ -434,7 +441,20 @@ int PCB_LeerConfig()
 	tConfig *cfg;
 	
 	do
-	{		
+	{
+		Log_printf(log_debug,"abriendo el archivo config");
+		if ( !(cfg = config_Crear( "config", _ADP_ )) ) 
+			break;	
+	
+		PCB.m_ADP_Port = config_GetVal_Int( cfg, _ADP_, "ADP_PORT" );
+		
+		if ( (tmp = config_GetVal( cfg, _ADP_ , "ADP_IP" ) ) )
+		{
+			strncpy( PCB.m_ADP_IP, tmp, LEN_IP );
+		}
+		config_Destroy(cfg);
+		tmp = NULL;
+	
 		sprintf(strConfig, "config.ppcb%ld", PCB.PPCB_ID);
 		
 		Log_printf(log_debug,"abriendo el archivo %s",strConfig);
@@ -517,11 +537,7 @@ int PCB_LeerConfig()
 		PCB.m_nLimite2 = config_GetVal_Int( cfg, _PCB_, "L2" );
 		*/
 		
-		PCB.m_ADP_Port = config_GetVal_Int( cfg, _PPCB_, "PUERTO_ADP" );
-		if ( (tmp = config_GetVal( cfg, _PPCB_ , "IP_ADP" ) ) )
-		{
-			strncpy( PCB.m_ADP_IP, tmp, LEN_IP );
-		}
+		
 		config_Destroy(cfg);
 
 		return OK;
