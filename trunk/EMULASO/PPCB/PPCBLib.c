@@ -18,6 +18,7 @@ sigset_t 		conjunto_seniales;
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
 \**************************************************/
+int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto, int posSocket);
 int PCB_ExecuteProgram();
 int PCB_ExecuteInstruction(int line) ;
 int PCB_ExecuteMem(char *param);
@@ -195,7 +196,7 @@ int createPCB(char *argv[]) {
 		
 		fclose(cfgCode);
 		/* PARA PRUEBA */
-		PCB_ExecuteProgram();
+		/*PCB_ExecuteProgram();*/
 		return OK;
 		
 	} while (0);
@@ -375,6 +376,8 @@ int PCB_Init(int argc, char *argv[] )
 		signal(SIGCHLD, PCB_ProcesarSeniales);
 		signal(SIGTERM, PCB_ProcesarSeniales);
 	
+		/*PCB_Migrar("127.0.0.1",9550, SOCK_ADP); /* Esto fue de prueba*/
+		
 		return OK;
 		
 	}while(0);
@@ -406,6 +409,7 @@ int PCB_LeerConfig()
 	{		
 		sprintf(strConfig, "config.ppcb%ld", PCB.PPCB_ID);
 		
+		Log_printf(log_debug,"abriendo el archivo %s",strConfig);
 		if ( !(cfg = config_Crear( strConfig, _PPCB_ )) ) 
 			break;
 		
@@ -438,13 +442,13 @@ int PCB_LeerConfig()
 					
 		}
 		
-		if (strcmp("PENDIENTE", config_GetVal( cfg, _PPCB_, "ESTADO")) ){
+		if (!strcmp("PENDIENTE", config_GetVal( cfg, _PPCB_, "ESTADO")) ){
 			PCB.State = PENDIENTE;
-		} else if (strcmp("BLOQUEADO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
+		} else if (!strcmp("BLOQUEADO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
 			PCB.State = BLOQUEADO;
-		} else if (strcmp("LISTO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
+		} else if (!strcmp("LISTO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
 			PCB.State = LISTO;
-		} else if (strcmp("EJECUTANDO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
+		} else if (!strcmp("EJECUTANDO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
 			PCB.State = EJECUTANDO;
 		} 
 		
@@ -560,7 +564,7 @@ void PCB_ConfirmarConexion( tSocket* sockIn )
 		sockIn->callback = &PCB_AtenderACR;
 	} else 	if ( IS_ADP_PAQ( paq ) &&  IS_PAQ_PONG ( paq ) )
 	{/*Si el ADP me responde pong la conexion queda establecida!*/
-			Log_log( log_debug, "Conexion establecida con el ADP!" );
+		Log_log( log_debug, "Conexion establecida con el ADP!" );
 		sockIn->callback = &PCB_AtenderADP;
 	}
 	
@@ -662,12 +666,12 @@ void PCB_AtenderACR ( tSocket *sockIn )
 	tPaquete* 		paq ; 
 	char 			*tmp;
 	char			buffer [ PAQUETE_MAX_TAM ]; 
-	tIDMensaje		idMsj;
-	float 			fCargaProm = 0;
-	int 			CantPCB = 0;
-	char*			buffPaq;
 	int				nSend;
-	unsigned char	szIP[4] = {'\0','\0','\0','\0'};
+	unsigned char	szIpRed[4] = {'\0','\0','\0','\0'};
+	unsigned char	szIpRed2[4] = {'\0','\0','\0','\0'};
+	unsigned char	idProceso;
+	char			szIp[LEN_IP];
+	unsigned short 	nPuerto,nPuerto2;
 
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
@@ -682,16 +686,13 @@ void PCB_AtenderACR ( tSocket *sockIn )
 	
 	paq = paquetes_CharToPaq(buffer);
 
-
-	if ( IS_PAQ_GET_PERFORMANCE( paq ) )
-	{/*Me pide la performance*/
-		Log_log( log_debug, "el ACR me manda un GetPerformance" );
-
-		
-	} else if ( IS_PAQ_MIGRATE( paq) ) {
-		
+	if ( IS_PAQ_MIGRATE( paq) ) {
 		/* MIGRAR HACIA EL ADP */
+		Log_log(log_info,"Llega un PAQ_MIGRATE");
 		
+		paquetes_ParsearPaqMigrate(buffer,szIpRed2,&idProceso,&nPuerto2,szIpRed,&nPuerto);
+		AmpliarIP(szIpRed,szIp);
+		PCB_Migrar(szIp,nPuerto, SOCK_ADP);
 		
 	}
 
@@ -732,15 +733,26 @@ void PCB_AtenderADP ( tSocket *sockIn )
 	
 	paq = paquetes_CharToPaq(buffer);
 
+	if ( IS_PAQ_MIGRAR_OK( paq ) )
+	{/*La migracion concluyo con exito*/
+		
+		Log_log( log_info, "el ADP me manda un PAQ_MIGRAR_OK" );
+		paq->id.id_Proceso = _ID_PPCB_;
+		nSend = conexiones_sendBuff( PCB.m_ListaSockets[ SOCK_ACR ], 
+					(const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		if(nSend == 0 || nSend == ERROR )
+			Log_log(log_error,"Error al enviar PAQ_MIGRAR_OK");
+			 
+	} else if( IS_PAQ_MIGRAR_FAULT(paq) ){
 
-	if ( IS_PAQ_GET_PERFORMANCE( paq ) )
-	{/*Me pide la performance*/
-		Log_log( log_debug, "el ADPme manda un GetPerformance" );
-
+		Log_log( log_info, "el ADP me manda un PAQ_MIGRAR_FAULT" );
+		paq->id.id_Proceso = _ID_PPCB_;
+		nSend = conexiones_sendBuff( PCB.m_ListaSockets[ SOCK_ACR ], 
+					(const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		if(nSend == 0 || nSend == ERROR )
+			Log_log(log_error,"Error al enviar PAQ_MIGRAR_FAULT");		 
 		
 	}
-
-
 
 	
 	if ( paq ) 
@@ -749,6 +761,198 @@ void PCB_AtenderADP ( tSocket *sockIn )
 }
 
 
+/**********************************************************/
+int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto, int posSocket)
+/*	Procedimiento de MIGRACION
+ * El tercer parametro es la macro SOCK_ACR o SOCK_ADP, dependiendo el caso
+ */
+{
+	tSocket 	*pSocket;
+	tPaquete 	*pPaq;
+	tPaqueteArch*pPaqLargo;
+	int			nSend;
+	unsigned char szIP[4] = {'0','0','0','0'};
+	void		(*callback)(struct sSocket*);
+	char* 		tmp; 
+	int 		len, cantLeido, byteLeido; 
+	char 		buffer[ PAQUETE_MAX_TAM ];
+	char		parteArchivo[MAX_PAQ_ARCH];
+	char		strBuff[50];
+	FILE		*cfgFile=NULL;
+	
+	Log_log(log_info,"Inicia Procedimiento de migracion");
+	
+	createPCBConfig();
+	Log_log(log_debug,"Cree el archivo de configuracion");
+	
+	/*[INI]	Conexion ----------------------------------------------*/
+	if(posSocket == SOCK_ACR)
+		callback = PCB_AtenderACR;
+	else
+		callback = PCB_AtenderADP;
+	
+	Log_printf(log_debug,"Intento conectarme con ip:%s,puerto:%d",szIp,nPuerto);
+	
+	if ( !( pSocket = conexiones_ConectarHost( szIp, nPuerto,callback ) ) )
+		return ERROR;
+	
+	PCB.m_ListaSockets[ posSocket ] = pSocket;
+	/*TODO: Pensar que asignarle al "ultimoSocket"*/
+	PCB.m_ultimoSocket = SOCK_ADP; /*En todos los casos atiende a ambos sockets (creo)*/
+	
+	/*Mando el Ping*/
+	Log_log( log_debug, "envio Ping para conectarme" );
+	
+	if ( !(pPaq  = paquetes_newPaqPing(szIP, _ID_PPCB_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
+		return ERROR;
+	
+	memcpy(pPaq->msg,&PCB.PPCB_ID, sizeof(long)); /* Se le agrega el ID del PCB al mensaje del ping hacia el ACR, no queremos hacer otro paquete */
+	
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	
+	if(pPaq)
+		paquetes_destruir(pPaq);
+	/*[FIN]	Conexion*/
+	Log_log(log_debug,"Conexion exitosa");
+
+	/*[INI] Confirmacion ----------------------------------------------*/
+	len = conexiones_recvBuff( pSocket, buffer, PAQUETE_MAX_TAM );
+	
+	if ( ERROR == len || !len)
+	{
+		conexiones_CerrarSocket( PCB.m_ListaSockets, pSocket, &PCB.m_ultimoSocket );
+		return ERROR;
+	}
+	
+	pPaq = paquetes_CharToPaq( buffer );
+
+	if ( IS_ACR_PAQ( pPaq ) &&  IS_PAQ_PONG ( pPaq ) )
+	{/*Si el ACR me responde pong la conexion queda establecida!*/
+		Log_log( log_debug, "Conexion establecida con el ACR!" );
+		pSocket->callback = &PCB_AtenderACR;
+	} else 	if ( IS_ADP_PAQ( pPaq ) &&  IS_PAQ_PONG ( pPaq ) )
+	{/*Si el ADP me responde pong la conexion queda establecida!*/
+		Log_log( log_debug, "Conexion establecida con el ADP!" );
+		pSocket->callback = &PCB_AtenderADP;
+	}
+	
+	if ( pPaq ) 
+		paquetes_destruir( pPaq );
+	/*[FIN] Confirmacion*/
+	Log_log(log_debug,"Confirmacion exitosa");
+	
+	/*[INI] PAQ_MIGRAR ----------------------------------------------*/
+	if ( !(pPaq  = paquetes_newPaqMigrar(szIP, _ID_PPCB_,
+						conexiones_getPuertoLocalDeSocket(pSocket), PCB.PPCB_ID )) )
+		return ERROR;
+	
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	if(nSend == 0 || nSend == ERROR )
+		Log_log(log_error,"Error al enviar PAQ_MIGRAR");
+	
+	if ( pPaq ) 
+		paquetes_destruir( pPaq );
+	/*[FIN] PAQ_MIGRAR*/
+	Log_log(log_debug,"Aviso migracion exitosa");
+	
+	/*[INI] PAQ_ARCHIVO ----------------------------------------------*/
+	
+	sprintf(strBuff, "config.ppcb%ld", PCB.PPCB_ID);
+	if( !(cfgFile = fopen(strBuff, "rb")) ){
+		Log_logLastError("Abriendo archivo config");
+		return ERROR;
+	}
+	cantLeido = 0;
+	while( (byteLeido = fgetc(cfgFile)) != EOF ){
+		
+		parteArchivo[cantLeido++] = (char)byteLeido;
+		
+		if( cantLeido % MAX_PAQ_ARCH == 0 ){
+			
+			if( PCB_EnviarArchivo(parteArchivo,pSocket) == ERROR ){
+				fclose(cfgFile);
+				return ERROR;
+			}
+			bzero(parteArchivo,sizeof(parteArchivo));
+			cantLeido = 0;
+		}
+	}
+	
+	if( cantLeido > MAX_PAQ_ARCH ){
+		Log_log(log_error,"Error se leyo mas del maximo");
+	}else if( cantLeido > 0 ){
+		while( cantLeido < MAX_PAQ_ARCH )
+			parteArchivo[cantLeido++] = '\0';	/*Completo con NULL*/
+	}
+	
+	if( PCB_EnviarArchivo(parteArchivo,pSocket) == ERROR ){
+		fclose(cfgFile);
+		return ERROR;
+	}
+	fclose(cfgFile);
+	/*[FIN] PAQ_ARCHIVO*/
+	Log_log(log_debug,"Envio archivo exitoso");
+	
+	/*[INI] PAQ_FIN_MIGRAR ----------------------------------------------*/
+	if( PCB_EnviarFinMigrar(pSocket) == ERROR ){
+		return ERROR;
+	}
+	/*[FIN] PAQ_FIN_MIGRAR*/
+	Log_log(log_debug,"Envio fin migracion exitoso");
+	
+	return OK;
+}
+
+/**********************************************************/
+int PCB_EnviarArchivo( char parteArchivo[MAX_PAQ_ARCH], tSocket* pSocket){
+	tPaqueteArch	*pPaqLargo;
+	int				nSend;
+	unsigned char 	szIP[4] = {'0','0','0','0'};
+
+	if ( !(pPaqLargo = paquetes_newArchivo(szIP, _ID_PPCB_,
+						conexiones_getPuertoLocalDeSocket(pSocket), parteArchivo )) ){
+		Log_log(log_error,"Error al crear PAQ_ARCHIVO");
+		return ERROR;
+	}
+	
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqArchToChar( pPaqLargo ),
+									PAQUETE_ARCH_MAX_TAM );
+	if(nSend == 0 || nSend == ERROR ){
+		Log_logLastError("Error al enviar PAQ_ARCHIVO");
+		if ( pPaqLargo ) 
+			paquetes_Archdestruir( pPaqLargo );
+		return ERROR;
+	}
+	
+	if ( pPaqLargo ) 
+		paquetes_Archdestruir( pPaqLargo );
+	return OK;
+}
+/**********************************************************/
+int PCB_EnviarFinMigrar( tSocket* pSocket ){
+	tPaqueteArch	*pPaqLargo;
+	int				nSend;
+	unsigned char 	szIP[4] = {'0','0','0','0'};
+
+	if ( !(pPaqLargo = paquetes_newPaqFinMigrar(szIP, _ID_PPCB_,
+						conexiones_getPuertoLocalDeSocket(pSocket) )) ){
+		Log_log(log_error,"Error al crear PAQ_FIN_MIGRAR");
+		return ERROR;
+	}
+	
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqArchToChar( pPaqLargo ),
+									PAQUETE_ARCH_MAX_TAM );
+	if(nSend == 0 || nSend == ERROR ){
+		Log_log(log_error,"Error al enviar PAQ_FIN_MIGRAR");
+		if ( pPaqLargo ) 
+			paquetes_Archdestruir( pPaqLargo );
+		return ERROR;
+	}
+	
+	if ( pPaqLargo ) 
+		paquetes_Archdestruir( pPaqLargo );
+	return OK;
+}
 
 /**********************************************************/
 void PCB_Salir()

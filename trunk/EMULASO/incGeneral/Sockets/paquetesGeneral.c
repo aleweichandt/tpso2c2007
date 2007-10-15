@@ -656,14 +656,14 @@ char* paquetes_PaqArchToChar( tPaqueteArch* paq  )
 {
 	memset( g_PaqArch, ' ', PAQUETE_ARCH_MAX_TAM );
 	
-	memcpy( &g_Paq, paq->id.IP, sizeof( paq->id.IP ) );
-	memcpy( &(g_Paq[ POS_PAQ_ID_PORT ]), &paq->id.puerto, sizeof( paq->id.puerto ) );
-	memcpy( &(g_Paq[ POS_PAQ_ID_PROC ]), &paq->id.id_Proceso, sizeof( paq->id.id_Proceso ) );
-	memcpy( &(g_Paq[ POS_PAQ_ID_MSG ]), &paq->id.id_Msg, sizeof( paq->id.id_Msg ) );
-	memcpy( &(g_Paq[ POS_PAQ_ID_ID_UU ]), &paq->id.UnUsed, sizeof( paq->id.UnUsed ) );
+	memcpy( &g_PaqArch, paq->id.IP, sizeof( paq->id.IP ) );
+	memcpy( &(g_PaqArch[ POS_PAQ_ID_PORT ]), &paq->id.puerto, sizeof( paq->id.puerto ) );
+	memcpy( &(g_PaqArch[ POS_PAQ_ID_PROC ]), &paq->id.id_Proceso, sizeof( paq->id.id_Proceso ) );
+	memcpy( &(g_PaqArch[ POS_PAQ_ID_MSG ]), &paq->id.id_Msg, sizeof( paq->id.id_Msg ) );
+	memcpy( &(g_PaqArch[ POS_PAQ_ID_ID_UU ]), &paq->id.UnUsed, sizeof( paq->id.UnUsed ) );
 	
-	memcpy( &(g_Paq[ POS_PAQ_LEN_MSG ]), &paq->msg_len, sizeof( paq->msg_len ) );
-	memcpy( &(g_Paq[ POS_PAQ_MSG ]), &paq->msg, sizeof( paq->msg ) );
+	memcpy( &(g_PaqArch[ POS_PAQ_LEN_MSG ]), &paq->msg_len, sizeof( paq->msg_len ) );
+	memcpy( &(g_PaqArch[ POS_PAQ_MSG ]), &paq->msg, sizeof( paq->msg ) );
 
 	return g_PaqArch;	
 }
@@ -680,7 +680,7 @@ tPaquete* paquetes_newPaqMigrar( unsigned char IP[4], unsigned char id_Proceso, 
 {
 	tPaquete* paq;
 	
-	if ( (paq = CrearPaqSinBody( IP, id_Proceso,puerto, PAQ_MIGRAR_OK ) ) )
+	if ( (paq = CrearPaqSinBody( IP, id_Proceso,puerto, PAQ_MIGRAR ) ) )
 	{ 
 		memcpy( &paq->msg, &lPCB_ID, sizeof( long ) ); 
 	}
@@ -691,7 +691,7 @@ tPaquete* paquetes_newPaqMigrar( unsigned char IP[4], unsigned char id_Proceso, 
 /*-----------------------------------------------------------------------------------------------------------*/
 tPaquete* paquetes_newPaqMigrarOK( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
 {
-	return CrearPaqSinBody( IP, id_Proceso,puerto, PAQ_MIGRAR );		
+	return CrearPaqSinBody( IP, id_Proceso,puerto, PAQ_MIGRAR_OK );		
 }
 
 
@@ -724,7 +724,7 @@ tPaqueteArch* paquetes_newArchivo( unsigned char IP[4], unsigned char id_Proceso
 		return NULL;
 
 	paquetes_CargarIdMSgArch( paq, IP, id_Proceso, PAQ_ARCHIVO, puerto );
-	strcpy( paq->msg, szArch );
+	strncpy( paq->msg, szArch, MAX_PAQ_ARCH );
 	
 	return paq;		
 }								
@@ -819,7 +819,7 @@ tPaqueteArch* paquetes_CharToPaqArch( const char* buffer  )
 	if ( !(paq = paquetes_CrearArch() ) )
 		return NULL;
 	
-	memcpy( &paq->id.IP, &buffer, sizeof( paq->id.IP ) );
+	memcpy( &paq->id.IP, &(buffer[ POS_PAQ_IP ]), sizeof( paq->id.IP ) );
 	memcpy( &paq->id.puerto, &(buffer[ POS_PAQ_ID_PORT ]), sizeof( paq->id.puerto ) );
 	memcpy( &paq->id.id_Proceso, &(buffer[ POS_PAQ_ID_PROC ]), sizeof( paq->id.id_Proceso ) );
 	memcpy( &paq->id.id_Msg,  &(buffer[ POS_PAQ_ID_MSG ]), sizeof( paq->id.id_Msg ) );
@@ -849,7 +849,7 @@ tPaquete* paquetes_newPaqMigrate( unsigned char IP[4], unsigned char id_Proceso,
 	
 	paq->msg_len = PAQ_LEN_MSGCTRL;
 	
-	memcpy( &(paq->msg[MT_POS_IP]), &IPDestino, sizeof(IPDestino) ); 
+	memcpy( &(paq->msg[MT_POS_IP]), IPDestino, sizeof(IPDestino) ); 
 	memcpy( &(paq->msg[MT_POS_PUERTO]), &puertoDestino, sizeof( puertoDestino ) );
 	
 	return paq;		
@@ -868,7 +868,7 @@ tPaquete* paquetes_ParsearPaqMigrate( const char* Buffer, unsigned char* IP, uns
 	memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
 	memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
 	memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
-	memcpy( IPDestino, &(paq->msg[MT_POS_IP]), sizeof( char[4] ) ); 
+	memcpy( IPDestino, &(paq->msg[MT_POS_IP]), sizeof( unsigned char[4] ) ); 
 	memcpy( puertoDestino, &(paq->msg[MT_POS_PUERTO]), sizeof( unsigned short int ) );
 	
 	return paq;		
