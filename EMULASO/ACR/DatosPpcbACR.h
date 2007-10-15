@@ -18,7 +18,8 @@
 typedef enum tActividad
 {
 	Estado_Activo,
-	Estado_Inactivo
+	Estado_Inactivo,
+	Estado_Neutral
 } tActividad;
 
 

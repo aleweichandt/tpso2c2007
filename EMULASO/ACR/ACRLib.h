@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define ALRM_T 15				/*Periodo en segundos para la alarma*/
+#define ALRM_T 10				/*Periodo en segundos para la alarma*/
 
 #define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
 #define SOCKS_OCUPADOS 	1

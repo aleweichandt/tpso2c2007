@@ -367,7 +367,7 @@ void ACR_ControlarPendientes(void)
 					ppcb->sActividad, Estado_Inactivo,
 					ppcb->sActividad == Estado_Inactivo
 					);
-		if ( ppcb->sActividad == Estado_Inactivo &&
+		if ( (ppcb->sActividad == Estado_Inactivo)&&
 				difftime( now, ppcb->sFechaInactvdad ) > (double)ACR.i_maxLifeTimePPCB )
 		{
 			Log_printf(log_info,
@@ -386,8 +386,13 @@ void ACR_ControlarPendientes(void)
 				"Intento reubicar PPCB id:%ld %s de %s, en nodo de ejecucion",
 				ppcb->pid, ppcb->szComando, ppcb->szUsuario);
 			
+			ppcb->sActividad = Estado_Neutral;
 			ACR_DeterminarNodo(ppcb);
 			break;	/*se termina para asegurar que el ppcb migre exitosamente o muera*/
+			
+		}else if ( ppcb->sActividad == Estado_Neutral )
+		{
+			break;	/*se espera para ver el resultado del procedimiento de migracion*/
 		}
 		
 		Lista = PpcbAcr_Siguiente( Lista );
@@ -633,12 +638,26 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 	{
 		Log_log(log_debug,"Llega PAQ_MIGRAR_OK");
 		
+		ppcbAux.socket = sockIn;
 		if ( (ppcbEncontrado = PpcbAcr_ObtenerPpcbXSock(&ACR.t_ListaPpcbPend,&ppcbAux)) ){
 			/*Migro exitosamente entonces deja de ser inactivo*/
 			ppcbEncontrado->sActividad = Estado_Activo;
 			ppcbEncontrado->sFechaInactvdad = time (NULL);
 		}else{
 			Log_log(log_warning,"Se recibio MIGRAR_OK pero no se encontro PPCB asociado para adminsitrar");
+		}
+	}
+	else if( IS_PAQ_MIGRAR_FAULT(paq) )
+	{
+		Log_log(log_debug,"Llega PAQ_MIGRAR_FAULT");
+		
+		ppcbAux.socket = sockIn;
+		if ( (ppcbEncontrado = PpcbAcr_ObtenerPpcbXSock(&ACR.t_ListaPpcbPend,&ppcbAux)) ){
+			/*Migro exitosamente entonces deja de ser inactivo*/
+			ppcbEncontrado->sActividad = Estado_Inactivo;
+			/*ppcbEncontrado->sFechaInactvdad = time (NULL);  Esto no, se continua con el primer timer*/
+		}else{
+			Log_log(log_warning,"Se recibio MIGRAR_FAULT pero no se encontro PPCB asociado para adminsitrar");
 		}
 	}
 

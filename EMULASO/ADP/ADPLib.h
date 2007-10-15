@@ -18,7 +18,8 @@
 #include <signal.h>
 #include "DatosPCBs.h"
 #include <unistd.h>
-
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
 #define SOCK_ACR 		1

@@ -158,7 +158,12 @@ void ADP_ProcesarSeniales( int senial )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
 		wait( &nstateChld );
-		Log_log( log_warning, "Certifico que murio un proc hijo(ADT)");
+		if(  WIFEXITED(nstateChld) ){
+			Log_printf( log_warning, "Murio un proc hijo en forma normal. ExitStatus: %d",
+						WEXITSTATUS(nstateChld));
+		}else{
+			Log_log( log_warning, "Murio un proc hijo en forma Anormal");
+		}
 		signal( SIGCHLD, ADP_ProcesarSeniales );
 	}
 }
@@ -495,13 +500,15 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	
 	if ( ERROR == len || !len)
 	{
+		Log_logLastError("Se cierra socket al atender PCB");
 		ADP_CerrarConexion( sockIn );		
 	
 		return;
 	}
 	else if( len != PAQUETE_MAX_TAM )
 	{ 
-		Log_log( log_warning, "Atencion no recibi el largo fijo! de paquete" ); 
+		Log_printf( log_warning, "Atencion no recibi el largo fijo! de paquete(%d/%d)",
+					len, PAQUETE_MAX_TAM ); 
 	}
 	
 	paq = paquetes_CharToPaq(buffer);
@@ -521,6 +528,7 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 			sockIn->callback = &ADP_RecibirArchivo;
 			sockIn->extra = (void*)lpcb_id;
 			fclose(arch);
+			Log_printf(log_debug,"Se creo el archivo %s",szPathArch);
 		}
 		else
 		{
@@ -546,11 +554,13 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	unsigned char	szIP[4];
 	long			lpcb_id;
 
+	Log_printf(log_debug,"Entro en ADP_RecibirArchivo");
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_ARCH_MAX_TAM );
 	
 	if ( ERROR == len || !len)
 	{
+		Log_logLastError("Recibiendo datos de socket en ADP_RecibirArchivo");
 		ADP_CerrarConexion( sockIn );		
 	
 		return;
@@ -564,7 +574,9 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 			len, PAQUETE_ARCH_MAX_TAM ); 
 	}
 	
-	paq = paquetes_CharToPaqArch(buffer);
+	if( !(paq = paquetes_CharToPaqArch(buffer)) ){
+		Log_logLastError("Al crear el paquete en ADP_RecibirArchivo");
+	}
 
 	if ( IS_PAQ_ARCHIVO( paq ) )
 	{/*Llega el paq archivo -> persisto el contenido*/
@@ -597,8 +609,8 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 		}
 		else
 		{
-			if ( ADP_ForkearPCB( g_lpcb_id ) == OK )
-				ADP_CrearPCB( g_lpcb_id, sockIn );/*Lo crea y lo agrega a la lista de listos*/
+			if ( ADP_ForkearPCB( lpcb_id ) == OK )
+				ADP_CrearPCB( lpcb_id, sockIn );/*Lo crea y lo agrega a la lista de listos*/
 		}
 		
 		
@@ -624,6 +636,7 @@ void ADP_Salir()
 /**********************************************************/
 void 	ADP_CerrarConexion( tSocket *sockIn )
 {/*Cerrar el socket correspondiente y tomar la accion correspondiente*/
+	conexiones_CerrarSocket(ADP.m_ListaSockets,sockIn,&ADP.m_ultimoSocket);
 }
 
 /**********************************************************/
@@ -666,7 +679,7 @@ int ADP_ForkearPCB( long lpcbid )
     if( !pid )
     {
        	Log_printf(log_debug,"Voy a instanciar el PCB");
-    	execl( "ppcb", szPCB_ID, NULL);
+    	execl( "ppcb", "ppcb", szPCB_ID, NULL);
         Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
         Log_printf(log_debug,"Error en exec: %s", strerror(errno));
         
