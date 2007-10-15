@@ -96,7 +96,8 @@ typedef enum
 	PAQ_MIGRAR_OK,
 	PAQ_MIGRAR_FAULT,
 	PAQ_FIN_MIGRAR,
-	PAQ_ARCHIVO
+	PAQ_ARCHIVO,
+	PAQ_KILL
 	/**/
 	
 } tPaq_ids;
@@ -262,6 +263,9 @@ void paquetes_Archdestruir( tPaqueteArch* paq  );
 tPaqueteArch* paquetes_CharToPaqArch( const char* buffer  );
 
 /*--------------------- Migracion -------------------------------*/
+/*--------------------------paq_kill-----------------------------*/
+char IS_PAQ_ARCHIVO ( tPaquete *paq );
+tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long int pid );
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
