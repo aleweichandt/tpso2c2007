@@ -122,7 +122,7 @@ int ADS_Init( )
 	}
 	else
 	{
-		printf("No se puede crear el ADS: revise el archivo de configuracion\n");
+		Log_printf( log_debug,"No se puede crear el ADS: revise el archivo de configuracion\n");
 	}
 		
 	exit(EXIT_FAILURE);
@@ -604,7 +604,7 @@ char* ADS_BuscarUsuario(const char* szPathUsuarios, const char* userName)
 	
 	if( ( fp = fopen( szPathUsuarios, "r" ) ) == NULL )
 	{
-		printf("Error al abrir el archivo de Usuarios\n");
+		Log_printf(log_debug, "Error al abrir el archivo de Usuarios\n");
 		return NULL;
 	}
 	while(fgets(szLinea,LEN_MAX_LINEA_ARCH_USUARIOS, fp))
@@ -640,7 +640,7 @@ char *  ADS_ValidarPassword(const char *szUsername, const char *szPassword, cons
 		
 		if( ( fp = fopen( szPathUsuarios, "r" ) ) == NULL )
 		{
-			printf("Error al abrir el archivo de Usuarios\n");
+			Log_printf(log_debug, "Error al abrir el archivo de Usuarios\n");
 			return NULL;
 		}
 		while(fgets(szLinea,LEN_MAX_LINEA_ARCH_USUARIOS, fp))
@@ -682,7 +682,7 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 	
 	if((usr = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),connId, &iPos))==NULL)
 	{
-		printf("Error al abrir el archivo de Clave\n");
+		Log_printf(log_debug, "Error al abrir el archivo de Clave\n");
 		return -1;
 	}
 	if(usr->key != -1)
@@ -696,7 +696,7 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 	
 	if( ( fp = fopen( szNombreArchivoClave, "r" ) ) == NULL )
 	{
-		printf("Error al abrir el archivo de Clave\n");
+		Log_printf(log_debug, "Error al abrir el archivo de Clave\n");
 		return -1;
 	}
 	key = fgetc(fp);
