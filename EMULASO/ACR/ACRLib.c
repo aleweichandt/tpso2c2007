@@ -362,17 +362,17 @@ void ACR_ControlarPendientes(void)
 	{
 		ppcb = PpcbAcr_Datos( Lista );
 		
-		Log_printf(log_debug,"difftime de ppcb %ld es: %.2f, %d %d %d ",
+		/*Log_printf(log_debug,"difftime de ppcb %ld es: %.2f, %d %d %d ",
 					ppcb->pid, difftime( now, ppcb->sFechaInactvdad ),
 					ppcb->sActividad, Estado_Inactivo,
 					ppcb->sActividad == Estado_Inactivo
-					);
+					); /* Lo saco porque esta funcionando */
 		if ( (ppcb->sActividad == Estado_Inactivo)&&
 				difftime( now, ppcb->sFechaInactvdad ) > (double)ACR.i_maxLifeTimePPCB )
 		{
 			Log_printf(log_info,
-				"Se elimina PPCB id:%ld %s de %s, de LPendientes por timeout",
-				ppcb->pid, ppcb->szComando, ppcb->szUsuario);
+				"Se elimina PPCB id:%ld %s de %s, de LPendientes por timeout(%.2fseg pasaron)",
+				ppcb->pid, ppcb->szComando, ppcb->szUsuario, difftime( now, ppcb->sFechaInactvdad ));
 			
 			/*Elimino el proceso PPCB*/
 			kill( ppcb->pidChild, SIGTERM );
@@ -656,6 +656,7 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 			/*Migro exitosamente entonces deja de ser inactivo*/
 			ppcbEncontrado->sActividad = Estado_Activo;
 			ppcbEncontrado->sFechaInactvdad = time (NULL);
+			kill( ppcbEncontrado->pidChild, SIGTERM );	/*al migrar bien mato al proceso original*/
 		}else{
 			Log_log(log_warning,"Se recibio MIGRAR_OK pero no se encontro PPCB asociado para adminsitrar");
 		}
