@@ -395,16 +395,21 @@ int PCB_Init(int argc, char *argv[] )
 				Log_log( log_error, "No se pudo establecer conexion con el ACR" );
 				return ERROR;
 			}
-			PCB.m_ListaSockets[SOCK_ADP]->estado = estadoConn_standby;
+			/*PCB.m_ListaSockets[SOCK_ADP]->estado = estadoConn_standby;*/
 		}
 		if ( argc == 2) 
 		{
+			if ( PCB_ConectarConACR() == ERROR )
+			{
+				Log_log( log_error, "No se pudo establecer conexion con el ACR" );
+				return ERROR;
+			}
 			if ( PCB_ConectarConADP() == ERROR )
 			{
 				Log_log( log_error, "No se pudo establecer conexion con el ADP" );
 				return ERROR;
 			}
-			PCB.m_ListaSockets[SOCK_ACR]->estado = estadoConn_standby;
+			/*PCB.m_ListaSockets[SOCK_ACR]->estado = estadoConn_standby;*/
 		}
 		
 		signal(SIGALRM, PCB_ProcesarSeniales);
