@@ -247,7 +247,7 @@ int PCB_ExecuteInstruction(int line) {
 		executer = PCB_ExecuteImp;	
 	} else if ( !strcmp("PUSH", instruction) ) {
 		executer = PCB_ExecutePush;	
-	} else if ( !strcmp("POP", instruction) ) {
+	} else if ( !strncmp("POP", instruction, 3) ) {
 		executer = PCB_ExecutePop;	
 	}  else {
 		Log_log( log_error, "Comando no reconocido, checkee el script");
@@ -539,7 +539,9 @@ int PCB_LeerConfig()
 		
 		
 		config_Destroy(cfg);
-
+		
+		/* PARA PRUEBA */
+		/*PCB_ExecuteProgram();*/
 		return OK;
 		
 	}while(0);
