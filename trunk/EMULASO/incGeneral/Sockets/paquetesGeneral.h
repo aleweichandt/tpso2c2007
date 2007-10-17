@@ -280,7 +280,7 @@ tPaqueteArch* paquetes_CharToPaqArch( const char* buffer  );
 /*--------------------- Migracion -------------------------------*/
 /*--------------------------paq_kill-----------------------------*/
 char IS_PAQ_KILL ( tPaquete *paq );
-tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long int pid );
+tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int pid[25] );
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

@@ -921,16 +921,16 @@ char* paquetes_newPaqMigrateAsStr( unsigned char IP[4], unsigned char id_Proceso
 
 /*--------------------- Migracion -------------------------------*/
 /*-----------------------------paq_kill----------------------------*/
-tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, long int pid )
+tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int pidVec[25] )
 {
 	tPaquete *paq;
 		
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
-		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_END_SESION_OK, puerto );
-		memcpy( paq->msg, &pid, sizeof(pid));
-		paq->msg_len = sizeof(pid);
+		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_KILL, puerto );
+		memcpy( paq->msg, &pidVec, sizeof(pidVec));
+		paq->msg_len = sizeof(pidVec);
 		
 		return paq;
 }
