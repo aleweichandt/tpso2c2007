@@ -401,11 +401,6 @@ int PCB_Init(int argc, char *argv[] )
 		}
 		if ( argc == 2) 
 		{
-			if ( PCB_ConectarConACR() == ERROR )
-			{
-				Log_log( log_error, "No se pudo establecer conexion con el ACR" );
-				return ERROR;
-			}
 			if ( PCB_ConectarConADP() == ERROR )
 			{
 				Log_log( log_error, "No se pudo establecer conexion con el ADP" );
