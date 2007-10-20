@@ -14,12 +14,16 @@
 #include "../incGeneral/incGeneral.h" 
 #include "../incGeneral/Estructuras/estructuras.h"
 #include "../incGeneral/Sockets/conexiones.h"
+#include <signal.h>
 
 typedef struct
 {
 	char IP[LEN_IP];
 	char Registro[32];
 	long id;
+	long pid;/*proccess id*/
+	int  Q;
+	int	 MemoriaRequerida;
 	unsigned short int Port;
 	tSocket	*pSocket;
 	void* extra;
@@ -30,7 +34,8 @@ typedef struct
 
 /* funciones de pcb */
 tunPCB* 	pcb_Crear( 	char IP[LEN_IP], char Registro[32],	long id, unsigned short int Port,
-					void* extra, tSocket *pSocket );
+					void* extra, tSocket *pSocket, int Q, int MemoriaRequerida, long pid );
+tunPCB* 	pcb_Crear2( tunPCB *pcb );					
 void 		pcb_Eliminar( tunPCB *pcb );
 
 /* funciones de las listas de pcbs */
@@ -41,6 +46,10 @@ void 		lpcb_LimpiarLista( tListaPCB *lista );
 tunPCB* 	lpcb_Datos( tListaPCB lista );
 tListaPCB 	lpcb_Siguiente( tListaPCB lista );
 tunPCB* 	lpcb_ObtenerPCBXSock( tListaPCB* lista, tSocket* sock ); 
+int			lpcb_DecrementarQ( tListaPCB *pLista );
+int			lpcb_ActualizarQ( tListaPCB *pLista, int nQ );
+int			lpcb_PasarDeLTPaLTL( tListaPCB *pListaLTP, tListaPCB *pListaLTL, int* pnMemDisp  );
+void 		lpcb_MatarPCBs( tListaPCB *pLista );
 
 #endif /*DATOSPCBS_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
