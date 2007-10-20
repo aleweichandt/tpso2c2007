@@ -89,6 +89,8 @@ typedef enum
 	/* 24-09-07:LAS: Registro ACR-ADP*/
 	PAQ_GET_PERFORMANCE,
 	PAQ_INFO_PERFORMANCE,
+	PAQ_SUSPEND_PCB,
+	PAQ_EXEC_PCB,
 	
 	/*01-10-07:LAS: Migracion*/
 	PAQ_MIGRATE,
@@ -208,6 +210,8 @@ char* paquetes_newPaqNoProgAsStr( unsigned char IP[4], unsigned char id_Proceso,
 
 /* Funciones para identificar el paquete, seria conveniente ir agregando aca una funcion para cada paq */
 char IS_PAQ_INFO_PERFORMANCE ( tPaquete *paq );
+char IS_PAQ_EXEC_PCB ( tPaquete *paq );
+char IS_PAQ_SUSPEND_PCB ( tPaquete *paq );
 
 /* --- */
 
@@ -221,6 +225,13 @@ char* paquetes_newPaqInfoPerformanceAsStr( unsigned char IP[4], unsigned char id
 tPaquete* paquetes_ParsearPaqInfoPerformance( const char* Buffer, unsigned char* IP, unsigned char* id_Proceso, 
 											unsigned short int* puerto,
 											int* nMaxMen, float* fCargaProm, int* CantPCB );
+/* Para la planificacion */
+tPaquete* paquetes_newPaqExecPCB( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqExecPCBAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+
+tPaquete* paquetes_newPaqSuspendPCB( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqSuspendPCBAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+											
 /*----------------------- ADP -----------------------------------*/
 
 /*----------------------- ACR -----------------------------------*/
