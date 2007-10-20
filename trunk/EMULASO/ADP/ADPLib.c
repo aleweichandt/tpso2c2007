@@ -17,7 +17,7 @@
 sigset_t 		conjunto_seniales;
 long 			g_lTime1 = 0;
 long 			g_lTime2 = 0;
-long			g_lpcb_id = 0;
+
 
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
@@ -88,10 +88,10 @@ void ADP_Dispatcher(int n)
 		/*Log_printf( log_debug, "Largo LTP = %d", appADT.nLargoLTP );*/
 	
 		/*Las paso a LTL*/	
-		ADP_PasarDeLTPaLTL( &ADP.m_LPE, &ADP.m_LPL ); 
+		lpcb_PasarDeLTPaLTL( &ADP.m_LPE, &ADP.m_LPL, &ADP.m_nMemDisp ); 
 	
 		/*Ahora paso las primeras de LTL a LTP segun la capacidad de memoria*/
-		ADP_PasarDeLTLaLTP( &ADP.m_LPL, &ADP.m_LPE );
+		ADP_PasarDeLPLaLPE();
 		
 		/*Les digo Start a todas las de LTP*/
 		ADP_InformarReanudacion();
@@ -122,11 +122,96 @@ void ADP_Dispatcher(int n)
 	Log_log( log_debug, "<< Sale del Dispatcher >>" );
 }
 
+/************************************************************************************************/
+int ADP_PasarDeLPLaLPE()
+/*La multigramacion me la determina el limite de memoria*/
+{
+	tunPCB			*pPCB;
+	tListaPCB		Lista = ADP.m_LPE;
+
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		
+		if ( (ADP.m_nMemDisp - pPCB->MemoriaRequerida) >= 0 )
+		{
+			ADP.m_nMemDisp -= pPCB->MemoriaRequerida;
+			
+			Lista = lpcb_Siguiente( Lista );
+			
+			lpcb_PasarDeLista( &ADP.m_LPL, &ADP.m_LPE, pPCB->id );/*ojo que aca dentro elimina el puntero para pasarlo a la otra*/
+			continue;
+		}
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+}
+
+/************************************************************************************************/
+int 	ADP_InformarSuspencion() 
+{
+	tunPCB			*pPCB;
+	tListaPCB		Lista = ADP.m_LPE;
+	unsigned char	szIPReducido[4];
+				
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		ReducirIP( ADP.m_IP, szIPReducido );	
+		
+		Log_log( log_debug, "envio Suspension" );
+
+		if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqSuspendPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
+				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError("enviando suspend_pcb");
+		}
+		
+		
+		Log_printf( log_debug,"Se suspendera el PCB: %ld", pPCB->id);
+		Lista = lpcb_Siguiente( Lista );
+	}
+	usleep(1000);
+	  
+	return 1;
+}
+
+
+/**********************************************************/
+void ADP_InformarReanudacion()
+{
+	int 			len; 
+	int 			nCont = 0;
+	tunPCB			*pPCB;
+	tListaPCB		Lista = ADP.m_LPE;
+	unsigned char	szIPReducido[4];
+					
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		
+		Log_printf( log_debug,"Envio Start al PCB: %ld por fd = %d", 
+						pPCB->id, pPCB->pSocket->descriptor );
+		ReducirIP( ADP.m_IP, szIPReducido );	
+		if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqExecPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
+				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError("enviando exec_pcb");
+		}
+		Log_printf( log_debug,"Se envio un EXEC al PCB %d", pPCB->id);
+		
+		/*Espero que esto no haga falta:
+		EsperarSocketDeT( pT, "Start" );
+		EnviarGoes( pT );
+		*/
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+}
+
+
+
 /*TODO*/
-int 	ADP_InformarSuspencion() {return 1;}
-int		ADP_InformarReanudacion() {return 1;}
-int		ADP_PasarDeLTPaLTL( tListaPCB* LTP, tListaPCB* LTL ) {return 1;} 
-int		ADP_PasarDeLTLaLTP( tListaPCB* LTL, tListaPCB* LTP ){return 1;}
 int		ADP_EstoyCargado(){return 1;}
 int		ADP_MigrarPCBPesado() {return 1;}
 /*TODO*/
@@ -150,20 +235,16 @@ void ADP_ProcesarSeniales( int senial )
 	else if ( senial == SIGHUP )
 	{
 	}
-	else if ( senial == SIGINT )
-	{			
+	else if ( senial == SIGINT || senial == SIGTERM )
+	{	
+		Log_log( log_warning, "Recibo senial SIGTERM p SIGINT");		
 		ADP_Salir();
 	}
 	else if ( senial == SIGCHLD )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
 		wait( &nstateChld );
-		if(  WIFEXITED(nstateChld) ){
-			Log_printf( log_warning, "Murio un proc hijo en forma normal. ExitStatus: %d",
-						WEXITSTATUS(nstateChld));
-		}else{
-			Log_log( log_warning, "Murio un proc hijo en forma Anormal");
-		}
+		Log_log( log_warning, "Certifico que murio un proc hijo(ADP)");
 		signal( SIGCHLD, ADP_ProcesarSeniales );
 	}
 }
@@ -191,6 +272,8 @@ int ADP_Init( )
 			Log_log( log_error, "Error leyendo la configuracion" ); 
 			break;
 		}
+		
+		ADP.m_nMemDisp = ADP.m_nMemMax;
 				
 		/* inicializacion de la lista de sockets */
 		if ( !(ADP.m_ListaSockets = malloc( MALLOC_SOCKS_INI *sizeof(tSocket*) ) ) ) 
@@ -500,25 +583,25 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	
 	if ( ERROR == len || !len)
 	{
-		Log_logLastError("Se cierra socket al atender PCB");
 		ADP_CerrarConexion( sockIn );		
 	
 		return;
 	}
 	else if( len != PAQUETE_MAX_TAM )
 	{ 
-		Log_printf( log_warning, "Atencion no recibi el largo fijo! de paquete(%d/%d)",
-					len, PAQUETE_MAX_TAM ); 
+		Log_log( log_warning, "Atencion no recibi el largo fijo! de paquete" ); 
 	}
 	
 	paq = paquetes_CharToPaq(buffer);
 
 	if ( IS_PAQ_MIGRAR( paq ) )
 	{/*Me llega el paquete migrar, cambio el handshake para recibir el archivo del pcb data*/
-		Log_log( log_debug, "Llega un Migrar!" );
+		Log_log( log_debug, "Llega un Migrar..." );
 		
 		memcpy( &lpcb_id, paq->msg, sizeof(long) );
 		bzero(szPathArch,sizeof(szPathArch));
+		
+		Log_printf( log_debug, "...del pcb %ld", lpcb_id );
 		
 		ArmarPathPCBConfig( szPathArch, lpcb_id );
 		
@@ -528,23 +611,10 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 			sockIn->callback = &ADP_RecibirArchivo;
 			sockIn->extra = (void*)lpcb_id;
 			fclose(arch);
-			Log_printf(log_debug,"Se creo el archivo %s",szPathArch);
 		}
 		else
 		{
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
-		}
-	}
-	else if(IS_PAQ_PRINT(paq))
-	{/*me llega el print, se lo reenvio al ACR*/
-		int nSend;
-		
-		Log_log( log_debug, "Mando PRINT al ACR" );
-		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
-					
-		if(nSend != PAQUETE_MAX_TAM)
-		{
-			Log_logLastError( "error al enviar PRINT al ACR" );
 		}
 	}
 	
@@ -565,14 +635,14 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	char			szPathArch[512];	 
 	unsigned char	szIP[4];
 	long			lpcb_id;
+	int				nMemoria;
+	long			lpid;
 
-	Log_printf(log_debug,"Entro en ADP_RecibirArchivo");
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_ARCH_MAX_TAM );
 	
 	if ( ERROR == len || !len)
 	{
-		Log_logLastError("Recibiendo datos de socket en ADP_RecibirArchivo");
 		ADP_CerrarConexion( sockIn );		
 	
 		return;
@@ -586,9 +656,7 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 			len, PAQUETE_ARCH_MAX_TAM ); 
 	}
 	
-	if( !(paq = paquetes_CharToPaqArch(buffer)) ){
-		Log_logLastError("Al crear el paquete en ADP_RecibirArchivo");
-	}
+	paq = paquetes_CharToPaqArch(buffer);
 
 	if ( IS_PAQ_ARCHIVO( paq ) )
 	{/*Llega el paq archivo -> persisto el contenido*/
@@ -598,11 +666,23 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 		lpcb_id = (long)sockIn->extra;
 		ArmarPathPCBConfig( szPathArch, lpcb_id );
 		
-		if ( (arch = fopen( szPathArch, "ab+" )) ){
+		if ( (arch = fopen( szPathArch, "ab+" )) )
+		{
 			fprintf( arch, "%s", paq->msg );
 			fclose(arch);
-		}else{
+		}
+		else
+		{
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
+
+			/*Envio el msj de migracion Fault*/
+			Log_log( log_debug, "envio migrar Fault" );
+			ReducirIP( ADP.m_IP, szIP);
+			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarFault( szIP, _ID_ADP_, ADP.m_Port ), 
+					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError("enviando migrar_Fault");
+			}
 		}
 	}
 	else if ( IS_PAQ_FIN_MIGRAR( paq ) )
@@ -621,8 +701,22 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 		}
 		else
 		{
-			if ( ADP_ForkearPCB( lpcb_id ) == OK )
-				ADP_CrearPCB( lpcb_id, sockIn );/*Lo crea y lo agrega a la lista de listos*/
+			if ( ADP_ForkearPCB( lpcb_id, &lpid ) == OK )
+			{
+				memcpy( &nMemoria, &(paq->id.UnUsed[0]), sizeof(int) );
+				ADP_CrearPCB( lpcb_id, sockIn, nMemoria, lpid );/*Lo crea y lo agrega a la lista de listos*/
+			}
+			else
+			{
+				/*Envio el msj de migracion Fault*/
+				Log_log( log_debug, "envio migrar Fault" );
+				ReducirIP( ADP.m_IP, szIP);
+				if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarFault( szIP, _ID_ADP_, ADP.m_Port ), 
+						PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+				{
+					Log_logLastError("enviando migrar_Fault");
+				}
+			}
 		}
 		
 		
@@ -639,6 +733,15 @@ void ADP_Salir()
 	/* Logear salida, hacer un clean up? */
 	
 	conexiones_CerrarLista( 0, &ADP.m_ultimoSocket, ADP.m_ListaSockets );
+	
+	Log_log(log_info,"matando los pcbs de LPN");
+	lpcb_MatarPCBs( &ADP.m_LPN );
+	Log_log(log_info,"matando los pcbs de LPL");
+	lpcb_MatarPCBs( &ADP.m_LPL );
+	Log_log(log_info,"matando los pcbs de LPE");
+	lpcb_MatarPCBs( &ADP.m_LPE );
+	Log_log(log_info,"matando los pcbs de LPB");
+	lpcb_MatarPCBs( &ADP.m_LPB );
 	
 	Log_log(log_info,"Fin de la ejecucion");
 	pantalla_Clear();
@@ -678,39 +781,38 @@ float	ADP_CalcularCargaPromReal()
 } 
 
 /**********************************************************/
-int ADP_ForkearPCB( long lpcbid )
+int ADP_ForkearPCB( long lpcbid, long *plpid )
 {
-	int pid;
 	char szPCB_ID[10];
 	
 	sprintf( szPCB_ID, "%ld", lpcbid );
 	
-	Log_printf(log_debug,"Voy a hacer el fork del PCB");
-	pid = fork();
+	Log_printf(log_debug,"Voy a hacer el fork del PCB %s", szPCB_ID);
+	*plpid = fork();
     
-    if( !pid )
+    if( !(*plpid) )
     {
        	Log_printf(log_debug,"Voy a instanciar el PCB");
-    	execl( "ppcb", "ppcb", szPCB_ID, NULL);
+    	execl( "ppcb", "ppcb",szPCB_ID, NULL);
         Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
         Log_printf(log_debug,"Error en exec: %s", strerror(errno));
         
         return ERROR;
   	}
-  	else if( pid ) 
+  	else if( (*plpid) ) 
   	{
-  		Log_printf(log_debug,"El PID del PCB es: %d ", pid );
+  		Log_printf(log_debug,"El PID del PCB es: %d ", *plpid );
   		return OK;
     }
 
 }
 
 /**********************************************************/
-int	ADP_CrearPCB( long lpcbid, tSocket* pSock )
+int	ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMem, long pid )
 {
 	tunPCB *pcb;
 	
-	if ( (pcb = pcb_Crear( ADP.m_IP, "", lpcbid, 0, NULL, pSock   )) )
+	if ( (pcb = pcb_Crear( ADP.m_IP, "", lpcbid, 0, NULL, pSock, ADP.m_Q, nMem, pid   )) )
 		return lpcb_AgregarALista( &ADP.m_LPL, pcb );
 	
 	return ERROR;

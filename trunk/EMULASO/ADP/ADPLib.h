@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+
 #define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
 #define SOCK_ACR 		1
 #define SOCKS_OCUPADOS 	2
@@ -82,8 +83,8 @@ void	ADP_RealizarInforme();
 
 /* - Migracion - */
 void 	ADP_RecibirArchivo( tSocket *sockIn );
-int 	ADP_ForkearPCB( long lpcbid );
-int		ADP_CrearPCB( long lpcbid, tSocket* pSock );
+int 	ADP_ForkearPCB( long lpcbid, long* plpid );
+int		ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMemoria, long pid );
 int		ADP_MigrarPCBPesado();
 
 /* - Planificacion - */
@@ -91,9 +92,8 @@ int 	ADP_SeCumplioQ();
 int 	ADP_SeCumplioTimerAverage();
 void 	ADP_Dispatcher(int n);
 int 	ADP_InformarSuspencion();
-int		ADP_InformarReanudacion();
-int		ADP_PasarDeLTPaLTL( tListaPCB* LTP, tListaPCB* LTL ); 
-int		ADP_PasarDeLTLaLTP( tListaPCB* LTL, tListaPCB* LTP );
+void 	ADP_InformarReanudacion();
+int 	ADP_PasarDeLPLaLPE();
 
 
 #endif /*ADPLIB_H_*/
