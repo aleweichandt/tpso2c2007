@@ -13,6 +13,14 @@
  /*----------------------------------------------------------------------------------*/
 int compararPCBxId( const void *t1, const void *t2 );
 int compararPCBXSock( const void *t1, const void *t2 );
+int compararPCBXQVencido( const void *t1, const void *t2 );
+int siempre( const void *t1, const void *t2 );
+
+/*******************************************************/
+int siempre( const void *t1, const void *t2 )
+{
+	return 0;
+}
 
 /***********************************************************************************/
 int compararPCBxId( const void *t1, const void *t2 )
@@ -41,13 +49,24 @@ int compararPCBXSock( const void *t1, const void *t2 )
 	
 	return 1;	
 }
+/***********************************************************************************/
+int compararPCBXQVencido( const void *t1, const void *t2 )
+/*No uso el t2!*/
+{
+	tunPCB	*pT1 = (tunPCB*) t1;
+						
+	if ( (pT1->Q) <= 0 )
+		return 0;
+	
+	return 1;	
+}
 
 /*----------------------------------------------------------------------------------*/
  
 
 /****************************************************************************************/
 tunPCB* pcb_Crear( 	char IP[LEN_IP], char Registro[32],	long id, unsigned short int Port,
-					void* extra,tSocket *pSocket )
+					void* extra,tSocket *pSocket, int Q, int MemoriaRequerida, long pid )
 {
 	tunPCB *newpcb;
 	
@@ -60,6 +79,9 @@ tunPCB* pcb_Crear( 	char IP[LEN_IP], char Registro[32],	long id, unsigned short 
 	newpcb->Port = Port;
 	newpcb->extra = extra;
 	newpcb->pSocket = pSocket;
+	newpcb->Q = Q;
+	newpcb->MemoriaRequerida = MemoriaRequerida;
+	newpcb->pid = pid;
 	
 	return newpcb;
 }
@@ -78,6 +100,9 @@ tunPCB* pcb_Crear2( tunPCB *pcb )
 	newpcb->Port = pcb->Port;
 	newpcb->extra = pcb->extra;
 	newpcb->pSocket = pcb->pSocket;
+	newpcb->Q = pcb->Q;
+	newpcb->MemoriaRequerida = pcb->MemoriaRequerida;
+	newpcb->pid = pcb->pid;
 	
 	return newpcb;
 }
@@ -174,6 +199,107 @@ void lpcb_LimpiarLista( tListaPCB *lista )
 /**/
 {
 	lista_destruir( lista );	
+}
+ /*************************************************************************************************/
+int	lpcb_DecrementarQ( tListaPCB *pLista )
+/* Decrementa los Q de cada uno y devuelve la cantidad de los que se vencieron*/
+{
+	int 				nCont = 0;
+	tunPCB				*pPCB;
+	tListaPCB			Lista = *pLista;
+	
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		
+		if ( (--(pPCB->Q)) <= 0 )
+			nCont++;
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+	
+	return nCont;
+}
+
+/*************************************************************************************************/
+int	lpcb_ActualizarQ( tListaPCB *pLista, int nQ )
+/* Actualizo los Q de cada uno y devuelve la cantidad*/
+{
+	int 				nCont = 0;
+	tunPCB				*pPCB;
+	tListaPCB			Lista = *pLista;
+	
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		
+		pPCB->Q = nQ;
+		nCont++;
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+	
+	return nCont;
+}
+
+/*************************************************************************************************/
+int	lpcb_PasarDeLTPaLTL( tListaPCB *pListaLTP, tListaPCB *pListaLTL, int* pnMemDisp )
+/*Esta funcion no es optima!
+ * 1) Busco la T que tenga el Q vencido
+ * 2) Creo una nueva con los datos de esta, cambiando el estado
+ * 3) la quito de la LTP
+ * 4) la agrego a la LTL
+ * 5) Vuelvo al 1. Si no hay sale.
+ * 
+ * Devuelvo la cantidad que movi o -1 por error!
+ * */
+{
+	int		nCont;
+	tunPCB	*pPCBAPasar,
+			*pPCBNuevo;
+	/*No uso el 2do param porque en la comparacion hago Q <= 0*/
+    tListaPCB tmp = lista_buscar( pListaLTP, NULL, &compararPCBXQVencido );
+    nCont = 0;
+    
+	while ( tmp  )
+	{
+		pPCBAPasar = lpcb_Datos( tmp );
+		
+		*pnMemDisp += pPCBAPasar->MemoriaRequerida; /*Devuelvo la mem, gracias!*/
+		
+		if( !(pPCBNuevo = pcb_Crear2( pPCBAPasar ) ) )
+			return ERROR;
+		
+		if ( !lpcb_EliminarDeLista( pListaLTP, pPCBAPasar->id ) )
+			return ERROR;
+		
+		if ( !lpcb_AgregarALista( pListaLTL, pPCBNuevo ) )
+			return ERROR;
+		
+		nCont++;
+		tmp = lista_buscar( pListaLTP, NULL, &compararPCBXQVencido );
+	}
+
+	return nCont;
+}
+ 
+ /*******************************************************************************************/
+ void lpcb_MatarPCBs( tListaPCB *pLista )
+ {
+	tListaPCB 	Lista = *pLista;
+	tunPCB		*ppcb = NULL;
+	
+	while( Lista )
+	{
+		ppcb = lpcb_Datos( Lista );
+		
+		/*Elimino el proceso PPCB*/
+		kill( ppcb->pid, SIGTERM );
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+	
+	lpcb_LimpiarLista( pLista );
 }
  
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
