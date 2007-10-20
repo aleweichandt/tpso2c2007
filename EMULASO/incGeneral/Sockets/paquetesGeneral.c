@@ -533,6 +533,66 @@ char* paquetes_newPaqNoProgAsStr( unsigned char IP[4], unsigned char id_Proceso,
 
 /*----------------------- ADP -----------------------------------*/
 char IS_PAQ_INFO_PERFORMANCE ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_INFO_PERFORMANCE); }
+char IS_PAQ_SUSPEND_PCB ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_SUSPEND_PCB); }
+char IS_PAQ_EXEC_PCB ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_EXEC_PCB); }
+
+/*******************************************************************************************/
+tPaquete* paquetes_newPaqExecPCB( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_EXEC_PCB, puerto );
+	
+	return paq;		
+}
+
+/*******************************************************************************************/
+char* paquetes_newPaqExecPCBAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *pNew; char *Ret;
+	if ( (pNew = paquetes_newPaqExecPCB(IP,id_Proceso, puerto )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
+
+/*******************************************************************************************/
+tPaquete* paquetes_newPaqSuspendPCB( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_SUSPEND_PCB, puerto );
+	
+	return paq;		
+}
+
+/*******************************************************************************************/
+char* paquetes_newPaqSuspendPCBAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *pNew; char *Ret;
+	if ( (pNew = paquetes_newPaqSuspendPCB(IP,id_Proceso, puerto )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
 
 /*******************************************************************************************/
 tPaquete* paquetes_newPaqInfoPerformance( unsigned char IP[4], unsigned char id_Proceso, 
