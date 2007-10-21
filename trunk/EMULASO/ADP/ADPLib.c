@@ -244,7 +244,12 @@ void ADP_ProcesarSeniales( int senial )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
 		wait( &nstateChld );
-		Log_log( log_warning, "Certifico que murio un proc hijo(ADP)");
+		if(  WIFEXITED(nstateChld) ){
+			Log_printf( log_warning, "Murio un proc hijo en forma normal. ExitStatus: %d",
+						WEXITSTATUS(nstateChld));
+		}else{
+			Log_log( log_warning, "Murio un proc hijo en forma Anormal");
+		}
 		signal( SIGCHLD, ADP_ProcesarSeniales );
 	}
 }
@@ -583,13 +588,15 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	
 	if ( ERROR == len || !len)
 	{
+		Log_logLastError("Se cierra socket al atender PCB");
 		ADP_CerrarConexion( sockIn );		
 	
 		return;
 	}
 	else if( len != PAQUETE_MAX_TAM )
 	{ 
-		Log_log( log_warning, "Atencion no recibi el largo fijo! de paquete" ); 
+		Log_printf( log_warning, "Atencion no recibi el largo fijo! de paquete(%d/%d)",
+					len, PAQUETE_MAX_TAM ); 
 	}
 	
 	paq = paquetes_CharToPaq(buffer);
@@ -611,10 +618,23 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 			sockIn->callback = &ADP_RecibirArchivo;
 			sockIn->extra = (void*)lpcb_id;
 			fclose(arch);
+			Log_printf(log_debug,"Se creo el archivo %s",szPathArch);
 		}
 		else
 		{
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
+		}
+	}
+	else if(IS_PAQ_PRINT(paq))
+	{/*me llega el print, se lo reenvio al ACR*/
+		int nSend;
+		
+		Log_log( log_debug, "Mando PRINT al ACR" );
+		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+					
+		if(nSend != PAQUETE_MAX_TAM)
+		{
+			Log_logLastError( "error al enviar PRINT al ACR" );
 		}
 	}
 	
@@ -638,11 +658,13 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	int				nMemoria;
 	long			lpid;
 
+	Log_printf(log_debug,"Entro en ADP_RecibirArchivo");
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_ARCH_MAX_TAM );
 	
 	if ( ERROR == len || !len)
 	{
+		Log_logLastError("Recibiendo datos de socket en ADP_RecibirArchivo");
 		ADP_CerrarConexion( sockIn );		
 	
 		return;
@@ -656,7 +678,9 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 			len, PAQUETE_ARCH_MAX_TAM ); 
 	}
 	
-	paq = paquetes_CharToPaqArch(buffer);
+	if( !(paq = paquetes_CharToPaqArch(buffer)) ){
+		Log_logLastError("Al crear el paquete en ADP_RecibirArchivo");
+	}
 
 	if ( IS_PAQ_ARCHIVO( paq ) )
 	{/*Llega el paq archivo -> persisto el contenido*/
@@ -666,13 +690,10 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 		lpcb_id = (long)sockIn->extra;
 		ArmarPathPCBConfig( szPathArch, lpcb_id );
 		
-		if ( (arch = fopen( szPathArch, "ab+" )) )
-		{
+		if ( (arch = fopen( szPathArch, "ab+" )) ){
 			fprintf( arch, "%s", paq->msg );
 			fclose(arch);
-		}
-		else
-		{
+		}else{
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
 
 			/*Envio el msj de migracion Fault*/
