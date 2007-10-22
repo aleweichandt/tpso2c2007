@@ -18,8 +18,8 @@ sigset_t 		conjunto_seniales;
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
 \**************************************************/
-int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto, int posSocket);
-int PCB_ExecuteProgram();
+int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto);
+
 int PCB_ExecuteInstruction(int line) ;
 int PCB_ExecuteMem(char *param);
 int PCB_ExecuteOper(char *param);
@@ -185,6 +185,7 @@ int createPCB(char *argv[]) {
 			line++;
 		}
 		PCB.ultimaSentencia = line;
+		sscanf( PCB.Code[0], "MEM %d", &(PCB.Mem));	/*tomo la cantidad de memoria requerida*/
 		
 		PCB.IP = 0;
 		
@@ -204,19 +205,28 @@ int createPCB(char *argv[]) {
 	return ERROR;
 }
 /***********************************************************/
-int PCB_ExecuteProgram() {
-
-	FILE *cfgCode;
-	int line=0, i=0;
-	char strBuff[50];
+void PCB_ExecuteProgram(tSocket *sockIn) {
+	
+	/*Log_log(log_debug,"Entre en el Execute program del timeout");*/
+	if ( PCB.State == EJECUTANDO && PCB.IP < PCB.ultimaSentencia) {
 		
-	while ( PCB.IP < PCB.ultimaSentencia) {
+		if( !PCB.tiempoRestanteOper )	/*La siguiente sentencia*/
+		{
+			PCB_ExecuteInstruction(PCB.IP);
+			PCB.IP++;
+		}else							/*Una sentencia OPER sin terminar*/
+		{
+			sleep(1);
+			PCB.tiempoRestanteOper--;
+			
+			if(!PCB.tiempoRestanteOper)
+				Log_log( log_info, "Se termino de ejecutar la operacion");
+		}
+	}else if(PCB.State == EJECUTANDO && PCB.IP >= PCB.ultimaSentencia){
 		
-		PCB_ExecuteInstruction(PCB.IP);
-		PCB.IP++;
-		
-		/* EscucharLLegadaDeMensajes(); */
-		
+		/*Termino la ejecucion, se envía el mensaje PRINT con*/
+		/* "Proceso <PPCBID> finalizado exitosamente" */
+		/*PCB_Salir(); /* ¿Esto se hara aca? confirmar con Leonardo */
 	}
 	
 }
@@ -276,14 +286,8 @@ int PCB_ExecuteOper(char *param) {
 	int cantSeg = atoi( param);
 	
 	Log_printf( log_info, "Se ejecuta una operacion de: %s segundos", param);
-	while (cantSeg > 0) {
 	
-		sleep(1);
-		cantSeg--;
-		 /* Escuchar Mensajesss de suspensiónnnn! */
-	
-	}
-	Log_log( log_info, "Se termino de ejecutar la operacion");
+	PCB.tiempoRestanteOper = cantSeg;
 	return 0;
 }
 /**********************************************************************/
@@ -320,7 +324,7 @@ int PCB_ExecuteImp(char *param) {
 	pPaq = paquetes_newPaqPrint(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.SessionID, PCB.ProgName, param);
 	
 	Log_log( log_debug, "Mando PRINT al ADP" );
-	nSend = conexiones_sendBuff( PCB.m_ListaSockets[SOCK_ADP], (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
 	if ( nSend != PAQUETE_MAX_TAM )
 	{
 		Log_logLastError( "error enviando PRINT al ADP" );
@@ -360,9 +364,12 @@ int PCB_Init(int argc, char *argv[] )
 		Log_Inicializar( _PPCB_, "1" );
 		
 		PCB.PPCB_ID = atol (argv[1]);
+		PCB.tiempoRestanteOper = 0;	/*Se inicializa en cero*/
 			
-		if ( argc == 2) {
+		if ( argc == 3) {
 			
+			PCB.nIdProcesoPadre = atoi( argv[2] );	/*el proceso que lo origino (o _ID_ACR_ o _ID_ADP_)*/
+						
 			if ( PCB_LeerConfig() == ERROR )
 			{
 				Log_log( log_error, "Error leyendo la configuracion" ); 
@@ -370,6 +377,8 @@ int PCB_Init(int argc, char *argv[] )
 			}
 					
 		} else if ( argc == 8) {
+			
+			PCB.nIdProcesoPadre = _ID_ACR_;	/*el unico que usa esta cant de param es el ACR*/
 			
 			if ( createPCB(argv) == ERROR){
 				Log_log( log_error, "Error creando la configuracion" ); 
@@ -388,27 +397,41 @@ int PCB_Init(int argc, char *argv[] )
 			
 		/*PCB.m_ultimoSocket = SOCK_ESCUCHA; */
 		
-		if ( argc == 8) 
+		if ( argc == 8 ) 
 		{
 			if ( PCB_ConectarConACR() == ERROR )
 			{
 				Log_log( log_error, "No se pudo establecer conexion con el ACR" );
 				return ERROR;
 			}
-			tSocket* sockDummy = (tSocket*)CrearSocket();
+			/*tSocket* sockDummy = (tSocket*)CrearSocket();
 			sockDummy -> estado = estadoConn_standby;
-			PCB.m_ListaSockets[SOCK_ADP] = sockDummy;
+			PCB.m_ListaSockets[SOCK_ADP] = sockDummy;*/
 		}
-		if ( argc == 2) 
+		if ( argc == 3 ) 
 		{
-			if ( PCB_ConectarConADP() == ERROR )
+			if( PCB.nIdProcesoPadre == _ID_ACR_ )	/*si lo creo el ACR, se conecta con el ACR*/
 			{
-				Log_log( log_error, "No se pudo establecer conexion con el ADP" );
-				return ERROR;
-			}
-			tSocket* sockDummy = (tSocket*)CrearSocket();
-			sockDummy -> estado = estadoConn_standby;
-			PCB.m_ListaSockets[SOCK_ACR] = sockDummy;
+				if ( PCB_ConectarConACR() == ERROR )
+				{
+					Log_log( log_error, "No se pudo establecer conexion con el ACR" );
+					return ERROR;
+				}
+				/*tSocket* sockDummy = (tSocket*)CrearSocket();
+				sockDummy -> estado = estadoConn_standby;
+				PCB.m_ListaSockets[SOCK_ADP] = sockDummy;*/
+				
+			}else if( PCB.nIdProcesoPadre = _ID_ADP_ )	/*si lo creo el ADP, se conecta con el ADP*/
+			{
+				if ( PCB_ConectarConADP() == ERROR )
+				{
+					Log_log( log_error, "No se pudo establecer conexion con el ADP" );
+					return ERROR;
+				}
+				/*tSocket* sockDummy = (tSocket*)CrearSocket();
+				sockDummy -> estado = estadoConn_standby;
+				PCB.m_ListaSockets[SOCK_ACR] = sockDummy;*/				
+			} 
 		}
 		
 		signal(SIGALRM, PCB_ProcesarSeniales);
@@ -488,7 +511,8 @@ int PCB_LeerConfig()
 			sprintf(strCode, "CODE%d", line);
 			
 		}
-		PCB.ultimaSentencia = line;
+		PCB.ultimaSentencia = line-1;
+		sscanf( PCB.Code[0], "MEM %d", &(PCB.Mem));	/*tomo la cantidad de memoria*/
 		
 		if ( (PCB.IP = config_GetVal_Int( cfg, _PPCB_, "IPOINTER" ) ) ){
 					
@@ -568,9 +592,10 @@ int PCB_ConectarConACR()
 	if ( !( pSocket = conexiones_ConectarHost( PCB.m_ACR_IP, PCB.m_ACR_Port,
 										 &PCB_ConfirmarConexion ) ) )
 		return ERROR;
-	
-	PCB.m_ListaSockets[ SOCK_ACR ] = pSocket;
-	PCB.m_ultimoSocket = SOCK_ACR;
+
+	PCB.m_ultimoSocket = 0;
+	PCB.m_ListaSockets[ PCB.m_ultimoSocket ] = pSocket;
+	PCB.m_socketACR = pSocket;
 	
 	/*Mando el Ping al ACR*/
 	Log_log( log_debug, "envio Ping para conectarme con ACR" );
@@ -605,8 +630,9 @@ int PCB_ConectarConADP()
 										 &PCB_ConfirmarConexion ) ) )
 		return ERROR;
 	
-	PCB.m_ListaSockets[ SOCK_ADP] = pSocket;
-	PCB.m_ultimoSocket = SOCK_ADP;
+	PCB.m_ultimoSocket = 0;
+	PCB.m_ListaSockets[ PCB.m_ultimoSocket ] = pSocket;
+	PCB.m_socketADP = pSocket;
 	
 	/*Mando el Ping al ADP*/
 	Log_log( log_debug, "envio Ping para conectarme con ADP" );
@@ -783,12 +809,14 @@ void PCB_AtenderACR ( tSocket *sockIn )
 		
 		paquetes_ParsearPaqMigrate(buffer,szIpRed2,&idProceso,&nPuerto2,szIpRed,&nPuerto);
 		AmpliarIP(szIpRed,szIp);
-		PCB_Migrar(szIp,nPuerto, SOCK_ADP);
+		PCB_Migrar(szIp,nPuerto);
+		
+	}else if( IS_PAQ_MIGRAR_OK( paq ) ){
+		Log_log(log_info,"Llega un PAQ_MIGRATE_OK");
+		Log_log(log_info,"Kamikaze");
+		PCB_Salir();	/*Si nacio en el nodo del ADP entonces luego de migrar debe cerrarse por si solo*/
 		
 	}
-
-
-
 	
 	if ( paq ) 
 		paquetes_destruir( paq );
@@ -818,7 +846,7 @@ void PCB_AtenderADP ( tSocket *sockIn )
 	{
 		Log_log( log_debug, "Se cae conexion con ADP" );
 		PCB_CerrarConexion( sockIn );		
-	
+		PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);	/*Migra al ACR*/
 		return;
 	}
 	
@@ -829,7 +857,7 @@ void PCB_AtenderADP ( tSocket *sockIn )
 		
 		Log_log( log_info, "el ADP me manda un PAQ_MIGRAR_OK" );
 		paq->id.id_Proceso = _ID_PPCB_;
-		nSend = conexiones_sendBuff( PCB.m_ListaSockets[ SOCK_ACR ], 
+		nSend = conexiones_sendBuff( PCB.m_socketACR, 
 					(const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
 		if(nSend == 0 || nSend == ERROR )
 			Log_log(log_error,"Error al enviar PAQ_MIGRAR_OK");
@@ -838,7 +866,7 @@ void PCB_AtenderADP ( tSocket *sockIn )
 
 		Log_log( log_info, "el ADP me manda un PAQ_MIGRAR_FAULT" );
 		paq->id.id_Proceso = _ID_PPCB_;
-		nSend = conexiones_sendBuff( PCB.m_ListaSockets[ SOCK_ACR ], 
+		nSend = conexiones_sendBuff( PCB.m_socketACR, 
 					(const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
 		if(nSend == 0 || nSend == ERROR )
 			Log_log(log_error,"Error al enviar PAQ_MIGRAR_FAULT");		 
@@ -853,7 +881,7 @@ void PCB_AtenderADP ( tSocket *sockIn )
 
 
 /**********************************************************/
-int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto, int posSocket)
+int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto)
 /*	Procedimiento de MIGRACION
  * El tercer parametro es la macro SOCK_ACR o SOCK_ADP, dependiendo el caso
  */
@@ -877,19 +905,32 @@ int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto, int posSocket)
 	Log_log(log_debug,"Cree el archivo de configuracion");
 	
 	/*[INI]	Conexion ----------------------------------------------*/
-	if(posSocket == SOCK_ACR)
-		callback = PCB_AtenderACR;
-	else
-		callback = PCB_AtenderADP;
-	
 	Log_printf(log_debug,"Intento conectarme con ip:%s,puerto:%d",szIp,nPuerto);
 	
+	if( PCB.nIdProcesoPadre == _ID_ADP_ ){
+		callback = PCB_AtenderACR;	/*si lo creo el ADP entonces se intentara conectar con el ACR al migrar*/
+	}else{
+		callback = PCB_AtenderADP;
+	}
+
 	if ( !( pSocket = conexiones_ConectarHost( szIp, nPuerto,callback ) ) )
 		return ERROR;
 	
-	PCB.m_ListaSockets[ posSocket ] = pSocket;
+	if( PCB.nIdProcesoPadre == _ID_ADP_ ){
+		PCB.m_socketACR = pSocket;
+	}else{
+		PCB.m_socketADP = pSocket;
+	}
+
+	/*PCB.m_ListaSockets[ posSocket ] = pSocket;*/
 	/*TODO: Pensar que asignarle al "ultimoSocket"*/
-	PCB.m_ultimoSocket = SOCK_ADP; /*En todos los casos atiende a ambos sockets (creo)*/
+	/*PCB.m_ultimoSocket = SOCK_ADP; /*En todos los casos atiende a ambos sockets (creo)*/
+	
+	PCB.m_ListaSockets = realloc( PCB.m_ListaSockets,
+			( ++PCB.m_ultimoSocket + MALLOC_SOCKS_INI ) * sizeof( tSocket* ) );
+
+	PCB.m_ListaSockets[ PCB.m_ultimoSocket ] = pSocket;
+	
 	
 	/*Mando el Ping*/
 	Log_log( log_debug, "envio Ping para conectarme" );
@@ -1030,6 +1071,8 @@ int PCB_EnviarFinMigrar( tSocket* pSocket ){
 		Log_log(log_error,"Error al crear PAQ_FIN_MIGRAR");
 		return ERROR;
 	}
+	
+	memcpy( &(pPaqLargo-> id.UnUsed[0]), &(PCB.Mem), sizeof(int) );
 	
 	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqArchToChar( pPaqLargo ),
 									PAQUETE_ARCH_MAX_TAM );

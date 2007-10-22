@@ -49,6 +49,7 @@ tPpcbAcr*		PpcbAcr_BuscarPpcb		(tListaPpcbAcr *lista, const long pid, int *pos);
 tPpcbAcr*		PpcbAcr_Datos			(tListaPpcbAcr lista);
 tListaPpcbAcr	PpcbAcr_Siguiente		(tListaPpcbAcr lista);
 tPpcbAcr* 		PpcbAcr_ObtenerPpcbXSock(tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbSockIn );
+tPpcbAcr*		PpcbAcr_ObtenerPpcbXPid	(tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbPid );
 
 int 			comparaPpcbAcr			( const void *ppcb1, const void *ppcb2 );
 int 			compararPpcbXSock		( const void *ppcb1, const void *ppcb2 );

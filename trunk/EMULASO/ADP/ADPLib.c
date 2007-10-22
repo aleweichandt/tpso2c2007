@@ -301,6 +301,8 @@ int ADP_Init( )
 		
 		signal(SIGALRM, ADP_ProcesarSeniales);
 		signal(SIGCHLD, ADP_ProcesarSeniales);
+		signal(SIGTERM, ADP_ProcesarSeniales);
+		signal(SIGINT, ADP_ProcesarSeniales);
 	
 		return OK;
 		
@@ -820,9 +822,10 @@ float	ADP_CalcularCargaPromReal()
 /**********************************************************/
 int ADP_ForkearPCB( long lpcbid, long *plpid )
 {
-	char szPCB_ID[10];
+	char szPCB_ID[10], szIdProceso[10];
 	
 	sprintf( szPCB_ID, "%ld", lpcbid );
+	sprintf( szIdProceso, "%d", _ID_ADP_ );
 	
 	Log_printf(log_debug,"Voy a hacer el fork del PCB %s", szPCB_ID);
 	*plpid = fork();
@@ -830,7 +833,7 @@ int ADP_ForkearPCB( long lpcbid, long *plpid )
     if( !(*plpid) )
     {
        	Log_printf(log_debug,"Voy a instanciar el PCB");
-    	execl( "ppcb", "ppcb",szPCB_ID, NULL);
+    	execl( "ppcb", "ppcb",szPCB_ID, szIdProceso, NULL);
         Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
         Log_printf(log_debug,"Error en exec: %s", strerror(errno));
         
