@@ -170,8 +170,8 @@ tPaquete* paquetes_newPaqUserNameOk( unsigned char IP[4], unsigned char id_Proce
 tPaquete* paquetes_newPaqUserNameInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqPasswordOk( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
-tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion );
-tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion );
+tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char *idConeccion );
+tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char *idConeccion );
 
 void paquetes_ParsearUserName( const char *msg, char *szUserName );
 void paquetes_ParsearPassword(const char *msg, char *szPassword);

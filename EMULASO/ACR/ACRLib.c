@@ -540,6 +540,7 @@ void ACR_AtenderADS ( tSocket *sockIn )
 	else if( IS_PAQ_END_SESION(paq) ){
 		tPaquete* paqSend = NULL;
 		int nSend;
+		char *stringSesion;
 		
 		ReducirIP(ACR.sz_ACR_IP,ip);
 		idSesion=atoi(paq->msg);
@@ -547,7 +548,9 @@ void ACR_AtenderADS ( tSocket *sockIn )
 		
 		if(ACR_LiberarRecursos(idSesion)==OK){
 			Log_printf(log_info,"Se liberaron los recursos de la sesion %i con exito",idSesion);
-			if ( !(paqSend  = paquetes_newPaqEnd_Sesion_Ok( ip, _ID_ACR_,ACR.usi_ACR_Port,idSesion )) )
+			stringSesion=malloc(sizeof(int)+1);
+			sprintf(stringSesion,"%i",idSesion);
+			if ( !(paqSend  = paquetes_newPaqEnd_Sesion_Ok( ip, _ID_ACR_,ACR.usi_ACR_Port, paq->msg )) )
 			{
 				Log_log( log_error, "Error creando paquete End_Sesion" );
 			}
@@ -1002,7 +1005,7 @@ int ACR_LiberarRecursos(int idSesion){
 					/*Elimino el proceso PPCB*/
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
-					/*Lista = ACR.t_ListaPpcbPend;*/
+					Lista = ACR.t_ListaPpcbPend;
 					
 				}
 				else if(ppcb->sActividad == Estado_Activo)
@@ -1013,7 +1016,7 @@ int ACR_LiberarRecursos(int idSesion){
 				}
 			}
 		}
-		Lista = PpcbAcr_Siguiente( Lista );
+		if(Lista!=NULL)Lista = PpcbAcr_Siguiente( Lista );
 		
 	}
 	if(pidVector[0]!=-1){
