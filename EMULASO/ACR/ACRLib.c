@@ -973,5 +973,62 @@ void ACR_DesconectarPPCB(tSocket *sockIn)
 }
 /**********************************************************************/
 int ACR_LiberarRecursos(int idSesion){
+	tListaPpcbAcr 	Lista = ACR.t_ListaPpcbPend;
+	tPpcbAcr		*ppcb = NULL;
+	time_t			now = time(NULL);
+	unsigned int 	alpe;
+	tSocket* 		socket = NULL;
+	t_nodo* 		lista_aux = ACR.t_ListaSocketAdp;
+	unsigned char 	ip[4];
+	tPaquete* paqSend=NULL;
+	int nSend, pidVector[25], i = 0;
+	
+	
+	ReducirIP(ACR.sz_ACR_IP,ip);
+	memset(pidVector, -1, 25*sizeof(int) );
+	
+	Log_log(log_debug,"se procede a eliminar los ppcbs no migrados");
+	while( Lista )
+	{
+		ppcb = PpcbAcr_Datos( Lista );
+		if(ppcb != NULL){		
+			if( ppcb->lIdSesion == idSesion){
+				if ( ppcb->sActividad != Estado_Activo  )
+				{
+					Log_printf(log_info,
+						"Se elimina PPCB id:%ld de LPendientes por logout",
+						ppcb->pid);
+				
+					/*Elimino el proceso PPCB*/
+					kill( ppcb->pidChild, SIGTERM );
+					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
+					Lista = ACR.t_ListaPpcbPend;
+					
+				}
+				else if(ppcb->sActividad == Estado_Activo)
+				{
+					/*si esta activo acumulo en vector de pids para mandar a adps*/
+					pidVector[i]=ppcb->pid;
+					i++;
+				}
+			}
+		}
+		Lista = PpcbAcr_Siguiente( Lista );
+		
+	}
+	if(pidVector[0]!=-1){
+		Log_log(log_debug,"se envia end_sesion a cada adp");
+		paqSend = paquetes_newPaqKill(ip,_ID_ACR_,ACR.usi_ACR_Port,pidVector);
+		while( lista_aux )
+		{
+			socket = nodo_datos( lista_aux, &alpe );
+			
+			nSend = conexiones_sendBuff( socket, (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
+			if ( nSend != PAQUETE_MAX_TAM )
+			{
+				Log_log( log_error,"Error enviando end_sesion al ADP" );
+			}
+		}
+	}
 	return OK;
 }

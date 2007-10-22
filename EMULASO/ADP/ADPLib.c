@@ -562,6 +562,22 @@ void ADP_AtenderACR ( tSocket *sockIn )
 			nSend = conexiones_sendBuff( sockIn, buffPaq, PAQUETE_MAX_TAM );
 		}
 	}
+	/* atendewr end_sesion en adp */
+	else if( IS_PAQ_KILL(paq) )
+	{
+		int pidVector[25];
+		
+		Log_log( log_debug, "el ACR me manda un kill por end_sesion" );
+		/*pidVector=paq->msg;
+		/* se eliminan los pcbs de la lista si tienen igual id */
+		/*for (i=0;i<25;i++){
+			if(pidVector[i]!=-1){
+				/* aca se elimina de la lista */
+		
+			/*}
+		}*/
+		
+	}
 
 
 

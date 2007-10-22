@@ -198,8 +198,7 @@ tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proce
 			return NULL;
 
 		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_END_SESION, puerto );
-		memcpy( paq->msg, &idConeccion, sizeof(idConeccion));
-		paq->msg_len = sizeof(idConeccion);
+		paquetes_CargarMSg( paq, idConeccion);
 		
 		return paq;
 }
@@ -212,8 +211,7 @@ tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Pr
 			return NULL;
 
 		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_END_SESION_OK, puerto );
-		memcpy( paq->msg, &idConeccion, sizeof(idConeccion));
-		paq->msg_len = sizeof(idConeccion);
+		paquetes_CargarMSg( paq, idConeccion);
 		
 		return paq;
 }
@@ -989,7 +987,7 @@ tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, un
 			return NULL;
 
 		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_KILL, puerto );
-		memcpy( paq->msg, &pidVec, sizeof(pidVec));
+		memcpy( &paq->msg, &pidVec, sizeof(pidVec)); 
 		paq->msg_len = sizeof(pidVec);
 		
 		return paq;
