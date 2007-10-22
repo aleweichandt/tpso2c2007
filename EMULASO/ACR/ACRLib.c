@@ -743,7 +743,7 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 		
 		if ( (pidChild = ACR_ForkPPCB( lpcb_id )) != ERROR  &&
 			ACR_CrearPPCB( lpcb_id, pidChild ) == OK ){
-			
+			Log_printf(log_info,"Se creo PCB pid:%ld",lpcb_id);
 			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarOKAsStr( szIP, _ID_ACR_, ACR.usi_ACR_Port ), 
 					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
 			{
@@ -751,6 +751,7 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 			}
 			
 		}else{
+			Log_printf(log_error,"No se creo PCB pid:%ld",lpcb_id);
 			if( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarFaultAsStr( szIP, _ID_ACR_, ACR.usi_ACR_Port ), 
 					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
 			{
@@ -787,9 +788,10 @@ void ACR_MigrarProceso( tPpcbAcr* tPpcb, unsigned char ipIdeal[4], unsigned shor
 int ACR_ForkPPCB( long lpcbid )
 {
 	int pid;
-	char szPCB_ID[10];
+	char szPCB_ID[10], szIdProceso[10];
 	
 	sprintf( szPCB_ID, "%ld", lpcbid );
+	sprintf( szIdProceso, "%d", _ID_ACR_ );
 	
 	Log_printf(log_debug,"Voy a hacer el fork del PCB");
 	pid = fork();
@@ -797,7 +799,7 @@ int ACR_ForkPPCB( long lpcbid )
     if( !pid )
     {
        	Log_printf(log_debug,"Voy a instanciar el PCB");
-    	execl( "ppcb", szPCB_ID, NULL);
+    	execl( "ppcb", "ppcb", szPCB_ID, szIdProceso, NULL);
         Log_printf(log_debug,"Esto no deberia imprimirse -> FALLA en exec para instanciar PCB");
         Log_printf(log_debug,"Error en exec: %s", strerror(errno));
         
@@ -839,54 +841,74 @@ int ACR_ForkPPCBInicial( long lpcb_id, char szNomProg[LEN_COMANDO_EJEC], char sz
 /**********************************************************/
 int	ACR_CrearPPCB( long lpcbid, int pidChild )
 {
-	char		szPathArch[15];
+	char		szPathArch[51];
 	tPpcbAcr	*ppcb =NULL;
+	tPpcbAcr	ppcbAux;
 	char 		*tmp;
+	int 		pos;
 	tConfig 	*cfg;
 	
-	if ( !( ppcb = malloc(sizeof(tPpcbAcr)) ) )
+/*	if ( !( ppcb = malloc(sizeof(tPpcbAcr)) ) )
 	{
 		Log_logLastError("Creando datos de PPCB en ACR");
 		return ERROR;
 	}
-	
+*/	
 	bzero(szPathArch,sizeof(szPathArch));
 	ArmarPathPCBConfig( szPathArch, lpcbid );
 	
 	do
 	{
-		ppcb->pid = lpcbid;	/*PPCB ID*/
-		ppcb->pidChild = pidChild;	/*process id*/
+	/*	ppcb->pid = lpcbid;	/*PPCB ID*/
+	/*	ppcb->pidChild = pidChild;	/*process id*/
+		ppcbAux.pid = lpcbid;
+		if( (ppcb = PpcbAcr_ObtenerPpcbXPid(&ACR.t_ListaPpcbPend,&ppcbAux)) == NULL )
+		{
+			Log_log(log_warning,"El Proceso que migro no es de los que administro, lo mato");
+			kill(pidChild, SIGTERM);
+			break;
+		}
+		
+		Log_printf(log_debug,"Encuentro el ppcb que migro dentro de los que administro. pid:%ld",lpcbid);		
 		
 		/*Levanto la configuracion*/		
-		if ( !(cfg = config_Crear( szPathArch, _PPCB_ )) ) 
+/*		if ( !(cfg = config_Crear( szPathArch, _PPCB_ )) ) 
 			break;
 		
 		
-		if ( (tmp = config_GetVal( cfg, _PPCB_, "CREATORID" ) ) )	/*USUARIO*/
-		{
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "ESTADO" ) ) )	/*ESTADO*/
+/*		{
+			if (!strcmp("PENDIENTE", config_GetVal( cfg, _PPCB_, "ESTADO")) ){
+				ppcb->State = PENDIENTE;
+			} else if (!strcmp("BLOQUEADO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
+			PCB.State = BLOQUEADO;
+		} else if (!strcmp("LISTO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
+			PCB.State = LISTO;
+		} else if (!strcmp("EJECUTANDO", config_GetVal( cfg, _PPCB_, "ESTADO")) ) {
+			PCB.State = EJECUTANDO;
+		}
 			strncpy( ppcb->szUsuario, tmp, LEN_USUARIO );
 		}
 		
-		if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )		/*COMANDO que lo EJECUTO*/
-		{
+/*		if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )		/*COMANDO que lo EJECUTO*/
+/*		{
 			strncpy( ppcb->szComando, tmp, LEN_COMANDO_EJEC );
 		}
 		
 		ppcb->lIdSesion = config_GetVal_Int( cfg, _PPCB_, "SESIONID" );		/*ID de SESION*/
 		
-		if ( (tmp = config_GetVal( cfg, _PPCB_, "CODE1" ) ) )		/*cantidad de MEMORIA*/
-		{
+/*		if ( (tmp = config_GetVal( cfg, _PPCB_, "CODE1" ) ) )		/*cantidad de MEMORIA*/
+/*		{
 			sscanf( tmp, "MEM %d", &(ppcb->iMemoria));
 		}
 		
 		config_Destroy(cfg);
 
+		PpcbAcr_AgregarPpcb(&ACR.t_ListaPpcbPend, ppcb );
+*/
 		ppcb->sActividad = Estado_Inactivo;
 		ppcb->sFechaInactvdad = time(NULL);	/*Esto mejor hacerlo cuando el ppcb pida conexion, pero lo hago = porque evita error en ControlarPendientes*/
 		ppcb->socket= NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
-		
-		PpcbAcr_AgregarPpcb(&ACR.t_ListaPpcbPend, ppcb );
 		
 		
 		return OK;

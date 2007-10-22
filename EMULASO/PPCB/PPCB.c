@@ -18,7 +18,7 @@
 /**********************************************************/
 int main(int argc, char *argv[])
 {	
-	if (argc == 8 || argc == 2) {
+	if (argc == 8 || argc == 3) {
 	
 		if ( PCB_Init(argc, argv) == ERROR )
 				return EXIT_SUCCESS;
@@ -30,8 +30,16 @@ int main(int argc, char *argv[])
 	}
 	
 	while ( 1 )
-	{		
-	
+	{	
+		/*TODO: Este codigo hay que habilitarlo en el momento de ejecutar el programa*/
+		/*if( PCB.nIdProcesoPadre == _ID_ACR_ )
+		{
+			PCB.m_socketACR->onTimeOut= PCB_ExecuteProgram;
+			PCB.m_socketACR->segundos_timeout = ALRM_T;
+		}else{
+			PCB.m_socketADP->onTimeOut= PCB_ExecuteProgram;
+			PCB.m_socketADP->segundos_timeout = ALRM_T;
+		}*/	
 		conexiones_aguardarConexion( PCB.m_ListaSockets, 
 	 								&(PCB.m_ultimoSocket) );
 	}

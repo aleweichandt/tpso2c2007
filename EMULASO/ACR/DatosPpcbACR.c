@@ -93,6 +93,12 @@ tPpcbAcr* PpcbAcr_ObtenerPpcbXSock( tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbSockIn
 	return (tmp? tmp->datos : NULL);
 }
 
+tPpcbAcr* PpcbAcr_ObtenerPpcbXPid( tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbPid )
+{
+	tListaPpcbAcr tmp = lista_buscar( lstppcb, ppcbPid, &comparaPpcbAcr );
+	return (tmp? tmp->datos : NULL);
+}
+
 /*********************************************************/
 int comparaPpcbAcr( const void *ppcb1, const void *ppcb2 )
 {

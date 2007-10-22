@@ -26,9 +26,9 @@
 #define SOCK_ACR 		0
 #define SOCK_ADP 		1
 
-#define MALLOC_SOCKS_INI	2	/* Cantidad de mem para sockets reservada al inicio */
+#define MALLOC_SOCKS_INI	1	/* Cantidad de mem para sockets reservada al inicio */
 
-#define _TIMER_AVERAGE_		5 /*segs*/
+#define ALRM_T 1				/*Periodo en segundos para la alarma*/
 
 typedef enum {
 	PENDIENTE = 0,
@@ -52,6 +52,9 @@ typedef struct
 	tSocket** 			m_ListaSockets;
 	unsigned int		m_ultimoSocket;
 	
+	tSocket*			m_socketACR;
+	tSocket*			m_socketADP;
+	int					nIdProcesoPadre;
 	/*Datos PCB*/
 	
 	long PPCB_ID;
@@ -65,6 +68,7 @@ typedef struct
 	Stack stack;
 	char Code[20][20];
 	int	ultimaSentencia;
+	int tiempoRestanteOper;
 	
 	
 } tPCB;
@@ -91,7 +95,7 @@ void 	PCB_HandShake( tSocket* sockIn );
 void 	PCB_AtenderACR ( tSocket *sockIn );
 void 	PCB_AtenderADP ( tSocket *sockIn );
 void 	PCB_CerrarConexion( tSocket *sockIn );
-
+void	PCB_ExecuteProgram(tSocket *sockIn);
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
