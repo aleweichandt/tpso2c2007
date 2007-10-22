@@ -1002,7 +1002,7 @@ int ACR_LiberarRecursos(int idSesion){
 					/*Elimino el proceso PPCB*/
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
-					Lista = ACR.t_ListaPpcbPend;
+					/*Lista = ACR.t_ListaPpcbPend;*/
 					
 				}
 				else if(ppcb->sActividad == Estado_Activo)
