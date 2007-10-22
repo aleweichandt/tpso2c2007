@@ -190,7 +190,7 @@ tPaquete* paquetes_newPaqPasswordInvalido( unsigned char IP[4], unsigned char id
 		return paq;
 }
 /*******************************************************************/
-tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion )
+tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char *idConeccion )
 {
 	tPaquete *paq;
 		
@@ -203,7 +203,7 @@ tPaquete* paquetes_newPaqEnd_Sesion( unsigned char IP[4], unsigned char id_Proce
 		return paq;
 }
 /*******************************************************************/
-tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int idConeccion )
+tPaquete* paquetes_newPaqEnd_Sesion_Ok( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, char *idConeccion )
 {
 	tPaquete *paq;
 		
