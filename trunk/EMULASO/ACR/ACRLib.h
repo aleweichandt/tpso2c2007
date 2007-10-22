@@ -88,5 +88,8 @@ void 	ACR_DesconectarADS(tSocket *sockIn);
 void 	ACR_DesconectarADP(tSocket *sockIn);
 void 	ACR_DesconectarPPCB(tSocket *sockIn);
 
+int 	ACR_LiberarRecursos(int idSesion);
+
+
 
 #endif /*ACRLIB_H_*/

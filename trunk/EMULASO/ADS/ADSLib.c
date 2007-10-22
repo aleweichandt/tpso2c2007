@@ -540,15 +540,18 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 		{
 			tPaquete *paqSend = NULL;
 			unsigned char szIP[4];
-			int nSend;
+			char *stringSesion;
+			int nSend,idSesion;
 			
 			memset( szIP, 0, 4 );
 			if (ReducirIP(ADS.m_IP,szIP) == ERROR)
 				return;
-			
+			idSesion=sockIn->descriptor;
+			stringSesion=malloc(sizeof(int)+1);
+			sprintf(stringSesion,"%i",idSesion);
 			ADS_CerrarConexion(sockIn);
 			
-			if ( !(paqSend  = paquetes_newPaqEnd_Sesion( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),sockIn->descriptor )) )
+			if ( !(paqSend  = paquetes_newPaqEnd_Sesion( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),stringSesion )) )
 			{
 				Log_log( log_error, "Error enviando Logout al ACR" );
 			}
