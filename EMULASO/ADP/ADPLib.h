@@ -41,7 +41,6 @@ typedef struct
 	unsigned int		m_ultimoSocket;
 	
 	/*Planificacion*/
-	tListaPCB	m_LPN;
 	tListaPCB	m_LPL;
 	tListaPCB	m_LPB;
 	tListaPCB	m_LPE;
@@ -88,6 +87,8 @@ int		ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMemoria, long pid );
 int		ADP_MigrarPCBPesado();
 
 /* - Planificacion - */
+void 	ADP_ActivarAlarma();
+void 	ADP_DesactivarAlarma();
 int 	ADP_SeCumplioQ();
 int 	ADP_SeCumplioTimerAverage();
 void 	ADP_Dispatcher(int n);

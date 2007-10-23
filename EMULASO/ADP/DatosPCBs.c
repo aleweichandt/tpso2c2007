@@ -15,11 +15,18 @@ int compararPCBxId( const void *t1, const void *t2 );
 int compararPCBXSock( const void *t1, const void *t2 );
 int compararPCBXQVencido( const void *t1, const void *t2 );
 int siempre( const void *t1, const void *t2 );
+int nunca( const void *t1, const void *t2 );
 
 /*******************************************************/
 int siempre( const void *t1, const void *t2 )
 {
 	return 0;
+}
+
+/*******************************************************/
+int nunca( const void *t1, const void *t2 )
+{
+	return 1;
 }
 
 /***********************************************************************************/
@@ -127,7 +134,7 @@ int lpcb_AgregarALista( tListaPCB* lista, tunPCB* pcb )
 	/*Si no lo encuentra lo agrega*/
 	if ( !lista_buscar( lista, pcb, &compararPCBxId ) )
 	{
-		if( lista_insertar( lista, pcb, sizeof(tunPCB), &compararPCBxId, 1 ) )
+		if( lista_insertar( lista, pcb, sizeof(tunPCB), &nunca, 1 ) )
 			return OK;
 	}
 	
@@ -201,7 +208,7 @@ void lpcb_LimpiarLista( tListaPCB *lista )
 	lista_destruir( lista );	
 }
  /*************************************************************************************************/
-int	lpcb_DecrementarQ( tListaPCB *pLista )
+int	lpcb_DecrementarQ( tListaPCB *pLista, int nSeg )
 /* Decrementa los Q de cada uno y devuelve la cantidad de los que se vencieron*/
 {
 	int 				nCont = 0;
@@ -211,8 +218,9 @@ int	lpcb_DecrementarQ( tListaPCB *pLista )
 	while( Lista )
 	{
 		pPCB = lpcb_Datos( Lista );
+		pPCB->Q -= nSeg;
 		
-		if ( (--(pPCB->Q)) <= 0 )
+		if ( (pPCB->Q) <= 0 )
 			nCont++;
 		
 		Lista = lpcb_Siguiente( Lista );
@@ -273,7 +281,7 @@ int	lpcb_PasarDeLTPaLTL( tListaPCB *pListaLTP, tListaPCB *pListaLTL, int* pnMemD
 		if ( !lpcb_EliminarDeLista( pListaLTP, pPCBAPasar->id ) )
 			return ERROR;
 		
-		if ( !lpcb_AgregarALista( pListaLTL, pPCBNuevo ) )
+		if ( lpcb_AgregarALista( pListaLTL, pPCBNuevo ) == ERROR )
 			return ERROR;
 		
 		nCont++;
@@ -300,6 +308,19 @@ int	lpcb_PasarDeLTPaLTL( tListaPCB *pListaLTP, tListaPCB *pListaLTL, int* pnMemD
 	}
 	
 	lpcb_LimpiarLista( pLista );
+}
+
+/*******************************************************************************************/
+tunPCB* 	lpcb_BuscarPCBxid( tListaPCB *lista, long id )
+{
+    tListaPCB tmp;
+	tunPCB  pcbAux;
+	
+	pcbAux.id = id;
+    
+    tmp = lista_buscar( lista, &pcbAux, &compararPCBxId );
+	
+	return (tmp? tmp->datos : NULL);
 }
  
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
