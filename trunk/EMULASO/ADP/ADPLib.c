@@ -17,11 +17,86 @@
 sigset_t 		conjunto_seniales;
 long 			g_lTime1 = 0;
 long 			g_lTime2 = 0;
-
+int				g_nAlarmaActiva = 1;
 
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
 \**************************************************/
+
+void TestPlanificacion()
+{
+	return;
+	tunPCB	*ppcb; int i;
+	
+	ppcb = pcb_Crear( "127.0.0.1", "", 1, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], 5, 50, 9000 );
+	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
+	
+	ppcb = pcb_Crear( "127.0.0.1", "", 2, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], -5, 50, 9000 );
+	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
+
+	ppcb = pcb_Crear( "127.0.0.1", "", 3, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], 5, 50, 9000 );
+	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
+
+	ppcb = pcb_Crear( "127.0.0.1", "", 4, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], -5, 50, 9000 );
+	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
+/*	
+for ( i = 0; i < 3; i++ )
+{	
+	sleep( ADP.m_Q );
+	
+	ADP_Dispatcher( 1 );
+}
+*/
+	
+}
+
+void InformarLista( tListaPCB Lista )
+{
+	tunPCB			*pPCB;
+	
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		
+		Log_printf( log_debug, "PCB %ld , Q %d", pPCB->id, pPCB->Q );			
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+}
+
+/*------------------------------------------------------------------*/
+void ADP_DesactivarAlarma()
+{
+	Log_printf( log_debug, "Se desactiva alarma" );
+	g_nAlarmaActiva = 0;
+/*	
+	nRestoAlarma = alarm( 0 );
+	Log_printf( log_debug, "Restaban %d seg para el Q", nRestoAlarma );
+*/	
+}
+
+/*------------------------------------------------------------------*/
+void ADP_ActivarAlarma()
+{
+	if ( g_nAlarmaActiva )
+		return;
+		
+	Log_printf( log_debug, "Se Activa alarma" );
+		
+	if ( !ADP_SeCumplioQ() && !ADP_SeCumplioTimerAverage() )
+	{
+		alarm( 1 );
+		signal(SIGALRM, &ADP_Dispatcher ); 
+	}
+	else
+	{
+		ADP_Dispatcher( SIGALRM );	
+	}
+	
+	g_nAlarmaActiva = 1;
+}
+
+
 
 /*************************************************************************/
 int ADP_SeCumplioQ()
@@ -35,7 +110,7 @@ int ADP_SeCumplioQ()
 	
 	lTime2 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
 	
-	Log_printf( log_debug, "Time1 %ld Time2 %ld", g_lTime1, lTime2 );
+	/*Log_printf( log_debug, "Time1 %ld Time2 %ld", g_lTime1, lTime2 );*/
 	
 	if ( lTime2 - g_lTime1 >= ADP.m_Q )
 	{
@@ -57,7 +132,7 @@ int ADP_SeCumplioTimerAverage()
 	
 	lTime2 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
 	
-	Log_printf( log_debug, "Time1 %ld Time2 %ld", g_lTime1, lTime2 );
+	/*Log_printf( log_debug, "Time1 %ld Time2 %ld", g_lTime1, lTime2 );*/
 	
 	if ( lTime2 - g_lTime2 >= _TIMER_AVERAGE_ )
 	{
@@ -73,35 +148,48 @@ void ADP_Dispatcher(int n)
 {
 	time_t ahoraGlobal = time( NULL );
 	struct tm* ahoraLocal = localtime(&ahoraGlobal);
-	
-	Log_log( log_debug, "<< Entra al Dispatcher >>" );
+	long  lTime1;
+	int		nDif;
 	
 	if ( ADP_SeCumplioQ() )
 	{
-		Log_printf( log_debug, "Dispatcher Recibe las colas:" );
-		/*generarInformeOLD();*/		
+		Log_log( log_debug, "<< Entra al Dispatcher >>" );
+		
+		/* Esto se puede mejorar para que los saque exactamente a medida que se van venciendo
+		 * con eso saca todos los que se hayan vencido.*/
+		lTime1 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
+		nDif = lTime1 - g_lTime1;
+		lpcb_DecrementarQ( &ADP.m_LPE, nDif );
+		/**/
 		
 		/*Le informo a todas las de LTP que paren*/
 		ADP_InformarSuspencion();
-		
-		
-		/*Log_printf( log_debug, "Largo LTP = %d", appADT.nLargoLTP );*/
 	
-		/*Las paso a LTL*/	
+		/*Las paso a LTL*/
+		Log_printf( log_debug, "LPL" );
+		InformarLista( ADP.m_LPL );
+		
+		Log_printf( log_debug, "LPE" );
+		InformarLista( ADP.m_LPE );
+		
 		lpcb_PasarDeLTPaLTL( &ADP.m_LPE, &ADP.m_LPL, &ADP.m_nMemDisp ); 
 	
 		/*Ahora paso las primeras de LTL a LTP segun la capacidad de memoria*/
 		ADP_PasarDeLPLaLPE();
+
+		Log_printf( log_debug, "LPL" );
+		InformarLista( ADP.m_LPL );
+		
+		Log_printf( log_debug, "LPP" );
+		InformarLista( ADP.m_LPE );
+
 		
 		/*Les digo Start a todas las de LTP*/
 		ADP_InformarReanudacion();
-	
-		/*
-		Log_printf( log_debug, "Despues de la accion de Dispatcher las colas:" );
-		generarInformeOLD();
-		*/
 		
 		g_lTime1 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
+		
+		Log_log( log_debug, "<< Sale del Dispatcher >>" );
 	}
 	
 	if ( ADP_SeCumplioTimerAverage() )
@@ -115,11 +203,8 @@ void ADP_Dispatcher(int n)
 	}
 	
 	/*Si entro aca quiere decir que se cumplio el timer asi que reseteo la senial*/
-	Log_printf( log_debug, "Activo alarma con Q = %d", ADP.m_Q);	
+	alarm( 1 );
 	signal( SIGALRM, &ADP_Dispatcher );
-	alarm( ADP.m_Q );
-
-	Log_log( log_debug, "<< Sale del Dispatcher >>" );
 }
 
 /************************************************************************************************/
@@ -127,18 +212,33 @@ int ADP_PasarDeLPLaLPE()
 /*La multigramacion me la determina el limite de memoria*/
 {
 	tunPCB			*pPCB;
-	tListaPCB		Lista = ADP.m_LPE;
-
+	tListaPCB		Lista = ADP.m_LPL;
+	
+	Log_printf( log_debug, "Voy a pasar de LPL a LPE. Mem. Disp. = %d", ADP.m_nMemDisp );
+	
 	while( Lista )
 	{
 		pPCB = lpcb_Datos( Lista );
 		
+		if ( !pPCB->pSocket )
+		{
+			Log_printf( log_debug, "El PCB %ld todavia no establecio conexion porque tiene el socket en null", 
+									pPCB->id );
+									
+			Lista = lpcb_Siguiente( Lista );
+			continue;			
+		}
+		
+		
 		if ( (ADP.m_nMemDisp - pPCB->MemoriaRequerida) >= 0 )
 		{
 			ADP.m_nMemDisp -= pPCB->MemoriaRequerida;
+
+			Log_printf( log_debug, "Paso el PCB %ld, mem %d a LPE. Mem. Disp. = %d", pPCB->id, 
+								pPCB->MemoriaRequerida, ADP.m_nMemDisp );			
 			
-			Lista = lpcb_Siguiente( Lista );
-			
+			Lista = lpcb_Siguiente( Lista );/*no sacar por el ojo de abajo*/
+			pPCB->Q = ADP.m_Q;
 			lpcb_PasarDeLista( &ADP.m_LPL, &ADP.m_LPE, pPCB->id );/*ojo que aca dentro elimina el puntero para pasarlo a la otra*/
 			continue;
 		}
@@ -159,16 +259,17 @@ int 	ADP_InformarSuspencion()
 		pPCB = lpcb_Datos( Lista );
 		ReducirIP( ADP.m_IP, szIPReducido );	
 		
-		Log_log( log_debug, "envio Suspension" );
-
-		if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqSuspendPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
-				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		if ( pPCB->Q <= 0 )
 		{
-			Log_logLastError("enviando suspend_pcb");
+			Log_printf( log_debug, "envio Suspension al pcb %ld", pPCB->id );
+	
+			if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqSuspendPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
+					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError("enviando suspend_pcb");
+			}
 		}
-		
-		
-		Log_printf( log_debug,"Se suspendera el PCB: %ld", pPCB->id);
+				
 		Lista = lpcb_Siguiente( Lista );
 	}
 	usleep(1000);
@@ -198,12 +299,7 @@ void ADP_InformarReanudacion()
 		{
 			Log_logLastError("enviando exec_pcb");
 		}
-		Log_printf( log_debug,"Se envio un EXEC al PCB %d", pPCB->id);
-		
-		/*Espero que esto no haga falta:
-		EsperarSocketDeT( pT, "Start" );
-		EnviarGoes( pT );
-		*/
+		/*Log_printf( log_debug,"Se envio un EXEC al PCB %d", pPCB->id);*/
 		
 		Lista = lpcb_Siguiente( Lista );
 	}
@@ -244,10 +340,13 @@ void ADP_ProcesarSeniales( int senial )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
 		wait( &nstateChld );
-		if(  WIFEXITED(nstateChld) ){
+		if(  WIFEXITED(nstateChld) )
+		{
 			Log_printf( log_warning, "Murio un proc hijo en forma normal. ExitStatus: %d",
 						WEXITSTATUS(nstateChld));
-		}else{
+		}
+		else
+		{
 			Log_log( log_warning, "Murio un proc hijo en forma Anormal");
 		}
 		signal( SIGCHLD, ADP_ProcesarSeniales );
@@ -258,6 +357,9 @@ void ADP_ProcesarSeniales( int senial )
 /**********************************************************************/
 int ADP_Init( )
 {
+	time_t ahoraGlobal = time( NULL );
+	struct tm* ahoraLocal = localtime(&ahoraGlobal);
+	
 	do
 	{
 		Log_Inicializar( _ADP_, "1" );
@@ -266,12 +368,11 @@ int ADP_Init( )
 		
 		ADP_CalcularCargaPromReal();		
 		
-		ADP.m_LPN = NULL;
 		ADP.m_LPL = NULL;
 		ADP.m_LPB = NULL;
 		ADP.m_LPE = NULL;
 		
-				
+						
 		if ( ADP_LeerConfig() == ERROR )
 		{
 			Log_log( log_error, "Error leyendo la configuracion" ); 
@@ -301,8 +402,20 @@ int ADP_Init( )
 		
 		signal(SIGALRM, ADP_ProcesarSeniales);
 		signal(SIGCHLD, ADP_ProcesarSeniales);
+		
+		struct tm* ahoraLocal = localtime(&ahoraGlobal);
 		signal(SIGTERM, ADP_ProcesarSeniales);
 		signal(SIGINT, ADP_ProcesarSeniales);
+	
+	
+		if ( !g_lTime1 )
+			g_lTime1 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
+		
+		if ( !g_lTime2 )
+			g_lTime2 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
+		
+		alarm( 1 );
+		signal( SIGALRM, &ADP_Dispatcher );
 	
 		return OK;
 		
@@ -424,6 +537,8 @@ void ADP_ConfirmarConexion( tSocket* sockIn )
 	{/*Si el ACR me responde pong la conexion queda establecida!*/
 		Log_log( log_debug, "Conexion establecida con el ACR!" );
 		sockIn->callback = &ADP_AtenderACR;
+		
+		TestPlanificacion();
 	}
 	
 	if ( paq ) 
@@ -473,6 +588,8 @@ void ADP_HandShake( tSocket* sockIn )
 	char			buffer [ PAQUETE_MAX_TAM ]; 
 	unsigned char szIP[4];
 	int nSend;
+	long			lpcb_id;
+	tunPCB			*pcb;
 	
 	memset( szIP, 0, 4 );
 
@@ -491,6 +608,13 @@ void ADP_HandShake( tSocket* sockIn )
 	if ( IS_PPCB_PAQ( paq ) && IS_PAQ_PING ( paq ) )
 	{/*Bienvenido PCB!*/
 		
+		memcpy( &lpcb_id, paq->msg, sizeof(long) );
+		
+		if ( (pcb = lpcb_BuscarPCBxid( &ADP.m_LPL, lpcb_id )) ) /*Busco el pcb y actualizo el socket*/
+		{/*Tiene que estar en la de LPL*/
+			pcb->pSocket = sockIn;
+		}
+		
 		Log_log( log_debug, "PCB me manda un ping para establecer conexion" );
 		
 		sockIn->callback = &ADP_AtenderPCB;
@@ -501,11 +625,13 @@ void ADP_HandShake( tSocket* sockIn )
 		
 		if ( !(paq  = paquetes_newPaqPong( szIP, _ID_ADP_, conexiones_getPuertoLocalDeSocket(sockIn) )) )
 		{
-			Log_log( log_error, "Error enviando pong al MShell" );
+			Log_log( log_error, "Error enviando pong al PPCB" );
 		}
 			
 		Log_log( log_debug, "Le respondo con un pong" );
 		nSend = conexiones_sendBuff( sockIn, (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		
+		
 		
 		if ( nSend != PAQUETE_MAX_TAM )
 			Log_logLastError( "error enviando pong " );
@@ -623,6 +749,8 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	{/*Me llega el paquete migrar, cambio el handshake para recibir el archivo del pcb data*/
 		Log_log( log_debug, "Llega un Migrar..." );
 		
+		ADP_DesactivarAlarma();
+		
 		memcpy( &lpcb_id, paq->msg, sizeof(long) );
 		bzero(szPathArch,sizeof(szPathArch));
 		
@@ -683,7 +811,9 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	if ( ERROR == len || !len)
 	{
 		Log_logLastError("Recibiendo datos de socket en ADP_RecibirArchivo");
-		ADP_CerrarConexion( sockIn );		
+		ADP_CerrarConexion( sockIn );
+		
+		ADP_ActivarAlarma();		
 	
 		return;
 	}
@@ -758,7 +888,7 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 			}
 		}
 		
-		
+		ADP_DesactivarAlarma();
 	}
 	
 	if ( paq ) 
@@ -772,16 +902,14 @@ void ADP_Salir()
 	/* Logear salida, hacer un clean up? */
 	
 	conexiones_CerrarLista( 0, &ADP.m_ultimoSocket, ADP.m_ListaSockets );
-	
-	Log_log(log_info,"matando los pcbs de LPN");
-	lpcb_MatarPCBs( &ADP.m_LPN );
+/*
 	Log_log(log_info,"matando los pcbs de LPL");
 	lpcb_MatarPCBs( &ADP.m_LPL );
 	Log_log(log_info,"matando los pcbs de LPE");
 	lpcb_MatarPCBs( &ADP.m_LPE );
 	Log_log(log_info,"matando los pcbs de LPB");
 	lpcb_MatarPCBs( &ADP.m_LPB );
-	
+*/
 	Log_log(log_info,"Fin de la ejecucion");
 	pantalla_Clear();
 	exit(EXIT_SUCCESS);
@@ -849,10 +977,10 @@ int ADP_ForkearPCB( long lpcbid, long *plpid )
 
 /**********************************************************/
 int	ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMem, long pid )
-{
+{/*Si le seteo el socket este no me sirve, porque se cortara la conexion*/
 	tunPCB *pcb;
 	
-	if ( (pcb = pcb_Crear( ADP.m_IP, "", lpcbid, 0, NULL, pSock, ADP.m_Q, nMem, pid   )) )
+	if ( (pcb = pcb_Crear( ADP.m_IP, "", lpcbid, 0, NULL, NULL, ADP.m_Q, nMem, pid   )) )
 		return lpcb_AgregarALista( &ADP.m_LPL, pcb );
 	
 	return ERROR;
