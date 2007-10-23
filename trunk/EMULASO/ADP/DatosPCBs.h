@@ -46,10 +46,11 @@ void 		lpcb_LimpiarLista( tListaPCB *lista );
 tunPCB* 	lpcb_Datos( tListaPCB lista );
 tListaPCB 	lpcb_Siguiente( tListaPCB lista );
 tunPCB* 	lpcb_ObtenerPCBXSock( tListaPCB* lista, tSocket* sock ); 
-int			lpcb_DecrementarQ( tListaPCB *pLista );
+int			lpcb_DecrementarQ( tListaPCB *pLista, int nSeg );
 int			lpcb_ActualizarQ( tListaPCB *pLista, int nQ );
 int			lpcb_PasarDeLTPaLTL( tListaPCB *pListaLTP, tListaPCB *pListaLTL, int* pnMemDisp  );
 void 		lpcb_MatarPCBs( tListaPCB *pLista );
+tunPCB* 	lpcb_BuscarPCBxid( tListaPCB *lista, long id );
 
 #endif /*DATOSPCBS_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
