@@ -259,6 +259,7 @@ void MSH_AtenderADS( tSocket* sockIn )
 	if ( ERROR == len || !len)
 	{
 		conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
+		isUsrLogued=0;
 		return;
 	}
 	
@@ -308,7 +309,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	{
 		conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, 
 			&MShell.m_ultimoSocket );
-			
+			isUsrLogued=0;
 		ventana_Print( MShell.m_pwRemoto, "Atencion! Se cayo el ADS!!" );
 		Log_log( log_error, "Atencion! Se cayo el ADS!!" );
 		
