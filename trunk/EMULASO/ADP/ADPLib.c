@@ -694,16 +694,23 @@ void ADP_AtenderACR ( tSocket *sockIn )
 	else if( IS_PAQ_KILL(paq) )
 	{
 		int pidVector[25];
+		int i;
 		
 		Log_log( log_debug, "el ACR me manda un kill por end_sesion" );
-		/*pidVector=paq->msg;
+		
+		/*for(i=0;i<25;i++){
+			memset( &pidVector[i], 0,sizeof(int));
+			memcpy( &pidVector[i], &paq->msg[2*i], sizeof(int)); 
+		}*/
+		memcpy(pidVector,&paq->msg,25*sizeof(int));
+		
 		/* se eliminan los pcbs de la lista si tienen igual id */
-		/*for (i=0;i<25;i++){
+		for (i=0; i<25; i++){
 			if(pidVector[i]!=-1){
 				/* aca se elimina de la lista */
-		
-			/*}
-		}*/
+				ADP_LiberarRecursos(pidVector[i]);
+			}
+		}
 		
 	}
 
@@ -984,6 +991,54 @@ int	ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMem, long pid )
 		return lpcb_AgregarALista( &ADP.m_LPL, pcb );
 	
 	return ERROR;
+}
+/**********************************************************/
+void ADP_LiberarRecursos(int pid){
+	tListaPCB lista=NULL;
+	tunPCB *pcb;
+	int i;
+	
+	/*Le informo a todas las de LTP que paren*/
+	ADP_InformarSuspencion();
+	
+	for(i=0; i<3; i++){
+		switch (i){
+			case 0:{lista=ADP.m_LPB;break;}
+			case 1:{lista=ADP.m_LPL;break;}
+			case 2:{lista=ADP.m_LPE;break;}
+		}
+		while(lista){
+			pcb = lpcb_Datos( lista );
+			if(pcb != NULL){
+				if(pcb->id == pid){
+					Log_printf(log_info,
+							"Se elimina PPCB id:%ld de ADP por logout",
+							pcb->id);
+								
+					/*Elimino el proceso PPCB*/
+					kill( pcb->pid, SIGTERM );
+					switch (i){
+						case 0:{
+							lpcb_EliminarDeLista( &ADP.m_LPB, pcb->id );
+							/*lista = ADP.m_LPB;*/
+							break;}
+						case 1:{
+							lpcb_EliminarDeLista( &ADP.m_LPL, pcb->id );
+							/*lista = ADP.m_LPB;*/
+							break;}
+						case 2:{
+							lpcb_EliminarDeLista( &ADP.m_LPE, pcb->id );
+							/*lista = ADP.m_LPB;*/
+							break;}
+					}
+				}
+			}
+			if(lista!=NULL)lista=lpcb_Siguiente(lista);
+		}
+		lpcb_LimpiarLista(&lista);
+	}
+	/*Les digo Start a todas las de LTP*/
+	ADP_InformarReanudacion();
 }
 
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

@@ -96,6 +96,9 @@ int 	ADP_InformarSuspencion();
 void 	ADP_InformarReanudacion();
 int 	ADP_PasarDeLPLaLPE();
 
+/* - liberar recursos - */
+void 	ADP_LiberarRecursos(int pid);
+
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

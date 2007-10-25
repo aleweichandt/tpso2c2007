@@ -1010,7 +1010,9 @@ int ACR_LiberarRecursos(int idSesion){
 	
 	
 	ReducirIP(ACR.sz_ACR_IP,ip);
-	memset(pidVector, -1, 25*sizeof(int) );
+	/*memset(pidVector, -1, 25*sizeof(int) );*/
+	for(i=0;i<25;i++)pidVector[i]=-1;
+	i=0;
 	
 	Log_log(log_debug,"se procede a eliminar los ppcbs no migrados");
 	while( Lista )
@@ -1027,7 +1029,7 @@ int ACR_LiberarRecursos(int idSesion){
 					/*Elimino el proceso PPCB*/
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
-					Lista = ACR.t_ListaPpcbPend;
+					/*Lista = ACR.t_ListaPpcbPend;*/
 					
 				}
 				else if(ppcb->sActividad == Estado_Activo)
@@ -1053,6 +1055,7 @@ int ACR_LiberarRecursos(int idSesion){
 			{
 				Log_log( log_error,"Error enviando end_sesion al ADP" );
 			}
+			lista_aux = nodo_sgte( lista_aux );
 		}
 	}
 	return OK;
