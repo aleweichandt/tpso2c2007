@@ -982,16 +982,23 @@ char* paquetes_newPaqMigrateAsStr( unsigned char IP[4], unsigned char id_Proceso
 tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int pidVec[25] )
 {
 	tPaquete *paq;
+	int i;
 		
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
 		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_KILL, puerto );
-		memcpy( &paq->msg, &pidVec, sizeof(pidVec)); 
-		paq->msg_len = sizeof(pidVec);
+		/*for(i=0;i<25;i++){
+			memset( &paq->msg[2*i], 0,sizeof(int));
+			memcpy( &paq->msg[2*i], &pidVec[i], sizeof(int)); 
+		}*/
+		memcpy(&paq->msg,&pidVec,25*sizeof(int));
+		paq->msg_len = 25*sizeof(int);
 		
 		return paq;
 }
 char IS_PAQ_KILL ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_KILL); }
+
+
 
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
