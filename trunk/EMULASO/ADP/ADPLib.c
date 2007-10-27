@@ -695,21 +695,25 @@ void ADP_AtenderACR ( tSocket *sockIn )
 	{
 		int pidVector[25];
 		int i;
+		char p[50];
 		
 		Log_log( log_debug, "el ACR me manda un kill por end_sesion" );
 		
-		/*for(i=0;i<25;i++){
-			memset( &pidVector[i], 0,sizeof(int));
-			memcpy( &pidVector[i], &paq->msg[2*i], sizeof(int)); 
-		}*/
-		memcpy(pidVector,&paq->msg,25*sizeof(int));
+		memcpy(p,&paq->msg,50);
+		
+		for(i=0;i<25;i++){
+			pidVector[i]=(p[2*i]*256)+p[2*i+1];
+			/*memcpy( &pidVector[i], &paq->msg[2*i], sizeof(int));*/ 
+		}
+		i=0;
+		/*memcpy(pidVector,&paq->msg,25*sizeof(int));*/
 		
 		/* se eliminan los pcbs de la lista si tienen igual id */
-		for (i=0; i<25; i++){
-			if(pidVector[i]!=-1){
+		/*for (i=0; i<25; i++){*/
+		while(pidVector[i]!=0){
 				/* aca se elimina de la lista */
-				ADP_LiberarRecursos(pidVector[i]);
-			}
+			ADP_LiberarRecursos(pidVector[i]);
+			i++;
 		}
 		
 	}

@@ -1011,7 +1011,7 @@ int ACR_LiberarRecursos(int idSesion){
 	
 	ReducirIP(ACR.sz_ACR_IP,ip);
 	/*memset(pidVector, -1, 25*sizeof(int) );*/
-	for(i=0;i<25;i++)pidVector[i]=-1;
+	for(i=0;i<25;i++)pidVector[i]=0;
 	i=0;
 	
 	Log_log(log_debug,"se procede a eliminar los ppcbs no migrados");
@@ -1029,7 +1029,7 @@ int ACR_LiberarRecursos(int idSesion){
 					/*Elimino el proceso PPCB*/
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
-					/*Lista = ACR.t_ListaPpcbPend;*/
+					Lista = ACR.t_ListaPpcbPend;
 					
 				}
 				else if(ppcb->sActividad == Estado_Activo)
@@ -1037,13 +1037,15 @@ int ACR_LiberarRecursos(int idSesion){
 					/*si esta activo acumulo en vector de pids para mandar a adps*/
 					pidVector[i]=ppcb->pid;
 					i++;
+					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
+					Lista = ACR.t_ListaPpcbPend;
+				}else{
+					Lista = PpcbAcr_Siguiente( Lista );
 				}
 			}
 		}
-		if(Lista!=NULL)Lista = PpcbAcr_Siguiente( Lista );
-		
 	}
-	if(pidVector[0]!=-1){
+	if(pidVector[0]!=0){
 		Log_log(log_debug,"se envia end_sesion a cada adp");
 		paqSend = paquetes_newPaqKill(ip,_ID_ACR_,ACR.usi_ACR_Port,pidVector);
 		while( lista_aux )
