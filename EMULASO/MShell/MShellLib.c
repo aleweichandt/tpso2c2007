@@ -15,6 +15,7 @@ sigset_t 		conjunto_seniales;
 char			isUsrLogued;	/*1 si el usuario esta logueado, 0 si no lo esta*/
 char			isExit;		/*seal para separar cuando cierra sesion de cuando cierra el mshell*/
 char 			key;
+char 			logInterno;
 
 /**************************************************\
  *            PROTOTIPOS DE FUNCIONES Privadas     *
@@ -94,6 +95,7 @@ int MSH_Init( )
 	isExit = 0;
 	isUsrLogued = 0;
 	key = 0;
+	logInterno=0;
 	do
 	{
 		Log_Inicializar( _MSHELL_, "1" );
@@ -283,9 +285,8 @@ void MSH_AtenderADS( tSocket* sockIn )
 	{/*Si el ADS me responde Usr_Error no inicia sesion!*/
 		Log_log( log_debug, "ADS rechaza usuario!" );
 		ventana_Print( MShell.m_pwRemoto, "Usuario invalido.");
-		if(MSH_Logout(sockIn)==OK){
-			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
-		}
+		MSH_Logout(sockIn);
+		/*conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );*/
 	}
 	
 	if ( paq ) 
@@ -332,7 +333,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		Log_log( log_debug, "ADS rechaza password!" );
 		ventana_Print( MShell.m_pwRemoto, "Password Invalida");
 		if(MSH_Logout(sockIn)==OK){
-			conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
+			/*conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );*/
 		}
 	}
 	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
@@ -366,11 +367,12 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		Log_log( log_debug, "ADS rechaza exec!" );
 	}
 	
-	/*esto no lo usamos*//*
-	if ( IS_PAQ_END_SESION_OK ( paq ) )
+	/*esto no lo usamos*/
+	
+	/*if ( IS_PAQ_END_SESION_OK ( paq ) )
 	{/*Si el ADS me responde ok al logout !
-/*		isUsrLogued = 0;
-		Log_log( log_debug, "ADS confirma logout!" );
+/*		isUsrLogued = 0;*/
+		/*Log_log( log_debug, "ADS confirma logout!" );
 		/*se cierra la conexion con ADS*/
 /*		conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );
 		if(isExit)
@@ -433,7 +435,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			if(strcmp(p,"exit")==0){
 				MSH_Salir();
 			}
-			if( strcmp ( p, "login" ) == 0 ){
+			else if( strcmp ( p, "login" ) == 0 ){
 				p=strtok(NULL," ");
 				if(p!=NULL){
 					strcpy(MShell.m_Usr_Name, p);
@@ -449,6 +451,23 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 		}
 		else
 		{
+			if( strcmp ( p, "login" ) == 0 )
+			{
+				p=strtok(NULL," ");
+				if(p!=NULL){
+					if(strcmp(p,MShell.m_Usr_Name) != 0){
+						strcpy(MShell.m_Usr_Name, p);
+						strcpy(p,"logout");
+						logInterno=1;
+					}else{
+						ventana_Print( MShell.m_pwRemoto, "Usted ya esta logueado" );
+					}
+				}else{
+					ventana_Print( MShell.m_pwRemoto, "debe ingresar un usuario(ej:login <usr>)" );
+					p=malloc(6*sizeof(char));
+					strcpy(p,"login");
+				}
+			}
 			if( strcmp ( p, "logout" ) == 0 )
 			{
 				if(MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ])==ERROR)
@@ -456,25 +475,33 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
 				}else{
-					conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );
+					/*conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );*/
 					ventana_Print( MShell.m_pwRemoto, "se cierra sesion" );
 				}
+				if(logInterno==1){
+					if ( MSH_ConectarADS() == ERROR )
+					{
+						Log_log( log_error, "Error conectandose con el ADS!" );
+						break;
+					}
+					logInterno=0;
+				}
 			}
-			if( strcmp ( p, "exit" ) == 0 )
+			else if( strcmp ( p, "exit" ) == 0 )
 			{
 				if(MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ])==ERROR)
 				{
 					Log_log( log_error, "MShell No Envio exec a ADS!!" );
 					break;
 				}else{
-					conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );
+					/*conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );*/
 					ventana_Print( MShell.m_pwRemoto, "se cierra sesion" );
 					MSH_Salir();
 				}
 				
 				/*isExit = 1;*/
 			}
-			if( strcmp ( p, "exec" ) == 0 )
+			else if( strcmp ( p, "exec" ) == 0 )
 			{
 				p=strtok(NULL," ");
 				if(p!=NULL){
@@ -625,7 +652,7 @@ int MSH_Logout (tSocket *pSocket)
 	if (ReducirIP(MShell.m_ADS_IP,szIP) == ERROR)
 			return ERROR;
 	
-	/*Mando el Ping al ADS*/
+	/*Mando el logout al ADS*/
 	Log_log( log_debug, "envio Aviso de Logout al ADS" );
 	
 	if ( !(pPaq  = paquetes_newPaqLogout( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
@@ -634,6 +661,7 @@ int MSH_Logout (tSocket *pSocket)
 	nSend = conexiones_sendBuff( pSocket, (const char*) AplicarXorEnString((char*)paquetes_PaqToChar( pPaq ),key), PAQUETE_MAX_TAM );
 	
 	paquetes_destruir( pPaq );
+	conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );
 	isUsrLogued=0;
 	
 	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
