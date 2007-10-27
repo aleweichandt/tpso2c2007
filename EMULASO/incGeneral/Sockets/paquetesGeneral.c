@@ -983,16 +983,19 @@ tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, un
 {
 	tPaquete *paq;
 	int i;
+	char a,b;
 		
 		if ( !(paq = paquetes_Crear() ) )
 			return NULL;
 
 		paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_KILL, puerto );
-		/*for(i=0;i<25;i++){
-			memset( &paq->msg[2*i], 0,sizeof(int));
-			memcpy( &paq->msg[2*i], &pidVec[i], sizeof(int)); 
-		}*/
-		memcpy(&paq->msg,&pidVec,25*sizeof(int));
+		for(i=0;i<25;i++){
+			a=pidVec[i]/256;
+			b=pidVec[i]%256;
+			memcpy( &paq->msg[2*i], &a, sizeof(char));
+			memcpy( &paq->msg[2*i+1], &b, sizeof(char)); 
+		}
+		/*memcpy(&paq->msg,&pidVec,25*sizeof(int));*/
 		paq->msg_len = 25*sizeof(int);
 		
 		return paq;
