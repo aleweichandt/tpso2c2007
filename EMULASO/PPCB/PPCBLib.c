@@ -40,13 +40,18 @@ void PCB_ProcesarSeniales( int senial )
 		
 	}
 	else if ( senial == SIGUSR1 )
-	{
+	{	/* Escribir informacion de control */
 		
 		signal(SIGUSR1, PCB_ProcesarSeniales);
 		
 	}
 	else if ( senial == SIGUSR2 )
-	{
+	{	/*Migrar al ACR*/
+		if( PCB.nIdProcesoPadre == _ID_ADP_ )
+		{
+			PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);
+		}
+		signal(SIGUSR2, PCB_ProcesarSeniales);
 	}
 	else if ( senial == SIGHUP )
 	{
@@ -73,8 +78,10 @@ void PCB_ProcesarSeniales( int senial )
 int createPCBConfig() {
 
 	FILE *cfgFile;
+	tConfig *cfg;
 	int line=0;
 	char strBuff[50];
+	char strVal[10];
 		
 	do {
 		/*
@@ -100,35 +107,64 @@ int createPCBConfig() {
 		*/
 		
 		sprintf(strBuff, "config.ppcb%ld", PCB.PPCB_ID);
-		cfgFile = fopen(strBuff, "w+");
 		
-		fprintf(cfgFile, "%PPCB%\n");
-		fprintf(cfgFile, "<ID>=%ld\n", PCB.PPCB_ID);
-		fprintf(cfgFile, "<CREATORID>=%s\n", PCB.User);
-		fprintf(cfgFile, "<COMANDO>=%s\n",  PCB.ProgName);
-		fprintf(cfgFile, "<SESIONID>=%d\n", PCB.SessionID);
+		if( ExistPath(strBuff) != ERROR && PCB.argc == 3 )
+		{	/*existe el archivo*/
 		
-		while( line < PCB.ultimaSentencia ) {
-			fprintf(cfgFile, "<CODE%d>=%s", line+1, PCB.Code[line]);
-			line++;
+			if ( !(cfg = config_Crear( strBuff, _PPCB_ )) ) 
+				break;	
+			
+			bzero(strVal,sizeof(strVal));
+
+			sprintf(strVal,"%d",PCB.IP);
+			config_SetVal(cfg,_PPCB_,"IPOINTER",strVal);
+			
+			if( PCB.State == PENDIENTE ) 
+				config_SetVal(cfg,_PPCB_,"ESTADO","PENDIENTE");
+			else if( PCB.State == BLOQUEADO )
+				config_SetVal(cfg,_PPCB_,"ESTADO","BLOQUEADO");
+			else if( PCB.State == EJECUTANDO )
+				config_SetVal(cfg,_PPCB_,"ESTADO","EJECUTANDO");
+			else if( PCB.State == LISTO )
+				config_SetVal(cfg,_PPCB_,"ESTADO","LISTO");
+			
+			config_Guardar(cfg,strBuff);
+			
+			config_Destroy(cfg);
+			
+		}else
+		{	/*No existe el archivo*/
+			cfgFile = fopen(strBuff, "w+");
+			
+			fprintf(cfgFile, "%PPCB%\n");
+			fprintf(cfgFile, "<ID>=%ld\n", PCB.PPCB_ID);
+			fprintf(cfgFile, "<CREATORID>=%s\n", PCB.User);
+			fprintf(cfgFile, "<COMANDO>=%s\n",  PCB.ProgName);
+			fprintf(cfgFile, "<SESIONID>=%d\n", PCB.SessionID);
+			
+			Log_printf(log_debug,"Config(createConfig): PCB.ultimaSentencia %d",PCB.ultimaSentencia);
+			while( line < PCB.ultimaSentencia ) {
+				fprintf(cfgFile, "<CODE%d>=%s", line+1, PCB.Code[line]);
+				line++;
+			}
+			
+			fprintf(cfgFile, "\n<IPOINTER>=%d\n", PCB.IP);
+			
+			if( PCB.State == PENDIENTE ) 
+				fprintf(cfgFile, "<ESTADO>=%s\n", "PENDIENTE");
+			else if( PCB.State == BLOQUEADO )
+				fprintf(cfgFile, "<ESTADO>=%s\n", "BLOQUEADO");
+			else if( PCB.State == EJECUTANDO )
+				fprintf(cfgFile, "<ESTADO>=%s\n", "EJECUTANDO");		
+			else if( PCB.State == LISTO )
+				fprintf(cfgFile, "<ESTADO>=%s\n", "LISTO");		
+			
+			fprintf(cfgFile,"<IP_ACR>=%s\n",  PCB.m_ACR_IP);
+			
+			fprintf(cfgFile,"<PUERTO_ACR>=%d\n", PCB.m_ACR_Port);
+			
+			fclose(cfgFile);
 		}
-		
-		fprintf(cfgFile, "\n<IPOINTER>=%d\n", PCB.IP);
-		
-		if( PCB.State == PENDIENTE ) 
-			fprintf(cfgFile, "<ESTADO>=%s\n", "PENDIENTE");
-		else if( PCB.State == BLOQUEADO )
-			fprintf(cfgFile, "<ESTADO>=%s\n", "BLOQUEADO");
-		else if( PCB.State == EJECUTANDO )
-			fprintf(cfgFile, "<ESTADO>=%s\n", "EJECUTANDO");		
-		else if( PCB.State == LISTO )
-			fprintf(cfgFile, "<ESTADO>=%s\n", "LISTO");		
-		
-		fprintf(cfgFile,"<IP_ACR>=%s\n",  PCB.m_ACR_IP);
-		
-		fprintf(cfgFile,"<PUERTO_ACR>=%d\n", PCB.m_ACR_Port);
-		
-		fclose(cfgFile);
 		
 		return OK;
 		
@@ -185,6 +221,7 @@ int createPCB(char *argv[]) {
 			line++;
 		}
 		PCB.ultimaSentencia = line;
+		Log_printf(log_debug,"Config(createPPCB): PCB.ultimaSentencia %d",PCB.ultimaSentencia);
 		sscanf( PCB.Code[0], "MEM %d", &(PCB.Mem));	/*tomo la cantidad de memoria requerida*/
 		
 		PCB.IP = 0;
@@ -365,6 +402,7 @@ int PCB_Init(int argc, char *argv[] )
 		
 		PCB.PPCB_ID = atol (argv[1]);
 		PCB.tiempoRestanteOper = 0;	/*Se inicializa en cero*/
+		PCB.argc = argc;	/*Lo guardo para arreglar error en crear config.ppcb<ID>*/
 			
 		if ( argc == 3) {
 			
@@ -437,6 +475,8 @@ int PCB_Init(int argc, char *argv[] )
 		signal(SIGALRM, PCB_ProcesarSeniales);
 		signal(SIGCHLD, PCB_ProcesarSeniales);
 		signal(SIGTERM, PCB_ProcesarSeniales);
+		signal(SIGUSR1, PCB_ProcesarSeniales);
+		signal(SIGUSR2, PCB_ProcesarSeniales);
 	
 		/*PCB_Migrar("127.0.0.1",9550, SOCK_ADP); /* Esto fue de prueba*/
 		
@@ -512,6 +552,7 @@ int PCB_LeerConfig()
 			
 		}
 		PCB.ultimaSentencia = line-1;
+		Log_printf(log_debug,"Config(LeerConfig): PCB.ultimaSentencia %d",PCB.ultimaSentencia);
 		sscanf( PCB.Code[0], "MEM %d", &(PCB.Mem));	/*tomo la cantidad de memoria*/
 		
 		if ( (PCB.IP = config_GetVal_Int( cfg, _PPCB_, "IPOINTER" ) ) ){
