@@ -17,6 +17,7 @@
 #include "../incGeneral/Sockets/paquetesGeneral.h"
 #include "../incGeneral/log.h"
 #include "../incGeneral/libConf.h"
+#include "../incGeneral/FindFile.h"
 #include "../incGeneral/Estructuras/Stack.h"
 
 #include <signal.h>
@@ -55,6 +56,7 @@ typedef struct
 	tSocket*			m_socketACR;
 	tSocket*			m_socketADP;
 	int					nIdProcesoPadre;
+	int					argc;
 	/*Datos PCB*/
 	
 	long PPCB_ID;

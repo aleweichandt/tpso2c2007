@@ -659,7 +659,11 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 			/*Migro exitosamente entonces deja de ser inactivo*/
 			ppcbEncontrado->sActividad = Estado_Activo;
 			ppcbEncontrado->sFechaInactvdad = time (NULL);
-			kill( ppcbEncontrado->pidChild, SIGTERM );	/*al migrar bien mato al proceso original*/
+			/*al migrar bien mato al proceso original*/
+			Log_printf(log_debug,"Se mata a proceso pid: %d",ppcbEncontrado->pidChild);
+			if(kill( ppcbEncontrado->pidChild, SIGTERM ) == ERROR){
+				Log_logLastError("kill(SIGTERM) al proceso hijo");
+			}
 		}else{
 			Log_log(log_warning,"Se recibio MIGRAR_OK pero no se encontro PPCB asociado para adminsitrar");
 		}
@@ -860,7 +864,6 @@ int	ACR_CrearPPCB( long lpcbid, int pidChild )
 	do
 	{
 	/*	ppcb->pid = lpcbid;	/*PPCB ID*/
-	/*	ppcb->pidChild = pidChild;	/*process id*/
 		ppcbAux.pid = lpcbid;
 		if( (ppcb = PpcbAcr_ObtenerPpcbXPid(&ACR.t_ListaPpcbPend,&ppcbAux)) == NULL )
 		{
@@ -906,6 +909,7 @@ int	ACR_CrearPPCB( long lpcbid, int pidChild )
 
 		PpcbAcr_AgregarPpcb(&ACR.t_ListaPpcbPend, ppcb );
 */
+		ppcb->pidChild = pidChild;	/*process id*/
 		ppcb->sActividad = Estado_Inactivo;
 		ppcb->sFechaInactvdad = time(NULL);	/*Esto mejor hacerlo cuando el ppcb pida conexion, pero lo hago = porque evita error en ControlarPendientes*/
 		ppcb->socket= NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
