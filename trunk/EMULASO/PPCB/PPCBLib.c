@@ -912,8 +912,17 @@ void PCB_AtenderADP ( tSocket *sockIn )
 		if(nSend == 0 || nSend == ERROR )
 			Log_log(log_error,"Error al enviar PAQ_MIGRAR_FAULT");		 
 		
+	} else  if( IS_PAQ_SUSPEND_PCB(paq) ){
+		
+		Log_log(log_info, "Se suspende la ejecucion del PPCB");
+		PCB.State = BLOQUEADO;
+		
+	}else if ( IS_PAQ_EXEC_PCB(paq) ){
+		
+		Log_log(log_info, "Se reanuda la Ejecucion del PPCB");
+		PCB.State = EJECUTANDO;
+		
 	}
-
 	
 	if ( paq ) 
 		paquetes_destruir( paq );
