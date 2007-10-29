@@ -431,6 +431,7 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 	
 		if ( ERROR == len || !len)
 		{
+			tPpcb->sActividad = Estado_Inactivo;
 			ACR_CerrarConexion( socket );		
 			return;
 		}
@@ -476,6 +477,8 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 		
 		/*migrar PCB a nodo*/
 		ACR_MigrarProceso(tPpcb,ipIdeal,puertoIdeal);
+	}else{
+		tPpcb->sActividad = Estado_Inactivo;
 	}
 	
 }
