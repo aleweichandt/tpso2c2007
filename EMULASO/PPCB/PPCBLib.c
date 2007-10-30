@@ -214,9 +214,8 @@ int createPCB(char *argv[]) {
 		
 		PCB.SessionID = atoi (argv[4]);
 		
-		while (!feof(cfgCode)) {
-			bzero(strBuff,sizeof(strBuff));
-			fgets(strBuff, 200, cfgCode);
+		bzero(strBuff,sizeof(strBuff));
+		while (!feof(cfgCode) && fgets(strBuff, 200, cfgCode)) {
 			strncpy(PCB.Code[line], strBuff,20 );
 			line++;
 		}
@@ -1047,7 +1046,8 @@ int PCB_Migrar(char szIp[LEN_IP], unsigned short int nPuerto)
 	cantLeido = 0;
 	while( (byteLeido = fgetc(cfgFile)) != EOF ){
 		
-		parteArchivo[cantLeido++] = (char)byteLeido;
+		if( byteLeido != '\r' )
+			parteArchivo[cantLeido++] = (char)byteLeido;
 		
 		if( cantLeido % MAX_PAQ_ARCH == 0 ){
 			
