@@ -49,6 +49,7 @@ void PCB_ProcesarSeniales( int senial )
 	{	/*Migrar al ACR*/
 		if( PCB.nIdProcesoPadre == _ID_ADP_ )
 		{
+			if( PCB.State == EJECUTANDO ) PCB.State = LISTO;  /*Evito que siga ejecutando en el ACR*/
 			PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);
 		}
 		signal(SIGUSR2, PCB_ProcesarSeniales);
@@ -885,7 +886,8 @@ void PCB_AtenderADP ( tSocket *sockIn )
 	if ( ERROR == len || !len)
 	{
 		Log_log( log_debug, "Se cae conexion con ADP" );
-		PCB_CerrarConexion( sockIn );		
+		PCB_CerrarConexion( sockIn );
+		if( PCB.State == EJECUTANDO ) PCB.State = LISTO;  /*Evito que siga ejecutando en el ACR*/
 		PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);	/*Migra al ACR*/
 		return;
 	}
