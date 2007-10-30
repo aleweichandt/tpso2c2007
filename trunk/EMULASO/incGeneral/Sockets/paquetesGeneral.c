@@ -701,7 +701,7 @@ tPaqueteArch* paquetes_CrearArch()
 	if ( !(pPaq = malloc( sizeof(tPaqueteArch) ) ) )
 		return NULL;
 	
-	memset( pPaq, ' ', sizeof(tPaqueteArch) );
+	memset( pPaq, '\0', sizeof(tPaqueteArch) );
 	
 	return pPaq;
 }
