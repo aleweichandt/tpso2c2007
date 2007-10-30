@@ -40,14 +40,12 @@ int ACR_Init()
 		ACR.ui_ultimoSocket = SOCK_ESCUCHA;
 		
 		/* inicializacion de la lista de sockets a adps*/
-		ACR.t_ListaSocketAdp = NULL;
-		lista_inic( &ACR.t_ListaSocketAdp );
+		DatosAdpACR_Ini( &ACR.t_ListaSocketAdp );
 		
 		ACR.t_ListaPpcbPend = NULL;
 		lista_inic( &ACR.t_ListaPpcbPend );
 		
 		/*signals*/
-		signal(SIGALRM, ACR_SenialTimer);
 		signal(SIGTERM, ACR_ProcesarSeniales);
 		signal(SIGUSR1, ACR_ProcesarSeniales);
 		signal(SIGINT , ACR_ProcesarSeniales);
@@ -76,7 +74,7 @@ void ACR_Salir()
 {
 	/* Logear salida, hacer un clean up? */
 	
-	lista_destruir( &ACR.t_ListaSocketAdp );
+	DatosAdpACR_EliminarLista( &ACR.t_ListaSocketAdp );
 	
 	conexiones_CerrarLista( 0, &ACR.ui_ultimoSocket, ACR.t_ListaSockets );
 	free(ACR.t_ListaSockets);
@@ -196,29 +194,25 @@ void ACR_ProcesarSeniales( int senial )
 	}
 }
 
-/**********************************************************************/
-void ACR_SenialTimer( int senial )
+void ACR_Timer( tSocket* sockIn )
 {
-	if ( senial == SIGALRM ) /*Timer*/
-	{
-		/*Log_log( log_info, "Recibo senial SIGALRM");*/
-		
-		ACR_ControlarPendientes();
-		
-		ACR_PonerTimer();
+	/*Log_log( log_info, "Recibo senial SIGALRM");*/
+	
+	ACR_ControlarPendientes();
+}
+
+/**********************************************************************/
+void ACR_PonerTimer(time_t* tiempo){
+	int alarma = ALRM_T;
+	time_t now = time(NULL);
+	if( difftime( now, *tiempo) < ALRM_T ){
+		alarma = ALRM_T - difftime (now, *tiempo);
 	}else{
-		Log_log(log_warning, "Recibi otra senial en el handler del ALRM");
+		*tiempo = now;
 	}
-}
-
-void ACR_SacarTimer(void){
-	signal(SIGALRM, ACR_SenialTimer);
-	alarm(0);	
-}
-
-void ACR_PonerTimer(void){
-	signal(SIGALRM, ACR_SenialTimer);
-	alarm(ALRM_T);
+	
+	ACR.t_ListaSockets[ SOCK_ESCUCHA ]->onTimeOut= ACR_Timer;
+	ACR.t_ListaSockets[ SOCK_ESCUCHA ]->segundos_timeout = alarma;
 }
 
 /**********************************************************************/
@@ -299,7 +293,7 @@ void ACR_HandShake( tSocket* sockIn )
 		sockIn->onClose = &ACR_DesconectarADP;
 		sockIn->estado = estadoConn_escuchando;
 		
-		lista_insertar( &ACR.t_ListaSocketAdp, sockIn, sizeof(tSocket), compararSocket, _SIN_REPET_);
+		DatosAdpACR_Agregar( &ACR.t_ListaSocketAdp, sockIn );
 		
 		bSendPong = TRUE;
 	}
@@ -406,10 +400,10 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 {
 	unsigned int 	alpe;
 	tSocket* 		socket = NULL;
-	t_nodo* 		lista_aux = ACR.t_ListaSocketAdp;
+	tSocket*		socketIdeal = NULL;
 	unsigned char 	ip[4], ip2[4], ipIdeal[4], pid;
 	char 			* tmp, szIpAmplia[LEN_IP],	buffer [ PAQUETE_MAX_TAM ];
-	int 			iMaxMem, iCantPcb, iCantPcbIdeal, len;
+	int 			iMaxMem, iCantPcb, iCantPcbIdeal, len, indice=0, nSend;
 	float 			fCargaProm, fCargaPromIdeal;
 	unsigned short int puerto, puertoIdeal, bNodoIdeal;
 	tPaquete		* paq;
@@ -419,14 +413,15 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 	
 	ReducirIP(ACR.sz_ACR_IP,ip);
 	
-	while( lista_aux )
+	while( socket = DatosAdpACR_Obtener( &ACR.t_ListaSocketAdp, indice ) )
 	{
-		socket = nodo_datos( lista_aux, &alpe );
-		
+		Log_log(log_debug, "Tengo un adp candidato");
 		tmp = paquetes_newPaqGetPerformanceAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port);
 		
-		conexiones_sendBuff( socket, tmp, PAQUETE_MAX_TAM );
-
+		nSend = conexiones_sendBuff( socket, tmp, PAQUETE_MAX_TAM );
+		if( nSend == (int)NULL || nSend == ERROR )
+			Log_logLastError("Ocurrio un error en envío de PAQ_GET_PERFORMANCE");
+		
 		len = conexiones_recvBuff(socket, buffer, PAQUETE_MAX_TAM);
 	
 		if ( ERROR == len || !len)
@@ -454,16 +449,19 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 					iCantPcbIdeal = iCantPcb;
 					memcpy(ipIdeal, ip2, sizeof(unsigned char[4]));
 					puertoIdeal = puerto;
-					bNodoIdeal = TRUE; 
+					socketIdeal = socket;
+					bNodoIdeal = TRUE;
 				}
 			}
 			
+		}else{
+			Log_log(log_warning,"El ADP me responde algo que no es un PAQ_INFO_PERFORMANCE");
 		}
 	
 		if( paq )
 			paquetes_destruir(paq);
 		
-		lista_aux = nodo_sgte( lista_aux );
+		indice++;
 		
 	}
 	
@@ -475,6 +473,7 @@ void ACR_DeterminarNodo(tPpcbAcr* tPpcb)
 		Log_printf(log_info,"se encontro un nodo para migrar el ppcb id: %d, en IP: %s puerto %d",
 			tPpcb->pid,szIpAmplia,puertoIdeal);
 		
+		tPpcb->socketADP = socketIdeal;		/*se agrega el socket del adp*/
 		/*migrar PCB a nodo*/
 		ACR_MigrarProceso(tPpcb,ipIdeal,puertoIdeal);
 	}else{
@@ -679,6 +678,7 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 		if ( (ppcbEncontrado = PpcbAcr_ObtenerPpcbXSock(&ACR.t_ListaPpcbPend,&ppcbAux)) ){
 			/*Migro exitosamente entonces deja de ser inactivo*/
 			ppcbEncontrado->sActividad = Estado_Inactivo;
+			ppcbEncontrado->socketADP = NULL;
 			/*ppcbEncontrado->sFechaInactvdad = time (NULL);  Esto no, se continua con el primer timer*/
 		}else{
 			Log_log(log_warning,"Se recibio MIGRAR_FAULT pero no se encontro PPCB asociado para adminsitrar");
@@ -916,7 +916,7 @@ int	ACR_CrearPPCB( long lpcbid, int pidChild )
 		ppcb->sActividad = Estado_Inactivo;
 		ppcb->sFechaInactvdad = time(NULL);	/*Esto mejor hacerlo cuando el ppcb pida conexion, pero lo hago = porque evita error en ControlarPendientes*/
 		ppcb->socket= NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
-		
+		ppcb->socketADP = NULL;
 		
 		return OK;
 		
@@ -962,6 +962,7 @@ int ACR_CrearPPCBInicial( long lpcb_id, int pidChild, char szNomProg[LEN_COMANDO
 		ppcb->sActividad = Estado_Inactivo;
 		ppcb->sFechaInactvdad = time(NULL);	/*Esto mejor hacerlo cuando el ppcb pida conexion*/
 		ppcb->socket=NULL;   			/*nada ! Recien cuando se conecte desde mi nodo*/
+		ppcb->socketADP = NULL;
 		
 		if( !PpcbAcr_AgregarPpcb(&ACR.t_ListaPpcbPend, ppcb ))
 		{
@@ -994,7 +995,7 @@ void ACR_DesconectarADS(tSocket *sockIn)
 void ACR_DesconectarADP(tSocket *sockIn)
 {
 	Log_log(log_warning,"Se cierra Socket ADP");
-	lista_quitar(&ACR.t_ListaSocketAdp,sockIn, compararSocket);
+	DatosAdpACR_EliminarDeLaLista(&ACR.t_ListaSocketAdp,sockIn);
 	Log_log(log_debug,"Se elimina el socket de la lista de adps");
 }
 
@@ -1010,10 +1011,9 @@ int ACR_LiberarRecursos(int idSesion){
 	time_t			now = time(NULL);
 	unsigned int 	alpe;
 	tSocket* 		socket = NULL;
-	t_nodo* 		lista_aux = ACR.t_ListaSocketAdp;
 	unsigned char 	ip[4];
 	tPaquete* paqSend=NULL;
-	int nSend, pidVector[25], i = 0;
+	int nSend, pidVector[25], i = 0, indice = 0;
 	
 	
 	ReducirIP(ACR.sz_ACR_IP,ip);
@@ -1055,16 +1055,15 @@ int ACR_LiberarRecursos(int idSesion){
 	if(pidVector[0]!=0){
 		Log_log(log_debug,"se envia end_sesion a cada adp");
 		paqSend = paquetes_newPaqKill(ip,_ID_ACR_,ACR.usi_ACR_Port,pidVector);
-		while( lista_aux )
+		while( socket = DatosAdpACR_Obtener( &ACR.t_ListaSocketAdp, indice ) )
 		{
-			socket = nodo_datos( lista_aux, &alpe );
 			
 			nSend = conexiones_sendBuff( socket, (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
 			if ( nSend != PAQUETE_MAX_TAM )
 			{
 				Log_log( log_error,"Error enviando end_sesion al ADP" );
 			}
-			lista_aux = nodo_sgte( lista_aux );
+			indice++;
 		}
 	}
 	return OK;

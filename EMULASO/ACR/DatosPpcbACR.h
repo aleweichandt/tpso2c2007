@@ -36,6 +36,7 @@ typedef struct tPpcbAcr
 	time_t sFechaInactvdad;		/* instante de ingreso al sistema o de inactividad*/
 
 	tSocket* socket;
+	tSocket* socketADP;
 	
 } tPpcbAcr;
 

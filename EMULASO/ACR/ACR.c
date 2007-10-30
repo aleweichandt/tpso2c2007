@@ -13,12 +13,13 @@
 /**********************************************************/
 int main(int argc, char *argv[])
 {
+	time_t antes = time(NULL);
 	if ( ACR_Init() == ERROR )
 		return EXIT_SUCCESS;
 	
-	ACR_PonerTimer();
 	while ( 1 )
-	{		
+	{	
+		ACR_PonerTimer(&antes);
 	 	conexiones_aguardarConexion( ACR.t_ListaSockets, 
 	 								&(ACR.ui_ultimoSocket) );
 		/*ACR_SacarTimer();

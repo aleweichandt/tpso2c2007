@@ -20,6 +20,7 @@
 #include "MatrizRecursos.h"
 #include "DatosRecurso.h"
 #include "DatosPpcbACR.h"
+#include "DatosAdpACR.h"
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
@@ -47,7 +48,7 @@ typedef struct
 	unsigned int		ui_ultimoSocket;
 	
 	tSocket				*psocketADS;					/*Comunicacion con ADS*/
-	t_nodo				*t_ListaSocketAdp;				/*Comunicacion con ADPs*/
+	tListaAdps			t_ListaSocketAdp;				/*Comunicacion con ADPs*/
 	tListaPpcbAcr		t_ListaPpcbPend;				/*Comunicación con PPCBs*/
 	
 } tACR;
@@ -64,9 +65,8 @@ int 	ACR_LeerConfig();
 int 	ACR_LeerConfigRuntime();
 
 void 	ACR_ProcesarSeniales( int senial );
-void 	ACR_SenialTimer( int senial );
-void 	ACR_SacarTimer(void);
-void 	ACR_PonerTimer(void);
+void	ACR_PonerTimer(time_t* tiempo);
+void 	ACR_Timer( tSocket* sockIn );
 
 int 	ACR_ConectarACR();
 void 	ACR_AceptarConexion( tSocket* sockIn );
