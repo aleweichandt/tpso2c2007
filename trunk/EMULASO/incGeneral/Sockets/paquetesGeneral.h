@@ -99,8 +99,12 @@ typedef enum
 	PAQ_MIGRAR_FAULT,
 	PAQ_FIN_MIGRAR,
 	PAQ_ARCHIVO,
-	PAQ_KILL
+	PAQ_KILL,
 	/**/
+	
+	/*sol y dev de recursos*/
+	PAQ_SOL,
+	PAQ_DEV
 	
 } tPaq_ids;
 /* Fin de Registro de los ids de paquetes */
@@ -293,6 +297,19 @@ tPaqueteArch* paquetes_CharToPaqArch( const char* buffer  );
 
 char IS_PAQ_KILL ( tPaquete *paq );
 tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int pid[25] );
+
+/*--------------------------paqs sol y dev-----------------------*/
+#define SOLDEV_POS_PPCBID 	0
+#define SOLDEV_POS_RECURSO	sizeof(int)
+
+char IS_PAQ_SOL( tPaquete *paq );
+char IS_PAQ_DEV( tPaquete *paq );
+tPaquete* paquetes_newPaqSol( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado );
+tPaquete* paquetes_newPaqDev( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
+char* paquetes_newPaqSolAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado );
+char* paquetes_newPaqDevAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
+tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoSolicitado );
+tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoDevuelto );
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

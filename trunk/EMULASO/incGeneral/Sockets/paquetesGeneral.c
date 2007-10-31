@@ -82,6 +82,8 @@ char IS_PAQ_USR_NAME ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_NAME)
 char IS_PAQ_USR_PWD ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_USR_PWD); }
 char IS_PAQ_END_SESION ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_END_SESION); }
 char IS_PAQ_END_SESION_OK ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_END_SESION_OK); }
+char IS_PAQ_SOL( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_SOL); }
+char IS_PAQ_DEV( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_DEV); }
 
 /*******************************************************************/
 void paquetes_destruir( tPaquete* paq  )
@@ -1002,6 +1004,102 @@ tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, un
 }
 char IS_PAQ_KILL ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_KILL); }
 
+/*---------------------Solicitud y Devolucion de Recursos-------------------------------*/
+tPaquete* paquetes_newPaqSol( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
 
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_SOL , puerto );
 
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	memcpy( &(paq->msg[SOLDEV_POS_PPCBID]), &PPCB_id, sizeof( int ) ); 
+	memcpy( &(paq->msg[SOLDEV_POS_RECURSO]), &recursoSolicitado, sizeof( tRecurso ) );
+	
+	return paq;		
+}
+char* paquetes_newPaqSolAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado )
+{
+	tPaquete *pNew; char *Ret;
+		if ( (pNew = paquetes_newPaqSol(IP,id_Proceso, puerto, PPCB_id, recursoSolicitado )) )
+		{
+			Ret = paquetes_PaqToChar( pNew );
+			
+			paquetes_destruir( pNew );
+			
+			return Ret;
+		}	
+		
+		return NULL;
+}
+tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, 
+		int* 		PPCB_id, 
+		tRecurso* 	recursoSolicitado )
+{
+	tPaquete *paq;
+			
+	if ( !(paq = paquetes_CharToPaq( buffer ) ) )
+		return NULL;
+	
+	memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
+	memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
+	memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
+	 
+	memcpy( PPCB_id, &(paq->msg[SOLDEV_POS_PPCBID]),  sizeof (int) );
+	memcpy( recursoSolicitado, &(paq->msg[SOLDEV_POS_RECURSO]), sizeof (tRecurso));
+	
+	return paq;		
+}
+
+tPaquete* paquetes_newPaqDev( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_DEV , puerto );
+
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	memcpy( &(paq->msg[SOLDEV_POS_PPCBID]), &PPCB_id, sizeof( int ) ); 
+	memcpy( &(paq->msg[SOLDEV_POS_RECURSO]), &recursoDevuelto, sizeof( tRecurso ) );
+	
+	return paq;		
+}
+char* paquetes_newPaqDevAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto )
+{
+	tPaquete *pNew; char *Ret;
+		if ( (pNew = paquetes_newPaqSol(IP,id_Proceso, puerto, PPCB_id, recursoDevuelto )) )
+		{
+			Ret = paquetes_PaqToChar( pNew );
+			
+			paquetes_destruir( pNew );
+			
+			return Ret;
+		}	
+		
+		return NULL;
+}
+tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, 
+		int* PPCB_id, 
+		tRecurso* recursoDevuelto )
+{
+	tPaquete *paq;
+				
+		if ( !(paq = paquetes_CharToPaq( buffer ) ) )
+			return NULL;
+		
+		memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
+		memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
+		memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
+		 
+		memcpy( PPCB_id, &(paq->msg[SOLDEV_POS_PPCBID]),  sizeof (int) );
+		memcpy( recursoDevuelto, &(paq->msg[SOLDEV_POS_RECURSO]), sizeof (tRecurso));
+		
+		return paq;
+}
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
