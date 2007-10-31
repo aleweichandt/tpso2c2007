@@ -58,6 +58,12 @@
 
 #define bzero(donde, cuanto) memset(donde, '\0', cuanto); /* Como que no es ansi? */
 
+typedef enum{
+	Impresora = 0,
+	Disco = 1,
+	Cinta = 2
+} tRecurso;
+
 /* Prototipos globales */
 int getCadT(FILE *flujo, int fin, char *cad);
 
