@@ -104,7 +104,11 @@ typedef enum
 	
 	/*sol y dev de recursos*/
 	PAQ_SOL,
-	PAQ_DEV
+	PAQ_DEV,
+	
+	/*RemainingTimeExecution*/
+	PAQ_GET_REMAINING_TIME_EXECUTION,
+	PAQ_INFO_REMAINING_TIME_EXECUTION
 	
 } tPaq_ids;
 /* Fin de Registro de los ids de paquetes */
@@ -310,6 +314,18 @@ char* paquetes_newPaqSolAsStr( unsigned char IP[4], unsigned char id_Proceso, un
 char* paquetes_newPaqDevAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
 tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoSolicitado );
 tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoDevuelto );
+
+/*----------------------RemainingTimeExecution-------------------*/
+#define RTM_POS_PPCBID 				0
+#define RTM_POS_TIEMPO_RESTANTE 	sizeof(int)
+
+char IS_PAQ_GET_REMAINING_TIME_EXECUTION( tPaquete *paq );
+char IS_PAQ_INFO_REMAINING_TIME_EXECUTION( tPaquete *paq );
+tPaquete* paquetes_newPaqGetRemainingTimeExecution( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqInfoRemainingTimeExecution( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, int tiempoRestante );
+char* paquetes_newPaqGetRemainingTimeExecutionAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqInfoRemainingTimeExecutionAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, int tiempoRestante );
+tPaquete* paquetes_ParsearInfoRemainingTimeExecution( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, int* tiempoRestante );
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
