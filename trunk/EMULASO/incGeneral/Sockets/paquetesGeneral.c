@@ -84,6 +84,8 @@ char IS_PAQ_END_SESION ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_END_SES
 char IS_PAQ_END_SESION_OK ( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_END_SESION_OK); }
 char IS_PAQ_SOL( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_SOL); }
 char IS_PAQ_DEV( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_DEV); }
+char IS_PAQ_GET_REMAINING_TIME_EXECUTION( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_GET_REMAINING_TIME_EXECUTION); }
+char IS_PAQ_INFO_REMAINING_TIME_EXECUTION( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_INFO_REMAINING_TIME_EXECUTION); }
 
 /*******************************************************************/
 void paquetes_destruir( tPaquete* paq  )
@@ -1102,4 +1104,82 @@ tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP[4], unsigne
 		
 		return paq;
 }
+/*--------------------------RemainingTimeExecution-------------------------------*/
+
+tPaquete* paquetes_newPaqGetRemainingTimeExecution( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_GET_REMAINING_TIME_EXECUTION, puerto );
+
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	return paq;
+}
+tPaquete* paquetes_newPaqInfoRemainingTimeExecution( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, int tiempoRestante )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_INFO_REMAINING_TIME_EXECUTION , puerto );
+
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	memcpy( &(paq->msg[RTM_POS_PPCBID]), &PPCB_id, sizeof( int ) ); 
+	memcpy( &(paq->msg[RTM_POS_TIEMPO_RESTANTE]), &tiempoRestante, sizeof( int ) );
+	
+	return paq;
+}
+char* paquetes_newPaqGetRemainingTimeExecutionAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *pNew; char *Ret;
+	if ( (pNew = paquetes_newPaqGetRemainingTimeExecution(IP,id_Proceso, puerto )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
+char* paquetes_newPaqInfoRemainingTimeExecutionAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, int tiempoRestante )
+{
+	tPaquete *pNew; char *Ret;
+	if ( (pNew = paquetes_newPaqSol(IP,id_Proceso, puerto, PPCB_id, tiempoRestante )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
+tPaquete* paquetes_ParsearInfoRemainingTimeExecution( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, 
+		int* PPCB_id, 
+		int* tiempoRestante )
+{
+	tPaquete *paq;
+					
+	if ( !(paq = paquetes_CharToPaq( buffer ) ) )
+		return NULL;
+	
+	memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
+	memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
+	memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
+	 
+	memcpy( PPCB_id, &(paq->msg[RTM_POS_PPCBID]),  sizeof (int) );
+	memcpy( tiempoRestante, &(paq->msg[RTM_POS_TIEMPO_RESTANTE]), sizeof (int));
+	
+	return paq;
+}
+
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

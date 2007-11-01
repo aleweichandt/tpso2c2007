@@ -29,6 +29,8 @@ int PCB_ExecuteImp(char *param);
 int PCB_ExecutePush(char *param);
 int PCB_ExecutePop(char *param);
 
+int PCB_RemainingTimeExecution();
+
 /**********************************************************/
 void PCB_ProcesarSeniales( int senial )
 /*Advertencia al programador debbugueador: si pones un breakpoint aca
@@ -120,6 +122,9 @@ int createPCBConfig() {
 			sprintf(strVal,"%d",PCB.IP);
 			config_SetVal(cfg,_PPCB_,"IPOINTER",strVal);
 			
+			sprintf(strVal,"%d",PCB.tiempoRestanteOper);
+			config_SetVal(cfg,_PPCB_,"TMP_REST_OPER",strVal);
+			
 			if( PCB.State == PENDIENTE ) 
 				config_SetVal(cfg,_PPCB_,"ESTADO","PENDIENTE");
 			else if( PCB.State == BLOQUEADO )
@@ -163,6 +168,8 @@ int createPCBConfig() {
 			fprintf(cfgFile,"<IP_ACR>=%s\n",  PCB.m_ACR_IP);
 			
 			fprintf(cfgFile,"<PUERTO_ACR>=%d\n", PCB.m_ACR_Port);
+			
+			fprintf(cfgFile,"<TMP_REST_OPER>=%d\n", PCB.tiempoRestanteOper);
 			
 			fclose(cfgFile);
 		}
@@ -330,7 +337,32 @@ int PCB_ExecuteOper(char *param) {
 /**********************************************************************/
 int PCB_ExecuteSol(char *param) {
 	
+	tRecurso recurso;
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
+	
+	memset( szIP, 0, 4 );
+	
+	if (ReducirIP(PCB.m_IP,szIP) == ERROR)
+		return;
+	
+	if (PCB_RecursoFromFriendlyName(&recurso, param) == ERROR)
+		return;
+	
+	pPaq = paquetes_newPaqSol(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.PPCB_ID, recurso);
+	
 	Log_printf( log_info, "Se solicita recurso: %s", param);
+	
+	nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	if ( nSend != PAQUETE_MAX_TAM )
+	{
+		Log_logLastError( "error enviando SOL al ADP" );
+	}
+	PCB.State = BLOQUEADO;
+	paquetes_destruir( pPaq );
+	
 	sleep(1);
 	
 	return 0;
@@ -338,7 +370,31 @@ int PCB_ExecuteSol(char *param) {
 /**********************************************************************/
 int PCB_ExecuteDev(char *param) {
 	
+	tRecurso recurso;
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
+	
+	memset( szIP, 0, 4 );
+	
+	if (ReducirIP(PCB.m_IP,szIP) == ERROR)
+		return;
+	
+	if (PCB_RecursoFromFriendlyName(&recurso, param) == ERROR)
+		return;
+	
+	pPaq = paquetes_newPaqDev(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.PPCB_ID, recurso);
+	
 	Log_printf( log_info, "Se devuelve recurso: %s", param);
+	
+	nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	if ( nSend != PAQUETE_MAX_TAM )
+	{
+		Log_logLastError( "error enviando DEV al ADP" );
+	}	
+	paquetes_destruir( pPaq );
+	
 	sleep(1);
 	
 	return 0;
@@ -595,7 +651,9 @@ int PCB_LeerConfig()
 		{
 			strncpy( PCB.m_ACR_IP, tmp, LEN_IP );
 		}
-	
+		
+		PCB.tiempoRestanteOper = config_GetVal_Int( cfg, _PPCB_, "TMP_REST_OPER" );
+		
 		/*
 		
 		PCB.m_Port = config_GetVal_Int( cfg, _MSHELL_, "PCB_PORT" );
@@ -923,6 +981,28 @@ void PCB_AtenderADP ( tSocket *sockIn )
 		Log_log(log_info, "Se reanuda la Ejecucion del PPCB");
 		PCB.State = EJECUTANDO;
 		
+	}else if (IS_PAQ_GET_REMAINING_TIME_EXECUTION(paq)){
+		tPaquete *pPaq;
+		int		nSend;
+		unsigned char szIP[4];
+		int tiempoRestante;
+		
+		memset( szIP, 0, 4 );
+		
+		if (ReducirIP(PCB.m_IP,szIP) == ERROR)
+			return;
+		if ((tiempoRestante = PCB_RemainingTimeExecution()) == ERROR)
+			return;
+		
+		Log_log( log_info, "Enviando el tiempo restante de ejecucion al ADP");
+		
+		pPaq = paquetes_newPaqInfoRemainingTimeExecution(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.PPCB_ID, tiempoRestante );
+		nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+		if ( nSend != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError( "Error enviando INFO_REMAINING_TIME_EXECUTION al ADP" );
+		}	
+		paquetes_destruir( pPaq );
 	}
 	
 	if ( paq ) 
@@ -1160,6 +1240,75 @@ void 	PCB_CerrarConexion( tSocket *sockIn )
 }
 
 /**********************************************************/
-
-
+int		PCB_RecursoFromFriendlyName(tRecurso* recurso, const char* param)
+{
+	int result = ERROR;
+	if (strcmp("Impresora", param) == 0)
+	{
+		*recurso = Impresora;
+		result = OK;
+	}
+	else if(strcmp("Disco", param) == 0)
+	{
+		*recurso = Disco;
+		result = OK;
+	}
+	else if (strcmp("Cinta", param) == 0)
+	{
+		*recurso = Cinta;
+		result = OK;
+	}
+	return result;
+}
+/**********************************************************/
+int PCB_RemainingTimeExecution()
+{
+	int line = PCB.IP;
+	int remainingTime = 0;
+	
+	Log_log(log_info, "Calculando tiempo restante de ejecucion");
+	while (line <= PCB.ultimaSentencia)
+	{
+		char sentence[20];
+		char instruction[5];
+		char parameter[20];
+		int paramStart;
+		
+		strncpy(sentence, PCB.Code[line], 20);
+		
+		strncpy(instruction, sentence, 4);
+		instruction[4] = '\0';
+				
+		if ( !strcmp("SOL ", instruction) 	||
+		     !strcmp("DEV ", instruction) 	||
+			 !strcmp("IMP ", instruction) 	||
+		     !strcmp("PUSH", instruction) 	||
+			 !strncmp("POP", instruction, 3) 
+		   ) 
+		{
+			remainingTime += 1;	
+		} 
+		else if ( !strcmp("OPER", instruction) ) 
+		{
+			int tiempoOper;
+			
+			if ( sentence[3] == ' ' ) {
+				paramStart = 4;
+			} else if ( sentence[4] == ' ') {
+				paramStart = 5;
+			}
+			tiempoOper = atoi(sentence+paramStart);
+			
+			remainingTime += tiempoOper;
+		}  
+		else 
+		{
+			Log_log( log_error, "Error al calcular el tiempo restante de ejecucion, checkee el script");
+			return ERROR;
+		}
+		line++;
+	}
+	return remainingTime;
+}
+/**********************************************************/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

@@ -59,7 +59,7 @@ typedef struct
 	int					argc;
 	/*Datos PCB*/
 	
-	long PPCB_ID;
+	int PPCB_ID;
 	char User[LEN_USUARIO];
 	char ProgName[LEN_COMANDO_EJEC];
 	int SessionID;
@@ -98,6 +98,7 @@ void 	PCB_AtenderACR ( tSocket *sockIn );
 void 	PCB_AtenderADP ( tSocket *sockIn );
 void 	PCB_CerrarConexion( tSocket *sockIn );
 void	PCB_ExecuteProgram(tSocket *sockIn);
+int		PCB_RecursoFromFriendlyName(tRecurso* recurso, const char* param);
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
