@@ -974,7 +974,7 @@ void PCB_AtenderADP ( tSocket *sockIn )
 	} else  if( IS_PAQ_SUSPEND_PCB(paq) ){
 		
 		Log_log(log_info, "Se suspende la ejecucion del PPCB");
-		PCB.State = BLOQUEADO;
+		PCB.State = LISTO;
 		
 	}else if ( IS_PAQ_EXEC_PCB(paq) ){
 		
