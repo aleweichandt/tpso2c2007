@@ -260,7 +260,7 @@ void PCB_ExecuteProgram(tSocket *sockIn) {
 			PCB.IP++;
 		}else							/*Una sentencia OPER sin terminar*/
 		{
-			sleep(1);
+			/*sleep(1);*/
 			PCB.tiempoRestanteOper--;
 			
 			if(!PCB.tiempoRestanteOper)
@@ -363,7 +363,7 @@ int PCB_ExecuteSol(char *param) {
 	PCB.State = BLOQUEADO;
 	paquetes_destruir( pPaq );
 	
-	sleep(1);
+	/*sleep(1);*/
 	
 	return 0;
 }
@@ -395,7 +395,7 @@ int PCB_ExecuteDev(char *param) {
 	}	
 	paquetes_destruir( pPaq );
 	
-	sleep(1);
+	/*sleep(1);*/
 	
 	return 0;
 }
@@ -409,8 +409,7 @@ int PCB_ExecuteImp(char *param) {
 	
 	memset( szIP, 0, 4 );
 	
-	if (ReducirIP(PCB.m_IP,szIP) == ERROR)
-			return;
+	ReducirIP(PCB.m_IP,szIP);
 	
 	Log_printf( log_info, "Se imprime: %s", param);
 	
@@ -424,7 +423,7 @@ int PCB_ExecuteImp(char *param) {
 	}	
 	paquetes_destruir( pPaq );
 	
-	sleep(1);
+	/*sleep(1);*/
 		
 	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
 
@@ -436,7 +435,7 @@ int PCB_ExecutePush(char *param) {
 	push(&PCB.stack, value);
 	Log_printf( log_info, "Se inserta en la pila: %c", value);
 	MyStackPrint(&PCB.stack);
-	sleep(1);
+	/*sleep(1);*/
 	return 0;
 }
 /**********************************************************************/
@@ -444,7 +443,7 @@ int PCB_ExecutePop(char *param) {
 	char value = pop(&PCB.stack);
 	Log_printf( log_info, "Se poppea: %c", value);
 	
-	sleep(1);
+	/*sleep(1);*/
 	return 0;
 }
 
