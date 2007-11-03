@@ -1,0 +1,8 @@
+MEM 100
+IMP Este programa 'imprimira'... 'cosas'
+SOL Impresora
+IMP Se obtuvo la impresora.
+OPER 15
+IMP Se imprimio!.
+DEV Impresora
+IMP Se devolvio la impresora

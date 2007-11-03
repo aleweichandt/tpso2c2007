@@ -22,7 +22,7 @@
 %ACR%
 <ACR_IP>=127.0.0.1
 <ACR_PORT>=9502
-<PATH_PROG>=./
+<PATH_PROG>=./fuentes
 <PATH_USU>=./usuarios
 <LIFE_TIME_PPCB>=1200
 <IMPRESORA>=3
