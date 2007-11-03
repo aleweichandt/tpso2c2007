@@ -64,6 +64,16 @@ typedef enum{
 	Cinta = 2
 } tRecurso;
 
+/*Estado del PCB*/
+typedef enum {
+	PENDIENTE = 0,
+	BLOQUEADO = 1,
+	LISTO = 2,
+	EJECUTANDO = 3,
+	FINALIZADO = 4
+	
+} tState;
+
 /* Prototipos globales */
 int getCadT(FILE *flujo, int fin, char *cad);
 
