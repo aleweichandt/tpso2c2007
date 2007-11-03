@@ -31,6 +31,7 @@
 
 #define ALRM_T 1				/*Periodo en segundos para la alarma*/
 
+/* LAS: Lo paso al incGeneral
 typedef enum {
 	PENDIENTE = 0,
 	BLOQUEADO = 1,
@@ -38,7 +39,7 @@ typedef enum {
 	EJECUTANDO = 3
 	
 } tState;
-
+*/
 typedef struct 
 {
 	char 				m_ACR_IP[LEN_IP];
@@ -99,6 +100,7 @@ void 	PCB_AtenderADP ( tSocket *sockIn );
 void 	PCB_CerrarConexion( tSocket *sockIn );
 void	PCB_ExecuteProgram(tSocket *sockIn);
 int		PCB_RecursoFromFriendlyName(tRecurso* recurso, const char* param);
+int 	PCB_ExecuteImpFinal(char *param);
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
