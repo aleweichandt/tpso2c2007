@@ -46,10 +46,10 @@ int compararPCBxId( const void *t1, const void *t2 )
 /***********************************************************************************/
 int compararPCBXSock( const void *t1, const void *t2 )
 {
-	tunPCB 	*pcb1 = (tunPCB*) t1,
-			*pcb2 = (tunPCB*) t2;
+	tunPCB 	*pcb1 = (tunPCB*) t1;
+	tSocket	*psock = (tSocket*) t2;
 						
-	if ( pcb1->pSocket == pcb2->pSocket )
+	if ( pcb1->pSocket == psock )
 	{
 		return 0;
 	}

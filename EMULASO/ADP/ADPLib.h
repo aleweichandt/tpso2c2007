@@ -29,6 +29,8 @@
 
 #define _TIMER_AVERAGE_		5 /*segs*/
 
+#define CONECTADO		9 /*9 porque me gusta el 9!*/
+
 typedef struct 
 {
 	char 				m_ACR_IP[LEN_IP];
@@ -83,7 +85,7 @@ void	ADP_RealizarInforme();
 /* - Migracion - */
 void 	ADP_RecibirArchivo( tSocket *sockIn );
 int 	ADP_ForkearPCB( long lpcbid, long* plpid );
-int		ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMemoria, long pid );
+int		ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMemoria, long pid, tState );
 int		ADP_MigrarPCBPesado();
 
 /* - Planificacion - */
@@ -98,7 +100,8 @@ int 	ADP_PasarDeLPLaLPE();
 
 /* - liberar recursos - */
 void 	ADP_LiberarRecursos(int pid);
-
+tunPCB* ADP_BuscarPCB( long id );
+void ADP_EliminarDeLista( long id );
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
