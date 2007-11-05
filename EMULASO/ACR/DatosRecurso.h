@@ -20,6 +20,7 @@
 
 #define LARGO_NOMBRE_REC		11
 #define MAX_LISTA_REC			3	/*Hay 3 recursos: Impresora, Disco y Cinta*/
+#define MAX_LISTA_BLOQ			15
 
 
 /* Los datos de un Recurso */
@@ -29,7 +30,7 @@ typedef struct
 	int 			nInstancias;	/* R: cantidad total de instancias del recurso */
 	int				nSemaforo;		/* S: indica el comportamiento símil semáforo */
 	int				nAvailable;		/* A: cantidad de instacias disponibles */
-						
+	long			ListaBloqueados[MAX_LISTA_BLOQ];	/*los id de los bloqueados por este recurso en FIFO*/
 }tDatosRecurso;
 
 /* Funciones Publicas */

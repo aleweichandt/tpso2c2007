@@ -51,6 +51,10 @@ typedef struct
 	tListaAdps			t_ListaSocketAdp;				/*Comunicacion con ADPs*/
 	tListaPpcbAcr		t_ListaPpcbPend;				/*Comunicación con PPCBs*/
 	
+	tDatosRecurso		ListaRecursos[MAX_LISTA_REC];
+	int					nCantRecursos;
+	tListaFilas			MatrizAsignacion;
+	
 } tACR;
 
 /* "Objeto" Publico */
@@ -89,7 +93,8 @@ void 	ACR_DesconectarADP(tSocket *sockIn);
 void 	ACR_DesconectarPPCB(tSocket *sockIn);
 
 int 	ACR_LiberarRecursos(int idSesion);
-
+void	ACR_ImprimirInfoCtr();
+void 	ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso);
 
 
 #endif /*ACRLIB_H_*/

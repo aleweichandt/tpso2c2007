@@ -89,6 +89,7 @@ int ACR_LeerConfig()
 {
 	char 	*tmp;
 	tConfig *cfg;
+	int 	tmpInt;
 	
 	do
 	{		
@@ -128,6 +129,20 @@ int ACR_LeerConfig()
 			}				
 		}
 		
+		ACR.MatrizAsignacion = NULL;
+		MatrizRec_Iniciar(&ACR.MatrizAsignacion,ACR.nCantRecursos);
+		
+		Rec_InicializarLista(ACR.ListaRecursos,&ACR.nCantRecursos);
+		
+		tmpInt = config_GetVal_Int( cfg, _ACR_, "IMPRESORA" );
+		Rec_Agregar(ACR.ListaRecursos,"Impresora",tmpInt,&ACR.nCantRecursos);
+		
+		tmpInt = config_GetVal_Int( cfg, _ACR_, "DISCO" );
+		Rec_Agregar(ACR.ListaRecursos,"Disco",tmpInt,&ACR.nCantRecursos);
+		
+		tmpInt = config_GetVal_Int( cfg, _ACR_, "CINTA" );
+		Rec_Agregar(ACR.ListaRecursos,"Cinta",tmpInt,&ACR.nCantRecursos);
+		
 		config_Destroy(cfg);
 
 		return OK;
@@ -161,14 +176,14 @@ int ACR_LeerConfigRuntime()
 
 /**********************************************************************/
 void ACR_ProcesarSeniales( int senial )
-/*23/09/2007	GT	La atencion del timer esta en ACR_SenialTimer */
 {
 	int nstateChld;
  	
  	if ( senial == SIGUSR1 )
 	{	/* TODO: Escribir info de estado del sistema */
 		Log_log( log_info, "Recibo senial SIGUSR1");		
-
+		ACR_ImprimirInfoCtr();
+		signal( SIGUSR1, ACR_ProcesarSeniales );
 	}
 	else if ( senial == SIGINT )
 	{
@@ -213,6 +228,58 @@ void ACR_PonerTimer(time_t* tiempo){
 	
 	ACR.t_ListaSockets[ SOCK_ESCUCHA ]->onTimeOut= ACR_Timer;
 	ACR.t_ListaSockets[ SOCK_ESCUCHA ]->segundos_timeout = alarma;
+}
+
+/**********************************************************/
+void ACR_ImprimirInfoCtr()
+{
+	int i;
+	tDatosRecurso* recurso;
+	
+	Log_log(log_info, "  Se imprime la informacion de control del ACR  ");
+	
+	InfoCtr_Inicializar("ACR","1");
+	
+	for (i = 0; i < ACR.nCantRecursos; ++i) {
+
+		recurso =	Rec_BuscarXPos(ACR.ListaRecursos, ACR.nCantRecursos, i);
+		InfoCtr_printf(log_info, "recurso:  %s tiene %d disponibles de un total de %d (sem:%d).",
+				recurso->szNombre,recurso->nAvailable,recurso->nInstancias, recurso->nSemaforo );
+
+		InfoCtr_log(log_info,"Los PPCBs que lo estan usando son: ");
+		ACR_ImprimirPpcbUsando(&ACR.MatrizAsignacion,i);
+
+		InfoCtr_log(log_info,"Los PPCBs que lo estan esperando son: ");
+		/*TODO: Hacer*/
+	}
+	
+	InfoCtr_CerrarInfo();
+
+}
+
+/**********************************************************************/
+void ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso)
+{
+	int i;
+	int nResul;
+	tPpcbAcr* ppcb;
+	tListaPpcbAcr ListaPpcb = ACR.t_ListaPpcbPend;
+
+	while(ListaPpcb)
+	{
+		ppcb = PpcbAcr_Datos(ListaPpcb);
+		nResul = MatrizRec_ObtenerInstancia(matriz,ACR.nCantRecursos, ppcb->pid, posRecurso);
+		/*Log_printf(log_debug,"resultado Instancia: %d",nResul);*/
+		if(nResul == ERROR)
+		{
+			Log_printf(log_error,"No se encuentra la fila P:%ld en la matriz",ppcb->pid);
+		}else if( nResul > 0 )
+		{
+			InfoCtr_printf(log_info, "	ppcb-id: %ld, prog %s de %s. (instancias:%d)", ppcb->pid,ppcb->szComando,ppcb->szUsuario,nResul);
+			/*InfoCtr_printf(log_info, "---> %s.", transferencia->nombreTrans);*/
+		}
+		ListaPpcb = PpcbAcr_Siguiente(ListaPpcb);
+	}
 }
 
 /**********************************************************************/

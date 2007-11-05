@@ -97,6 +97,6 @@ void InfoCtr_logLastError( const char* msg )
 
 void InfoCtr_CerrarInfo()
 {
-	if ( !fclose(fpi) )
+	if ( fclose(fpi) )
 		printf("Error al cerrar el archivo de info\n");
 }
