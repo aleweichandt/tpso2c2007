@@ -33,7 +33,7 @@ int Rec_Agregar( tDatosRecurso *pLista, const char* szNombre, int nInstancias,
 			(pLista + i )->nInstancias = nInstancias;
 			(pLista + i )->nAvailable = nInstancias;
 			(pLista + i )->nSemaforo = nInstancias;
-			(pLista + i )->Estado = EstadoE_ConDisponibilidad;
+			bzero( (pLista + i )->ListaBloqueados, sizeof((pLista + i )->ListaBloqueados));
 /*			break;
 		}
 	}
