@@ -45,8 +45,8 @@ lib/DatosPCBs.o : ADP/DatosPCBs.c ADP/DatosPCBs.h
 #	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/paquetesGeneral.o" "lib/paquetesACR.o" "incGeneral/Sockets/paquetesACR.c"
 
 #ACR ---------------------------------------------
-ACR : librerias lib/ACRLib.o ACR/ACR.c ACR/ACR.h lib/DatosPpcbACR.o lib/DatosAdpACR.o
-	gcc $(GCC_DEBUG) $(GCC_ANSI) -Lefence -lpthread -o"acr" $(LIBRERIAS) "lib/ACRLib.o" "lib/DatosPpcbACR.o" "lib/DatosAdpACR.o" "ACR/ACR.c"
+ACR : librerias lib/ACRLib.o ACR/ACR.c ACR/ACR.h lib/DatosPpcbACR.o lib/DatosAdpACR.o lib/DatosRecurso.o lib/MatrizRecursos.o
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -Lefence -lpthread -o"acr" $(LIBRERIAS) "lib/ACRLib.o" "lib/DatosPpcbACR.o" "lib/DatosAdpACR.o" "lib/DatosRecurso.o" "ACR/ACR.c" "lib/MatrizRecursos.o"
 
 lib/ACRLib.o : ACR/ACRLib.c ACR/ACRLib.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -Lefence -o"lib/ACRLib.o" "ACR/ACRLib.c"
@@ -56,6 +56,12 @@ lib/DatosPpcbACR.o : ACR/DatosPpcbACR.c ACR/DatosPpcbACR.h
 
 lib/DatosAdpACR.o : ACR/DatosAdpACR.c ACR/DatosAdpACR.h
 	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosAdpACR.o" "ACR/DatosAdpACR.c"
+
+lib/DatosRecurso.o : ACR/DatosRecurso.c ACR/DatosRecurso.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/DatosRecurso.o" "ACR/DatosRecurso.c"
+
+lib/MatrizRecursos.o : ACR/MatrizRecursos.c ACR/MatrizRecursos.h
+	gcc $(GCC_DEBUG) $(GCC_ANSI) -c -o"lib/MatrizRecursos.o" "ACR/MatrizRecursos.c"
 
 #PPCB ---------------------------------------------
 PPCB : librerias lib/PPCBLib.o PPCB/PPCB.c PPCB/PPCB.h lib/Stack.o
