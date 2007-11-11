@@ -1,0 +1,86 @@
+B&RR - EMULASO
+
+1.Nodos de red:
+
+1.1. Procesos Unicos en el sistema. En el servidor.
+ACR y ADS
+
+	a. Ejemplo de una estructura de carpetas:
+		[...]/emulaso/acr
+		[...]/emulaso/ads
+		[...]/emulaso/ppcb
+		[...]/emulaso/config
+		[...]/emulaso/usuarios/usuarios
+		[...]/emulaso/claves/claves
+		[...]/emulaso/usuarios/programas/*.emu
+	b. configuracion de los procesos:
+		En el archivo "config":
+
+		%ACR%				Configuracion del ACR
+		<ACR_IP>=127.0.0.1		IP del ACR
+		<ACR_PORT>=9603			Puerto de escucha del ACR
+		<PATH_PROG>=./			Path de los programas emus
+		<PATH_USU>=./usuarios		Path y archivo de usuarios
+		<LIFE_TIME_PPCB>=1200		tiempo de vida de los pcbs
+		<IMPRESORA>=3			instancias de impresora
+		<DISCO>=5			instancias de disco
+		<CINTA>=2			instancias de cinta
+
+		%ADS%				Configuracion del ADS
+		<ADS_IP>=127.0.0.1		IP del ADS
+		<ADS_PORT>=9150			Puerto de escucha del ADS
+		<ACR_IP>=127.0.0.1		IP del ACR
+		<ACR_PORT>=9603			Puerto de escucha del ACR
+		<PATH_USU>=./usuarios		Path y archivo de usuarios
+		<PATH_KEY_USU>=./claves		Path y archivo de claves
+		<PATH_ESTADO>=./estado		Path y archivo de estado???
+	c. ejecucion de los procesos:
+		./acr
+		./ads
+		
+1.2. Proceso MShell:
+MSHELL
+
+	a. Ejemplo de una estructura de carpetas:
+		[...]/emulaso/mshell
+		[...]/emulaso/config
+		[...]/emulaso/claves/claves
+	b. configuracion de los procesos:
+		En el archivo "config":
+		%MSHELL%			Configuracion del MShell
+		<ADS_IP>=127.0.0.1		IP del ADS
+		<ADS_PORT>=9150			Puerto de escucha del ADS
+		<PATH_USU>=./claves		Path y archivo de claves de los usuarios
+
+	c. ejecucion de los procesos:
+		./mshell
+
+2. Nodo de carga:
+ADP
+	a. Ejemplo de una estructura de carpetas:
+		[...]/emulaso/adp
+		[...]/emulaso/ejec
+		[...]/emulaso/ppcb
+		[...]/emulaso/config
+		[...]/emulaso/claves/claves
+	b. configuracion de los procesos:
+		En el archivo "config":
+		%ADP%				Configuracion del ADP
+		<ACR_IP>=127.0.0.1		IP del ACR
+		<ACR_PORT>=9603			Puerto de escucha del ACR
+		<ADP_IP>=127.0.0.1		IP del ADP
+		<ADP_PORT>=9550			Puerto de escucha del ADP
+		<MAX_MEM>=100			Maximo de memoria que maneja el ADP
+		<Q>=2				Quantum del tiempo para la planificacion de los pcbs
+		<L1>=1				Limite 1 para el load average
+		<L2>=2				Limite 2 para el load average
+
+	c. ejecucion de los procesos:
+		./ejec
+
+
+3. Ejemplo de como levantar el sistema:
+
+3.1. Ejecutar los procesos acr, ads
+3.2. Ejecutar los procesos ads, mediante el script ejec
+3.3. Ejecutar los proceos mshell
