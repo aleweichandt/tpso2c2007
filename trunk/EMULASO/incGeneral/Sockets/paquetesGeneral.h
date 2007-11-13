@@ -108,7 +108,12 @@ typedef enum
 	
 	/*RemainingTimeExecution*/
 	PAQ_GET_REMAINING_TIME_EXECUTION,
-	PAQ_INFO_REMAINING_TIME_EXECUTION
+	PAQ_INFO_REMAINING_TIME_EXECUTION,
+	
+	
+	/*PBCs states*/
+	PAQ_GET_PCBS_STATES,
+	PAQ_INFO_PCBS_STATES,
 	
 } tPaq_ids;
 /* Fin de Registro de los ids de paquetes */
@@ -326,6 +331,16 @@ tPaquete* paquetes_newPaqInfoRemainingTimeExecution( unsigned char IP[4], unsign
 char* paquetes_newPaqGetRemainingTimeExecutionAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 char* paquetes_newPaqInfoRemainingTimeExecutionAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, int tiempoRestante );
 tPaquete* paquetes_ParsearInfoRemainingTimeExecution( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, int* tiempoRestante );
+
+/*----------------------PCBS states-------------------*/
+char IS_PAQ_GET_PCBS_STATES( tPaquete *paq );
+char IS_PAQ_INFO_PCBS_STATES( tPaquete *paq );
+
+tPaquete* paquetes_newPaqGetPCBsStates( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+tPaquete* paquetes_newPaqInfoPCBsStates( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int nCantPCBs, char msg[PAQ_LEN_MSGCTRL+1] );
+
+char* paquetes_newPaqGetPCBsStatesAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
+char* paquetes_newPaqInfoPCBsStatesAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int nCantPCBs, char msg[PAQ_LEN_MSGCTRL+1] );
 
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

@@ -1182,4 +1182,78 @@ tPaquete* paquetes_ParsearInfoRemainingTimeExecution( const char* buffer, unsign
 	return paq;
 }
 
+/*----------------------PCBS states-------------------*/
+char IS_PAQ_GET_PCBS_STATES( tPaquete *paq ) { return (paq->id.id_Msg == PAQ_GET_PCBS_STATES); }
+char IS_PAQ_INFO_PCBS_STATES( tPaquete *paq ){ return (paq->id.id_Msg == PAQ_INFO_PCBS_STATES); }
+
+/********************************************************************************************************************/
+tPaquete* paquetes_newPaqGetPCBsStates( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_GET_PCBS_STATES , puerto );
+
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	return paq;
+}
+
+/********************************************************************************************************************/
+tPaquete* paquetes_newPaqInfoPCBsStates( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int nCantPCBs, char msg[PAQ_LEN_MSGCTRL+1] )
+{
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_INFO_PCBS_STATES , puerto );
+	
+	memcpy( &(paq->id.UnUsed[0]), &nCantPCBs, sizeof(int) );
+
+	memcpy( &(paq->msg[0]), &(msg[0]), PAQ_LEN_MSGCTRL +1 );
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	return paq;
+}
+
+/********************************************************************************************************************/
+char* paquetes_newPaqGetPCBsStatesAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )
+{
+	tPaquete *pNew; 
+	char *Ret;
+	
+	if ( (pNew = paquetes_newPaqGetPCBsStates(IP,id_Proceso, puerto )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
+
+/********************************************************************************************************************/
+char* paquetes_newPaqInfoPCBsStatesAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int nCantPCBs, char msg[PAQ_LEN_MSGCTRL+1] )
+{
+	tPaquete *pNew; 
+	char *Ret;
+	
+	if ( (pNew = paquetes_newPaqInfoPCBsStates(IP,id_Proceso, puerto, nCantPCBs, msg )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
+
+
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
