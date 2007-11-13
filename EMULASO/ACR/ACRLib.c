@@ -668,6 +668,26 @@ void ACR_AtenderADP ( tSocket *sockIn )
 			Log_logLastError("error al enviar PRINT al ADS" );
 		}
 	}
+	else if ( IS_PAQ_INFO_PCBS_STATES( paq ) )
+	{
+/*	Gonza: aca tenes como recorrer el paquete, si queres hace las conversiones	
+			int i = 0;
+			int cant ;
+			int size = 0;
+			short int id;
+			char state;
+			
+			memcpy( &cant, &(paq->id.UnUsed[0]), sizeof(int) );
+			for (i = 0; i < cant; i ++)
+			{
+				memcpy( &id, &(paq->msg[size]), sizeof(short int) );
+				size += sizeof(short int);
+				memcpy( &state, &(paq->msg[size]), sizeof(char) );
+				size += sizeof(char);
+
+			}
+*/		
+	}
 
 	if( paq )
 		paquetes_destruir(paq);
