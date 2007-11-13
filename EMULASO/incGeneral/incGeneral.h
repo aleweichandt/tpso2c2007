@@ -52,7 +52,7 @@
 #define _PPCB_		"PPCB"
 
 /*23/09/2007	GT	Recursos*/
-#define _SEP_RECURSO_			";"
+#define _SEP_RECURSO_			","
 #define _NO_SEP_				"N"/*Sin separador*/
 
 /* ----------------------- */

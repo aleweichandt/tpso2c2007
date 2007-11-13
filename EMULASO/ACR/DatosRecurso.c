@@ -43,7 +43,6 @@ int Rec_Agregar( tDatosRecurso *pLista, const char* szNombre, int nInstancias,
 
 
 /***********************************************************************************/
-
 tDatosRecurso* Rec_Buscar( tDatosRecurso *pLista, const char* szNombre, 
 									const int nTope, int* pnPos )
 {
@@ -68,110 +67,32 @@ tDatosRecurso* Rec_BuscarXPos( tDatosRecurso *pLista, const int nTope, const int
 }
 
 /***********************************************************************************/
-/*
-int Rec_Eliminar( tDatosRecurso *pLista, const char* szNombre, int nInstancias, 
-						int *pnTope  )
-						
-{
-	tDatosRecurso* pE;
-	
-	if ( !(pE = Rec_Buscar( pLista, szNombre, pnTope )) )
-		return -1;
-	
-	pE->Estado = EstadoE_Borrado;
-	strcpy( pE->szNombre, "" );
-	
-	(*pnTope)--;
-}
-*/
-
-/***********************************************************************************/
-int Rec_IncrementarInst( tDatosRecurso *pLista, const char* szNombre, 
-							const int pnTope, tDatosRecurso *pE, const int bConLiberacion )
+int Rec_IncrementarInst( tDatosRecurso *pE, const int bConLiberacion )
 /*15/06/2007	GT	Se incrementan por su disponibilidad, nunca por su total */
 {
 	int i;
 	
-	if ( !(pE = Rec_Buscar(pLista, szNombre, pnTope, &i )) )
-		return ERROR;
-	
 	if( bConLiberacion && pE->nAvailable < pE->nInstancias )		/*15/06/2007	GT	para corregir defasaje */
 		++(pE->nAvailable);
 	++(pE->nSemaforo);
-	
-/*	if ( pE->nInstancias > 0 )
-		pE->Estado = EstadoE_ConDisponibilidad;
-	else if ( pE->nInstancias == 0 ) /*Ya lo incremento en el if anterior*/
-/*		pE->Estado = EstadoE_Agotado;*/
-	
+		
 	return pE->nAvailable;
 }
 
 /***********************************************************************************/
-int Rec_IncrementarInstXPos( tDatosRecurso *pLista, const long lTid, 
-							const int pnTope, const int nPos, tDatosRecurso *pE, const int bConLiberacion )
-/*15/06/2007	GT	Se incrementan por su disponibilidad, nunca por su total */
-{
-
-	if ( !(pE = Rec_BuscarXPos(pLista, pnTope, nPos )) )
-		return ERROR;
-	
-	if( bConLiberacion && pE->nAvailable < pE->nInstancias )		/*15/06/2007	GT	para corregir defasaje */
-		++(pE->nAvailable);
-	++(pE->nSemaforo);
-	
-/*	if ( pE->nInstancias > 0 )
-		pE->Estado = EstadoE_ConDisponibilidad;
-	else if ( pE->nInstancias == 0 ) /*Ya lo incremento en el if anterior*/
-/*		pE->Estado = EstadoE_Agotado;*/
-	
-	return pE->nAvailable;
-}
-
-/***********************************************************************************/
-int Rec_DecrementarInst( tDatosRecurso *pLista, const char* szNombre, 
-							const int pnTope, tDatosRecurso *pE, const int bConAsignacion )
+int Rec_DecrementarInst( tDatosRecurso *pE, const int bConAsignacion )
 {
 	int i;
 	int bResultado= FALSE;
 			
-	if ( !(pE = Rec_Buscar(pLista, szNombre, pnTope, &i )) )
-		return ERROR;
-
 	if( bConAsignacion && pE->nAvailable > 0 )		/*15/06/2007	GT	para corregir defasaje */
 	{
 		--(pE->nAvailable);
 		bResultado = TRUE;
-	}
-	--(pE->nSemaforo);
-	
-/*	if ( --(pE->nInstancias) < 0 )
-		pE->Estado = EstadoE_EnDeuda;
-	else if ( pE->nInstancias == 0 ) /*Ya lo incremento en el if anterior*/	
-/*		pE->Estado = EstadoE_Agotado;*/
-	
-	return bResultado;	/*04/07/2007	GT	TODO: OJO aca ¿que hice poner? -> verificar*/ /*17/07/2007	GT	Bug: Se modifico*/
-}
-
-/***********************************************************************************/
-int Rec_DecrementarInstXPos( tDatosRecurso *pLista, const char* szNombre, 
-							const int pnTope, const int nPos, tDatosRecurso *pE, const int bConAsignacion )
-{
-	int bResultado = FALSE;
-	if ( !(pE = Rec_BuscarXPos(pLista, pnTope, nPos )) )
-		return ERROR;
-
-	if( bConAsignacion && pE->nAvailable > 0 )		/*15/06/2007	GT	para corregir defasaje */
+	}else if( !bConAsignacion )		/*13/11/2007	GT	porque en la asignacion se supone el semaforo ya descontado*/
 	{
-		--(pE->nAvailable);
-		bResultado = TRUE;
+		--(pE->nSemaforo);
 	}
-	--(pE->nSemaforo);
-	
-/*	if ( --(pE->nInstancias) < 0 )
-		pE->Estado = EstadoE_EnDeuda;
-	else if ( pE->nInstancias == 0 ) /*Ya lo incremento en el if anterior*/	
-/*		pE->Estado = EstadoE_Agotado;*/
 	
 	return bResultado;
 }
@@ -260,5 +181,36 @@ void Rec_ObtenerVectorDisponibles( tDatosRecurso *pLista, const int nTope, int* 
 	for ( i = 0; i < nTope; i++ )
 		pInstancias[i] = (pLista + i)->nAvailable;
 	
+}
+
+/*******************************************************************/
+int Rec_AgregarBloqueado(tDatosRecurso* recurso, long ppcbid){
+	int pos = 0;
+	while( pos < MAX_LISTA_BLOQ && recurso->ListaBloqueados[pos] )
+		pos++;
+	if( pos < MAX_LISTA_BLOQ ){
+		recurso->ListaBloqueados[pos] = ppcbid;
+		return OK;
+	}
+	return ERROR;	/*no se pudo agregar, capacidad de la lista excedido*/
+}
+
+/*******************************************************************/
+long Rec_ObtenerBloqueado(tDatosRecurso* recurso, int pos){
+	return (pos<MAX_LISTA_BLOQ)? recurso->ListaBloqueados[pos]:ERROR;
+}
+
+/*******************************************************************/
+long Rec_QuitarBloqueado(tDatosRecurso* recurso){
+	int pos = 1;
+	long returnVal = recurso->ListaBloqueados[0];
+	while( pos < MAX_LISTA_BLOQ )
+		recurso->ListaBloqueados[pos-1] = recurso->ListaBloqueados[pos];
+		
+	return returnVal;
+}
+/*******************************************************************/
+int Rec_SinBloqueados(tDatosRecurso* recurso){
+	return recurso->ListaBloqueados[0] == (long)NULL;
 }
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
