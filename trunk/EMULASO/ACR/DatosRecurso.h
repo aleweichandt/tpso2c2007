@@ -30,7 +30,7 @@ typedef struct
 	int 			nInstancias;	/* R: cantidad total de instancias del recurso */
 	int				nSemaforo;		/* S: indica el comportamiento símil semáforo */
 	int				nAvailable;		/* A: cantidad de instacias disponibles */
-	long			ListaBloqueados[MAX_LISTA_BLOQ];	/*los id de los bloqueados por este recurso en FIFO*/
+	long			ListaBloqueados[MAX_LISTA_BLOQ +1];	/*los id de los bloqueados por este recurso en FIFO*/
 }tDatosRecurso;
 
 /* Funciones Publicas */
@@ -44,19 +44,17 @@ tDatosRecurso* 		Rec_Buscar( tDatosRecurso *pLista,
 						const char* szNombre, const int nTope, int* pnPos  );
 tDatosRecurso* 		Rec_BuscarXPos( tDatosRecurso *pLista, const int nTope, const int nPos );
 
-int 				Rec_IncrementarInst( tDatosRecurso *pLista, 
-						const char* szNombre, const int pnTope, tDatosRecurso *pE, const int bConLiberacion );
-int 				Rec_IncrementarInstXPos( tDatosRecurso *pLista, const long lTid, 
-							const int pnTope, const int nPos, tDatosRecurso *pE, const int bConLiberacion  );
-int			 		Rec_DecrementarInst( tDatosRecurso *pLista, 
-						const char* szNombre, const int pnTope, tDatosRecurso *pE, const int bConAsignacion );
-int 				Rec_DecrementarInstXPos( tDatosRecurso *pLista, const char* szNombre, 
-							const int pnTope, const int nPos, tDatosRecurso *pE, const int bConAsignacion );
+int 				Rec_IncrementarInst( tDatosRecurso *pE, const int bConLiberacion );
+int 				Rec_DecrementarInst( tDatosRecurso *pE, const int bConAsignacion );
 												
 char				Rec_EstanLosRecursos( tDatosRecurso *pLista, const int nTope, char* szRecursos );
 int 				Rec_ConvertirVect( tDatosRecurso *pLista, const char* szRecursos,
 						const int nTope, int *pInstancias );
 void				Rec_ObtenerVectorDisponibles( tDatosRecurso *pLista, const int nTope, int* pInstancias );
+
+int					Rec_AgregarBloqueado(tDatosRecurso* recurso, long ppcbid);
+long				Rec_ObtenerBloqueado(tDatosRecurso* recurso, int pos);
+long				Rec_QuitarBloqueado(tDatosRecurso* recurso);
 
 #endif /*DATOSRECURSO_H_*/
 
