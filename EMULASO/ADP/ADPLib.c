@@ -26,28 +26,79 @@ int				g_nAlarmaActiva = 1;
 void TestPlanificacion()
 {
 	return;
+/*
+	int 			len; 
+	tPaquete* 		paq ; 
+	char 			*tmp;
+	char			buffer [ PAQUETE_MAX_TAM ]; 
+	tIDMensaje		idMsj;
+	float 			fCargaProm = 0;
+	int 			CantPCB = 0;
+	char*			buffPaq;
+	int				nSend;
+	unsigned char	szIP[4] = {'\0','\0','\0','\0'};
+	int 			pidVector[25];
+	char 			p[50];
+	int				nCantPCBs;
+	char			szPCBStates[PAQ_LEN_MSGCTRL+1];
+
+
+			
+	
+	
 	tunPCB	*ppcb; int i;
 	
-	ppcb = pcb_Crear( "127.0.0.1", "", 1, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], 5, 50, 9000 );
+	ppcb = pcb_Crear( "127.0.0.1", "", 1, 9700, NULL, NULL, 5, 50, 9000 );
 	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
 	
-	ppcb = pcb_Crear( "127.0.0.1", "", 2, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], -5, 50, 9000 );
+	ppcb = pcb_Crear( "127.0.0.1", "", 2, 9700, NULL, NULL, -5, 50, 9000 );
 	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
 
-	ppcb = pcb_Crear( "127.0.0.1", "", 3, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], 5, 50, 9000 );
-	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
+	ppcb = pcb_Crear( "127.0.0.1", "", 3, 9700, NULL, NULL, 5, 50, 9000 );
+	lpcb_AgregarALista( &ADP.m_LPB, ppcb );
 
-	ppcb = pcb_Crear( "127.0.0.1", "", 4, 9700, NULL, ADP.m_ListaSockets[SOCK_ACR], -5, 50, 9000 );
-	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
-/*	
-for ( i = 0; i < 3; i++ )
-{	
-	sleep( ADP.m_Q );
+	ppcb = pcb_Crear( "127.0.0.1", "", 4, 9700, NULL, NULL, -5, 50, 9000 );
+	lpcb_AgregarALista( &ADP.m_LPE, ppcb );
 	
-	ADP_Dispatcher( 1 );
-}
-*/
 	
+		ReducirIP( ADP.m_IP, szIP );
+		
+		memset( &(szPCBStates[0]), 0, PAQ_LEN_MSGCTRL+1 );
+		
+		ADP_CargarPCBsStates( &nCantPCBs, szPCBStates );
+		
+		paq = paquetes_newPaqInfoPCBsStates( szIP, _ID_ADP_, ADP.m_Port,
+											nCantPCBs, szPCBStates );
+		
+		if (1)
+		{
+			int i = 0;
+			int cant ;
+			int size = 0;
+			short int id;
+			char state;
+			
+			memcpy( &cant, &(paq->id.UnUsed[0]), sizeof(int) );
+			for (i = 0; i < cant; i ++)
+			{
+				memcpy( &id, &(paq->msg[size]), sizeof(short int) );
+				size += sizeof(short int);
+				memcpy( &state, &(paq->msg[size]), sizeof(char) );
+				size += sizeof(char);
+
+			}
+		}
+
+	if ( paq ) 
+		paquetes_destruir( paq );
+
+		if( (buffPaq = paquetes_newPaqGetPCBsStatesAsStr( szIP, _ID_ADP_, ADP.m_Port )) )
+		{
+		}
+	
+	paquetes_newPaqInfoPCBsStatesAsStr( szIP, _ID_ADP_, ADP.m_Port,
+											nCantPCBs, szPCBStates );
+*/	
 }
 
 void InformarLista( tListaPCB Lista )
@@ -171,6 +222,9 @@ void ADP_Dispatcher(int n)
 		
 		Log_printf( log_debug, "LPE" );
 		InformarLista( ADP.m_LPE );
+
+		Log_printf( log_debug, "LPB" );
+		InformarLista( ADP.m_LPB );
 		
 		lpcb_PasarDeLTPaLTL( &ADP.m_LPE, &ADP.m_LPL, &ADP.m_nMemDisp ); 
 	
@@ -194,9 +248,14 @@ void ADP_Dispatcher(int n)
 	
 	if ( ADP_SeCumplioTimerAverage() )
 	{
+		/*En este punto leo la config online*/
+		ADP_LeerConfigOnline();
+		
 		if ( ADP_EstoyCargado() )
 		{
-			ADP_MigrarPCBPesado();
+			ADP_DesactivarAlarma();
+			ADP_MigrarPCBPesado();/*No es el mas pesado, es el que le resta mas tiempo para terminar*/
+			ADP_ActivarAlarma();
 		}
 		
 		g_lTime2 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
@@ -311,10 +370,105 @@ void ADP_InformarReanudacion()
 
 
 
-/*TODO*/
-int		ADP_EstoyCargado(){return 1;}
-int		ADP_MigrarPCBPesado() {return 1;}
-/*TODO*/
+/*************************************************************/
+int		ADP_EstoyCargado()
+{
+	float fCarga = ADP_CalcularCargaPromReal();
+	 
+	if ( fCarga >= (float) ADP.m_nLimite2 )
+	{
+		Log_printf( log_info, "Carga prom real = %f, L2 = %f", fCarga, (float) ADP.m_nLimite2  );
+		return 1;
+	}
+	
+	return 0;
+}
+
+
+/*************************************************************/
+int	ADP_MigrarPCBPesado() 
+{/*Asumo que se refiere a cualquier PCB, este en el estado que este*/
+	int nMayor = -1000;
+	tunPCB		*pcb1 = NULL;
+	
+	if ( ADP_CantidadPCBs() <= 1 )
+	{
+		Log_log( log_info, "la cantidad de pcbs es <= 1. Entonces no quito ninguno" );
+		return OK;
+	}
+	
+	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPL, &nMayor, pcb1 );
+	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPE, &nMayor, pcb1 );
+	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPB, &nMayor, pcb1 );
+	
+	if ( pcb1 )
+	{
+		/*Este es el que tengo que quitar*/
+		if ( pcb1->pSocket )
+		{
+			Log_printf( log_info,"Decido sacar al pcb %ld", pcb1->id );
+			
+			conexiones_CerrarSocket(ADP.m_ListaSockets, pcb1->pSocket, &ADP.m_ultimoSocket);
+			ADP_EliminarDeLista( pcb1->id );
+		}
+		else
+		{
+			Log_printf( log_info,"Decido sacar al pcb %ld, PERO el socket esta en NULL!!", pcb1->id );
+			return ERROR;
+		}
+	}
+	
+	return OK;
+}
+
+/**********************************************************/
+tunPCB* ADP_BuscarPCBMayorTRestante( tListaPCB Lista, int *nMayor, tunPCB* pcb1 )
+{
+	int 			len; 
+	int 			nCont = 0;
+	tunPCB			*pPCB;
+	tunPCB			*pPCBMayorTR = pcb1;
+	unsigned char	szIPReducido[4];
+					
+	while( Lista )
+	{
+		pPCB = lpcb_Datos( Lista );
+		
+		/*TODO*/
+		/*Habria que acumular el pcb de mayor tiempo restante y devolverlo como retorno
+		 * por default se seta el retorno con el pcb1 que viene como parametro
+		 * La comparacion se hace con el param *nMayor*/
+/*		
+		Log_printf( log_debug,"Envio Start al PCB: %ld por fd = %d", 
+						pPCB->id, pPCB->pSocket->descriptor );
+		ReducirIP( ADP.m_IP, szIPReducido );	
+		if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqExecPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
+				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError("enviando exec_pcb");
+			ADP_CerrarConexion( pPCB->pSocket );
+			return;
+		}
+*/		
+		/*Log_printf( log_debug,"Se envio un EXEC al PCB %d", pPCB->id);*/
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+	
+	return pPCBMayorTR;
+}
+
+/**********************************************************/
+int ADP_CantidadPCBs()
+{
+	int nRet = 0;
+	
+	nRet =+ lista_contar( &ADP.m_LPL );
+	nRet =+ lista_contar( &ADP.m_LPE );
+	nRet =+ lista_contar( &ADP.m_LPB );
+	
+	return nRet;
+}
 
 /**********************************************************/
 void ADP_ProcesarSeniales( int senial )
@@ -328,6 +482,9 @@ void ADP_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR1 )
 	{
+		ADP_DesactivarAlarma();
+		ADP_ImprimirInfoCtr();
+		ADP_ActivarAlarma();
 	}
 	else if ( senial == SIGUSR2 )
 	{
@@ -355,6 +512,82 @@ void ADP_ProcesarSeniales( int senial )
 		}
 		signal( SIGCHLD, ADP_ProcesarSeniales );
 	}
+}
+
+/**********************************************************/
+void ADP_ImprimirInfoCtr()
+{
+	int i;
+	
+	Log_log(log_info, "  Se imprime la informacion de control del ADP  ");
+	
+	InfoCtr_Inicializar("ADP","1");
+
+	ADP_InfoLista( ADP.m_LPL, LISTO );
+	ADP_InfoLista( ADP.m_LPE, EJECUTANDO );
+	ADP_InfoLista( ADP.m_LPB, BLOQUEADO );
+
+	InfoCtr_CerrarInfo();
+}
+
+/**********************************************************/
+void ADP_InfoLista( tListaPCB Lista, tState state )
+{
+	char szArchivo[ 50 ];
+	char szCmd[50];
+	char szUsr[50];
+	char szEstado[50];
+	tunPCB	*pcb;
+	char 	*tmp;
+	tConfig *cfg;
+	
+	if ( state == LISTO )
+	{
+		strcpy( szEstado, "Listo" );
+		InfoCtr_printf( log_info, "Cola de PCBs Listos (LPL)" );
+	}
+	else if ( state == EJECUTANDO )
+	{
+		strcpy( szEstado, "Ejecutando" );
+		InfoCtr_printf( log_info, "Cola de PCBs Ejecutando (LPE)" );
+	}
+	else if ( state == BLOQUEADO )
+	{
+		strcpy( szEstado, "Bloqueado" );
+		InfoCtr_printf( log_info, "Cola de PCBs Bloqueados (LPB)" );
+	}
+	
+	while( Lista )
+	{
+		pcb = lpcb_Datos( Lista );
+		
+		ArmarPathPCBConfig( szArchivo, pcb->id );
+		
+	
+		if ( !(cfg = config_Crear( szArchivo, _PPCB_ )) ) 
+			continue;
+		
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "CREATORID" ) ) )
+		{
+			strcpy( szUsr, tmp );
+		}
+		if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )
+		{
+			strcpy( szCmd, tmp );
+		}
+		config_Destroy( cfg );
+		
+		InfoCtr_printf( log_info, "PCB.id = %ld, Usr = %s, estado = %s,  Cmd = %s", pcb->id, szUsr, szEstado, szCmd );
+		
+		if ( state == EJECUTANDO )
+		{
+			InfoCtr_printf( log_info, "Q rest. = %d", pcb->Q );
+		}
+			
+		Lista = lpcb_Siguiente( Lista );
+	}
+	
+	
 }
 
 
@@ -481,6 +714,36 @@ int ADP_LeerConfig()
 }
 
 /**********************************************************************/
+int ADP_LeerConfigOnline()
+{
+	char 	*tmp;
+	tConfig *cfg;
+	int		Q;
+	
+	do
+	{		
+		if ( !(cfg = config_Crear( "config", _ADP_ )) ) 
+			break;
+		
+		/*Levanto la configuracion*/
+		Q = config_GetVal_Int( cfg, _ADP_, "Q" );
+		
+		if ( ADP.m_Q != Q )
+		{
+			Log_printf( log_info, "Se cambia el Q de %d a %d", ADP.m_Q, Q );
+			ADP.m_Q = Q;
+		}
+
+		config_Destroy(cfg);
+
+		return OK;
+		
+	}while(0);
+	
+	return ERROR;
+}
+
+/**********************************************************************/
 int ADP_ConectarConACR()
 {
 	tSocket *pSocket;
@@ -542,7 +805,7 @@ void ADP_ConfirmarConexion( tSocket* sockIn )
 		Log_log( log_debug, "Conexion establecida con el ACR!" );
 		sockIn->callback = &ADP_AtenderACR;
 		
-		TestPlanificacion();
+		/*TestPlanificacion();*/
 	}
 	
 	if ( paq ) 
@@ -679,6 +942,8 @@ void ADP_AtenderACR ( tSocket *sockIn )
 	int 			pidVector[25];
 	int 			i;
 	char 			p[50];
+	int				nCantPCBs;
+	char			szPCBStates[PAQ_LEN_MSGCTRL+1];
 
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
@@ -736,13 +1001,76 @@ void ADP_AtenderACR ( tSocket *sockIn )
 		}
 		
 	}
+	/* el acr me pide los estados de los pcbs */
+	else if( IS_PAQ_GET_PCBS_STATES( paq ) )
+	{
+		Log_log( log_debug, "el ACR me manda un GetPCBsStates" );
 
+		ReducirIP( ADP.m_IP, szIP );
+		
+		memset( &(szPCBStates[0]), 0, PAQ_LEN_MSGCTRL+1 );
+		
+		ADP_CargarPCBsStates( &nCantPCBs, szPCBStates );
+		
+		if( (buffPaq = paquetes_newPaqInfoPCBsStatesAsStr( szIP, _ID_ADP_, ADP.m_Port,
+											nCantPCBs, szPCBStates )) )
+		{
+			Log_log( log_debug, "Envio un InfoPCBsStates" );
+			nSend = conexiones_sendBuff( sockIn, buffPaq, PAQUETE_MAX_TAM );
+		}
+	}
 
 
 	
 	if ( paq ) 
 		paquetes_destruir( paq );
 	
+}
+
+/**********************************************************/
+void ADP_CargarPCBsStates( int *pnCantPCBs, char szPCBStates[PAQ_LEN_MSGCTRL+1] )
+{
+/*	
+	BLOQUEADO = 1,
+	LISTO = 2,
+	EJECUTANDO = 3,
+*/
+	int nSize = 0;
+	(*pnCantPCBs) += ADP_LlenarBuffPCBsStates( ADP.m_LPL, &nSize, szPCBStates, LISTO ); 
+	(*pnCantPCBs) += ADP_LlenarBuffPCBsStates( ADP.m_LPE, &nSize, szPCBStates, EJECUTANDO );
+	(*pnCantPCBs) += ADP_LlenarBuffPCBsStates( ADP.m_LPB, &nSize, szPCBStates, BLOQUEADO );
+}
+/**********************************************************/
+int ADP_LlenarBuffPCBsStates( tListaPCB Lista, int *pnSize, char szPCBStates[PAQ_LEN_MSGCTRL+1], tState state )
+{
+	int 			nCont = 0;
+	tunPCB			*pPCB;
+	short int		nid;/*con int el size me daba 4, state tb, asi que tenia que bajar bytes!*/
+	char			c = (char) state;
+					
+	while( Lista )
+	{
+		nCont++;
+		
+		pPCB = lpcb_Datos( Lista );
+		nid = (short int) (pPCB->id);
+		
+		memcpy( &(szPCBStates[ *pnSize ]), &nid, sizeof(short int) );
+		(*pnSize) += sizeof(short int);
+
+		memcpy( &(szPCBStates[ *pnSize ]), &c, sizeof(char) );
+		(*pnSize) += sizeof(char);
+		
+		if ( *pnSize >= PAQ_LEN_MSGCTRL )
+		{
+			Log_printf( log_warning, "son muchos pcbs!" );
+			break;/*no quiero segFault!!*/
+		}
+		
+		Lista = lpcb_Siguiente( Lista );
+	}
+	
+	return nCont;
 }
 
 /**********************************************************/
