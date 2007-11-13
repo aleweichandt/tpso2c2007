@@ -64,6 +64,7 @@ tADP 	ADP;
 int 	ADP_Init();
 void 	ADP_Salir();
 int 	ADP_LeerConfig();
+int 	ADP_LeerConfigOnline();
 
 void 	ADP_ProcesarSeniales( int senial );
 void 	ADP_SenialTimer();
@@ -78,9 +79,15 @@ void 	ADP_CerrarConexion( tSocket *sockIn );
 
 float	ADP_CalcularCargaPromReal();
 int		ADP_EstoyCargado();
+tunPCB* ADP_BuscarPCBMayorTRestante( tListaPCB Lista, int *nMayor, tunPCB* pcb1 );
+int 	ADP_CantidadPCBs();
 void	ADP_PasarMsgAlACR();
 void	ADP_PasarMsgAlPCB();
 void	ADP_RealizarInforme();
+void 	ADP_ImprimirInfoCtr();
+void 	ADP_CargarPCBsStates( int *pnCantPCBs, char szPCBStates[PAQ_LEN_MSGCTRL+1] );
+int 	ADP_LlenarBuffPCBsStates( tListaPCB Lista, int *pnSize, char szPCBStates[PAQ_LEN_MSGCTRL+1], tState state );
+void ADP_InfoLista( tListaPCB Lista, tState state );
 
 /* - Migracion - */
 void 	ADP_RecibirArchivo( tSocket *sockIn );
