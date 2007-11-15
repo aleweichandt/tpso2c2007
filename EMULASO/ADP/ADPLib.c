@@ -1165,15 +1165,42 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	 * Si entendi, esto es tuyo miguel*/
 	else if( IS_PAQ_SOL( paq ) )
 	{
-		
+		/*unsigned char IP[4];
+		unsigned char id_Proceso;
+		unsigned short int puerto;
+		int PPCB_id;
+		tRecurso recursoSolicitado;
+		unsigned char szIP[4];
+		memset( szIP, 0, 4 );
+		ReducirIP(ADP.m_IP,szIP);
+	
+		paquetes_ParsearSol(buffer, (unsigned char**)&IP,&id_Proceso, &puerto, &PPCB_id, &recursoSolicitado);
+		lpcb_PasarDeLista(&ADP.m_LPE, &ADP.m_LPB, PPCB_id);
+		Log_printf("se paso el PPCB id = %d de la LPE a la LPB", PPCB_id);
+		if ( conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_newPaqSolAsStr(szIP, (unsigned char)_ADP_, ADP.m_Port, PPCB_id, recursoSolicitado),PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError("enviando recurso solicitado al ACR");
+		}*/
 	}
 	else if ( IS_PAQ_DEV( paq ) )
 	{
-		
+		/*unsigned char IP[4];
+		unsigned char id_Proceso;
+		unsigned short int puerto;
+		int PPCB_id;
+		tRecurso recursoSolicitado;
+		unsigned char szIP[4];
+		memset( szIP, 0, 4 );
+		ReducirIP(ADP.m_IP,szIP);
+	
+		paquetes_ParsearSol(buffer, (unsigned char**)&IP,&id_Proceso, &puerto, &PPCB_id, &recursoSolicitado);
+			
+		if ( conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_newPaqSolAsStr(szIP, (unsigned char)_ADP_, ADP.m_Port, PPCB_id, recursoSolicitado),PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+		{
+			Log_logLastError("enviando recurso devuelto al ACR");
+		}*/
 	}
 	/* - */
-
-	
 	
 	if ( paq ) 
 		paquetes_destruir( paq );

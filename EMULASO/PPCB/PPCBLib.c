@@ -30,6 +30,7 @@ int PCB_ExecutePush(char *param);
 int PCB_ExecutePop(char *param);
 
 int PCB_RemainingTimeExecution();
+void SetRemainingTime(int remainingTimeExecution);
 
 /**********************************************************/
 void PCB_ProcesarSeniales( int senial )
@@ -43,7 +44,10 @@ void PCB_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR1 )
 	{	/* Escribir informacion de control */
-		
+		if( PCB.nIdProcesoPadre == _ID_ADP_ )
+		{
+			createPCBConfig();
+		}
 		signal(SIGUSR1, PCB_ProcesarSeniales);
 		
 	}
@@ -134,6 +138,9 @@ int createPCBConfig() {
 			else if( PCB.State == LISTO )
 				config_SetVal(cfg,_PPCB_,"ESTADO","LISTO");
 			
+			sprintf(strVal,"%d",PCB_RemainingTimeExecution());
+			config_SetVal(cfg,_PPCB_,"TMP_REST",strVal);
+			
 			config_Guardar(cfg,strBuff);
 			
 			config_Destroy(cfg);
@@ -170,6 +177,8 @@ int createPCBConfig() {
 			fprintf(cfgFile,"<PUERTO_ACR>=%d\n", PCB.m_ACR_Port);
 			
 			fprintf(cfgFile,"<TMP_REST_OPER>=%d\n", PCB.tiempoRestanteOper);
+			
+			fprintf(cfgFile, "<TMP_REST>=%d\n", PCB_RemainingTimeExecution());
 			
 			fclose(cfgFile);
 		}
@@ -317,6 +326,7 @@ int PCB_ExecuteInstruction(int line) {
 	}
 	
 	executer(sentence+paramStart);
+	/*SetRemainingTime(PCB_RemainingTimeExecution());*/
 	
 	return 0;
 }
@@ -1343,6 +1353,34 @@ int PCB_RemainingTimeExecution()
 		line++;
 	}
 	return remainingTime;
+}
+/**********************************************************/
+void SetRemainingTime(int remainingTimeExecution)
+{
+		tConfig *cfg;
+		char strBuff[50];
+		char strVal[10];
+			
+		do {
+			sprintf(strBuff, "config.ppcb%ld", PCB.PPCB_ID);
+			
+			if( ExistPath(strBuff) != ERROR && PCB.argc == 3 )
+			{	/*existe el archivo*/
+			
+				if ( !(cfg = config_Crear( strBuff, _PPCB_ )) ) 
+					break;	
+				
+				bzero(strVal,sizeof(strVal));
+
+				sprintf(strVal,"%d",remainingTimeExecution);
+				config_SetVal(cfg,_PPCB_,"TMP_REST",strVal);
+				
+				config_Guardar(cfg,strBuff);
+				
+				config_Destroy(cfg);
+				
+			}
+		} while (0);	
 }
 /**********************************************************/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
