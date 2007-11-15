@@ -62,6 +62,23 @@ int MatrizRec_SumarInstancia	(tListaFilas *lista, const int cantRecursos, const 
 		fila->valores[posRecurso] += cantidad;
 	}
 }
+/*******************************************************************/
+int MatrizRec_RestarInstancia	(tListaFilas *lista, const int cantRecursos, const long lTid,
+									const int posRecurso, const int cantidad)
+{
+	tFila* fila ;
+	tFila filaBuscada;
+	tListaFilas encontrado;
+	
+	filaBuscada.tid = lTid;
+	if( !(encontrado = lista_buscar(lista,&filaBuscada,compararFila)) )	/*30/06/2007	GT	Pregunta si lo encuentra*/
+		return ERROR;
+
+	if ( cantRecursos >= posRecurso ){
+		fila = (tFila*) encontrado->datos;
+		fila->valores[posRecurso] -= cantidad;
+	}
+}
 
 /*******************************************************************/
 int MatrizRec_ObtenerInstancia	(tListaFilas *lista, const int cantRecursos, const long lTid,

@@ -96,5 +96,7 @@ int 	ACR_LiberarRecursos(int idSesion);
 void	ACR_ImprimirInfoCtr();
 void 	ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso);
 
+int ACR_DevolverRecurso(int id,tRecurso rec);
+int ACR_DevolverTodos(int id);
 
 #endif /*ACRLIB_H_*/

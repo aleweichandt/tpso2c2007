@@ -1160,6 +1160,19 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 		ADP_ActivarAlarma();
 	}
 	
+	else if(IS_PAQ_DEV(paq))
+	{/*me llega el dev, se lo reenvio al ACR*/
+		int nSend;
+		
+		Log_log( log_error, "Mando DEV al ACR" );
+		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+					
+		if(nSend != PAQUETE_MAX_TAM)
+		{
+			Log_logLastError( "error al enviar DEV al ACR" );
+		}
+	}
+	
 	/*Manejo de recursos - Buscar el pcb y pasarlo a la LPB, ver el tad DatosPCB funcion que pasa de listas- 
 	 * Hay dos funciones en esta lib que busca el pcb en todas las listas por id o por socket
 	 * Si entendi, esto es tuyo miguel*/
@@ -1182,25 +1195,7 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 			Log_logLastError("enviando recurso solicitado al ACR");
 		}*/
 	}
-	else if ( IS_PAQ_DEV( paq ) )
-	{
-		/*unsigned char IP[4];
-		unsigned char id_Proceso;
-		unsigned short int puerto;
-		int PPCB_id;
-		tRecurso recursoSolicitado;
-		unsigned char szIP[4];
-		memset( szIP, 0, 4 );
-		ReducirIP(ADP.m_IP,szIP);
-	
-		paquetes_ParsearSol(buffer, (unsigned char**)&IP,&id_Proceso, &puerto, &PPCB_id, &recursoSolicitado);
-			
-		if ( conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_newPaqSolAsStr(szIP, (unsigned char)_ADP_, ADP.m_Port, PPCB_id, recursoSolicitado),PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
-		{
-			Log_logLastError("enviando recurso devuelto al ACR");
-		}*/
-	}
-	/* - */
+
 	
 	if ( paq ) 
 		paquetes_destruir( paq );
