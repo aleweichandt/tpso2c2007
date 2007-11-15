@@ -29,6 +29,8 @@ int  MatrizRec_EliminarProceso	(tListaFilas *lista, const int cantRecursos,	cons
 int  MatrizRec_EliminarMatriz	(tListaFilas *lista);
 int  MatrizRec_SumarInstancia	(tListaFilas *lista, const int cantRecursos, const long lTid,
 									const int posRecurso, const int cantidad);
+int  MatrizRec_RestarInstancia	(tListaFilas *lista, const int cantRecursos, const long lTid,
+									const int posRecurso, const int cantidad);
 									
 int	 MatrizRec_ObtenerInstancia		 (tListaFilas *lista, const int cantRecursos, const long lTid,
 										const int posRecurso);

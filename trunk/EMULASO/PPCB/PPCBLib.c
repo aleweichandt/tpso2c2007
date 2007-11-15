@@ -358,8 +358,7 @@ int PCB_ExecuteSol(char *param) {
 	
 	memset( szIP, 0, 4 );
 	
-	if (ReducirIP(PCB.m_IP,szIP) == ERROR)
-		return;
+	ReducirIP(PCB.m_IP,szIP);
 	
 	if (PCB_RecursoFromFriendlyName(&recurso, param) == ERROR)
 		return;
@@ -391,8 +390,7 @@ int PCB_ExecuteDev(char *param) {
 	
 	memset( szIP, 0, 4 );
 	
-	if (ReducirIP(PCB.m_IP,szIP) == ERROR)
-		return;
+	ReducirIP(PCB.m_IP,szIP);
 	
 	if (PCB_RecursoFromFriendlyName(&recurso, param) == ERROR)
 		return;

@@ -657,9 +657,19 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	paq = paquetes_CharToPaq( buffer );
 	
 	if(IS_PAQ_PRINT(paq))
-	{/*me llega el print, se lo reenvio al ADS*/
+	{/*me llega el print*/
 		int nSend;
+		long int pid;
+		/*chequeo el unused en la cabecera por si finaliza el pcb*/
+		memcpy(&pid, &(paq->id.UnUsed), sizeof(long int) );
+		if(pid != 0){
+			/*esta cargado el unused, se liberan los recursos*/
+			Log_printf(log_debug,"detecto finalizacion por paquete print. Se liberan los recursosdel PPCB id:%i",pid);
+				
+			ACR_DevolverTodos(pid);
+		}
 		
+		/*se lo reenvio al ADS*/
 		Log_log( log_debug, "Mando PRINT al ADS" );
 		nSend = conexiones_sendBuff( ACR.psocketADS, (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
 					
@@ -667,6 +677,19 @@ void ACR_AtenderADP ( tSocket *sockIn )
 		{
 			Log_logLastError("error al enviar PRINT al ADS" );
 		}
+	}
+	if(IS_PAQ_DEV(paq))
+	{/*me llega un DEV del ADP. libero el recurso*/
+		int id;
+		tRecurso rec;
+		
+		Log_log(log_debug, "me llego un DEV del ADP");
+		
+		memcpy( &(paq->msg[SOLDEV_POS_PPCBID]), &id ,  sizeof (int) );
+		memcpy( &(paq->msg[SOLDEV_POS_RECURSO]), &rec , sizeof (tRecurso));
+		
+		if(ACR_DevolverRecurso(id,rec)==OK)Log_log(log_info,"se devolvio el recurso correctamente");
+		else Log_log(log_info,"no hay recursos que devolver");
 	}
 	else if ( IS_PAQ_INFO_PCBS_STATES( paq ) )
 	{
@@ -1121,6 +1144,7 @@ int ACR_LiberarRecursos(int idSesion){
 						ppcb->pid);
 				
 					/*Elimino el proceso PPCB*/
+					ACR_DevolverTodos(ppcb->pid);
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 					Lista = ACR.t_ListaPpcbPend;
@@ -1131,6 +1155,7 @@ int ACR_LiberarRecursos(int idSesion){
 					/*si esta activo acumulo en vector de pids para mandar a adps*/
 					pidVector[i]=ppcb->pid;
 					i++;
+					ACR_DevolverTodos(ppcb->pid);
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 					Lista = ACR.t_ListaPpcbPend;
 				}else{
@@ -1154,4 +1179,35 @@ int ACR_LiberarRecursos(int idSesion){
 		}
 	}
 	return OK;
+}
+/************************************************************************/
+int ACR_DevolverTodos(int id){
+	int *valores;
+	int i;
+	
+	valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id);
+	if(valores == NULL)return ERROR;
+	
+	for(i=0;i<MAX_LISTA_REC;i++){
+		ACR.ListaRecursos[i].nAvailable+=valores[i];
+		ACR.ListaRecursos[i].nSemaforo+=valores[i];
+		if(ACR.ListaRecursos[i].nSemaforo > 0)ACR.ListaRecursos[i].nAvailable=ACR.ListaRecursos[i].nSemaforo;
+		
+		Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i",i,ACR.ListaRecursos[i].nSemaforo, ACR.ListaRecursos[i].nAvailable);
+	}
+	return (MatrizRec_EliminarProceso(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id));
+}
+/*************************************************************************/
+int ACR_DevolverRecurso(int id,tRecurso rec){
+	
+	int *valores;
+	valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id);
+	if(valores == NULL)return ERROR;
+		
+	ACR.ListaRecursos[rec].nSemaforo++;
+	if(ACR.ListaRecursos[rec].nSemaforo > 0)ACR.ListaRecursos[rec].nAvailable++;
+	
+	Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i",rec,ACR.ListaRecursos[rec].nSemaforo, ACR.ListaRecursos[rec].nAvailable);
+	
+	return (MatrizRec_RestarInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id,	rec, 1));
 }
