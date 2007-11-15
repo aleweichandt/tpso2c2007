@@ -562,7 +562,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 				Log_logLastError( "Error enviando Logout de un usuario al ACR" );
 			}
 			
-			/*UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);*/
+			UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
 			
 			paquetes_destruir( paqSend );
 		}
