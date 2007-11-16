@@ -1037,7 +1037,7 @@ char* paquetes_newPaqSolAsStr( unsigned char IP[4], unsigned char id_Proceso, un
 		
 		return NULL;
 }
-tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, 
+tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, 
 		int* 		PPCB_id, 
 		tRecurso* 	recursoSolicitado )
 {
@@ -1086,7 +1086,7 @@ char* paquetes_newPaqDevAsStr( unsigned char IP[4], unsigned char id_Proceso, un
 		
 		return NULL;
 }
-tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, 
+tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, 
 		int* PPCB_id, 
 		tRecurso* recursoDevuelto )
 {

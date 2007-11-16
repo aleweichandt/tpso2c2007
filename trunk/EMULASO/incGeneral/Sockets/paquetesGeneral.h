@@ -317,8 +317,8 @@ tPaquete* paquetes_newPaqSol( unsigned char IP[4], unsigned char id_Proceso, uns
 tPaquete* paquetes_newPaqDev( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
 char* paquetes_newPaqSolAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado );
 char* paquetes_newPaqDevAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
-tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoSolicitado );
-tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP[4], unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoDevuelto );
+tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoSolicitado );
+tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoDevuelto );
 
 /*----------------------RemainingTimeExecution-------------------*/
 #define RTM_POS_PPCBID 				0
