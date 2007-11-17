@@ -23,6 +23,14 @@ int				g_nAlarmaActiva = 1;
  *            PROTOTIPOS DE FUNCIONES Privadas     *
 \**************************************************/
 
+/****************************************************/
+void ADP_TimeOut( tSocket *sockIn )
+/*A ver como anda con esto.....*/
+{/*Todavia no lo uso*/
+	ADP_Dispatcher( SIGALRM );
+}
+
+
 void TestPlanificacion()
 {
 	return;
@@ -133,7 +141,7 @@ void ADP_ActivarAlarma()
 		return;
 		
 	Log_printf( log_debug, "Se Activa alarma" );
-		
+/*		
 	if ( !ADP_SeCumplioQ() && !ADP_SeCumplioTimerAverage() )
 	{
 		alarm( 1 );
@@ -143,6 +151,9 @@ void ADP_ActivarAlarma()
 	{
 		ADP_Dispatcher( SIGALRM );	
 	}
+*/
+	alarm( 1 );
+	signal(SIGALRM, &ADP_Dispatcher ); 
 	
 	g_nAlarmaActiva = 1;
 }
@@ -253,9 +264,7 @@ void ADP_Dispatcher(int n)
 		
 		if ( ADP_EstoyCargado() )
 		{
-			ADP_DesactivarAlarma();
 			ADP_MigrarPCBPesado();/*No es el mas pesado, es el que le resta mas tiempo para terminar*/
-			ADP_ActivarAlarma();
 		}
 		
 		g_lTime2 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
@@ -375,9 +384,9 @@ int		ADP_EstoyCargado()
 {
 	float fCarga = ADP_CalcularCargaPromReal();
 	 
-	if ( fCarga >= (float) ADP.m_nLimite2 )
+	if ( fCarga >= ADP.m_fLimite2 )
 	{
-		Log_printf( log_info, "Carga prom real = %f, L2 = %f", fCarga, (float) ADP.m_nLimite2  );
+		Log_printf( log_info, "Carga prom real = %f, L2 = %f", fCarga, ADP.m_fLimite2  );
 		return 1;
 	}
 	
@@ -429,28 +438,40 @@ tunPCB* ADP_BuscarPCBMayorTRestante( tListaPCB Lista, int *nMayor, tunPCB* pcb1 
 	tunPCB			*pPCB;
 	tunPCB			*pPCBMayorTR = pcb1;
 	unsigned char	szIPReducido[4];
+	int				nTimeRemaining = 1000;
+	char			szArchivo[255];
+	tConfig 		*cfg;
 					
 	while( Lista )
 	{
 		pPCB = lpcb_Datos( Lista );
 		
-		/*TODO*/
-		/*Habria que acumular el pcb de mayor tiempo restante y devolverlo como retorno
+		/*le mando la senial SIGUSR1 para que escriba el time remaining en el achivo de config.pcb*/
+		kill( pPCB->pid, SIGUSR1 );
+		usleep(1000); /*Por las dudas, le doy un tiempo para que grabe*/
+	
+		ArmarPathPCBConfig( szArchivo, pPCB->id );
+			
+		if ( (cfg = config_Crear( szArchivo, _PPCB_ )) )
+		{
+			nTimeRemaining = config_GetVal_Int(cfg,_PPCB_,"TMP_REST");
+			config_Destroy( cfg );
+			cfg = NULL;
+		}
+		else
+		{
+			Log_printf( log_error, "No se pudo leer el %s!!", szArchivo );
+			nTimeRemaining = 1000;
+		}
+		/*Acumular el pcb de mayor tiempo restante y devolverlo como retorno
 		 * por default se seta el retorno con el pcb1 que viene como parametro
 		 * La comparacion se hace con el param *nMayor*/
-/*		
-		Log_printf( log_debug,"Envio Start al PCB: %ld por fd = %d", 
-						pPCB->id, pPCB->pSocket->descriptor );
-		ReducirIP( ADP.m_IP, szIPReducido );	
-		if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqExecPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
-				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
-		{
-			Log_logLastError("enviando exec_pcb");
-			ADP_CerrarConexion( pPCB->pSocket );
-			return;
-		}
-*/		
-		/*Log_printf( log_debug,"Se envio un EXEC al PCB %d", pPCB->id);*/
+		 
+		 if ( nTimeRemaining > *nMayor)
+		 {
+		 	*nMayor = nTimeRemaining;
+		 	pPCBMayorTR = pPCB;
+		 }
 		
 		Lista = lpcb_Siguiente( Lista );
 	}
@@ -463,9 +484,9 @@ int ADP_CantidadPCBs()
 {
 	int nRet = 0;
 	
-	nRet =+ lista_contar( &ADP.m_LPL );
-	nRet =+ lista_contar( &ADP.m_LPE );
-	nRet =+ lista_contar( &ADP.m_LPB );
+	nRet += lista_contar( &ADP.m_LPL );
+	nRet += lista_contar( &ADP.m_LPE );
+	nRet += lista_contar( &ADP.m_LPB );
 	
 	return nRet;
 }
@@ -701,8 +722,18 @@ int ADP_LeerConfig()
 		
 		ADP.m_nMemDisp = ADP.m_nMemMax = config_GetVal_Int( cfg, _ADP_, "MAX_MEM" );
 		ADP.m_Q = config_GetVal_Int( cfg, _ADP_, "Q" );
-		ADP.m_nLimite1 = config_GetVal_Int( cfg, _ADP_, "L1" );
-		ADP.m_nLimite2 = config_GetVal_Int( cfg, _ADP_, "L2" );
+		
+		if ( (tmp = config_GetVal( cfg, _ADP_, "L1" ) ) )
+		{
+			ADP.m_fLimite1 = atof( tmp );
+		}
+		
+		if ( (tmp = config_GetVal( cfg, _ADP_, "L2" ) ) )
+		{
+			ADP.m_fLimite2 = atof( tmp );
+		}
+		
+		ADP.m_nCantPCBs = config_GetVal_Int( cfg, _ADP_, "CantPCBs" );
 
 		config_Destroy(cfg);
 
@@ -949,6 +980,7 @@ void ADP_AtenderACR ( tSocket *sockIn )
 	unsigned char	id_proceso;
 	unsigned short 	puerto;
 
+
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
 	if ( ERROR == len || !len)
@@ -969,7 +1001,8 @@ void ADP_AtenderACR ( tSocket *sockIn )
 		if ( (fCargaProm = ADP_CalcularCargaPromReal()) <= 0.0 )
 			fCargaProm = 1.0;
 		
-		CantPCB = (float)ADP.m_nMemMax / fCargaProm; 
+		/*CantPCB = (float)ADP.m_nMemMax / fCargaProm; Ubiese estado bueno haberlo pensado como funcion, pero el cambio es facil igual*/
+		CantPCB = ADP.m_nCantPCBs; 
 		Log_printf(log_debug,"CantPCB(%d) = ADP.m_nMemMax(%.5f) / fCargaProm(%.5f) = (%.5f)",
 					CantPCB,(float)ADP.m_nMemMax, fCargaProm, (float)ADP.m_nMemMax / fCargaProm);
 		ReducirIP( ADP.m_IP, szIP ); /*01-10-07:LAS: Esto lo tenia que reducir*/
@@ -1439,9 +1472,11 @@ void 	ADP_CerrarConexion( tSocket *sockIn )
 float	ADP_CalcularCargaPromReal()
 {
 	float fCarga;
-	char loadavg[50+1] ;
+	/*char loadavg[50+1] ;*/
+	char loadavg[255] ;
 	FILE *archivo;
 	
+	memset( loadavg, 0, 255 );
 	
 	
 	if ((archivo = fopen("/proc/loadavg", "r")) == NULL) 
