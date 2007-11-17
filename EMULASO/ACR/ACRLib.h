@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define ALRM_T 10				/*Periodo en segundos para la alarma*/
+#define ALRM_T 4				/*Periodo en segundos para la alarma*/
 
 #define SOCK_ESCUCHA 	0	/* Define los slots para los sockets */
 #define SOCKS_OCUPADOS 	1
@@ -93,6 +93,13 @@ void 	ACR_DesconectarADP(tSocket *sockIn);
 void 	ACR_DesconectarPPCB(tSocket *sockIn);
 
 int 	ACR_LiberarRecursos(int idSesion);
+void 	ACR_PedirRecurso(long ppcbid, tRecurso recurso);
+void 	ACR_ExtraerUserName(char* szUserNAme, const char* szLinea);
+void 	ACR_ExtraerRecursos(char* szRecursos, const char* szLinea);
+char 	ACR_EstaRecurso(const char* szRecursoPedido, char *szRecursos );
+void 	ACR_ControlarConcesionRecursos();
+void 	ACR_ControlarConcesionRecurso(tDatosRecurso* recurso, int posRecurso);
+void 	ACR_ConcederRecurso(tPpcbAcr* ppcb, tDatosRecurso* recurso, int posRecurso);
 void	ACR_ImprimirInfoCtr();
 void 	ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso);
 

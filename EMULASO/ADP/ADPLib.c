@@ -944,7 +944,10 @@ void ADP_AtenderACR ( tSocket *sockIn )
 	char 			p[50];
 	int				nCantPCBs;
 	char			szPCBStates[PAQ_LEN_MSGCTRL+1];
-
+	tunPCB			*pcb;
+	int			pcb_id;
+	unsigned char	id_proceso;
+	unsigned short 	puerto;
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -1019,8 +1022,29 @@ void ADP_AtenderACR ( tSocket *sockIn )
 			nSend = conexiones_sendBuff( sockIn, buffPaq, PAQUETE_MAX_TAM );
 		}
 	}
+	else if( IS_PAQ_SOL_CONCEDIDO(paq) )
+	{
+		Log_log(log_debug, "recibo PAQ_SOL_CONCEDIDO");
+		
+		paquetes_ParsearSolConcedido(buffer,szIP,&id_proceso,&puerto,&pcb_id);
+		
+		if( pcb = lpcb_BuscarPCBxid( &ADP.m_LPB, (long)pcb_id ) ) /*Busco el pcb y actualizo el socket*/
+		{
+			nSend = conexiones_sendBuff( pcb->pSocket, (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+		
+			if(nSend != PAQUETE_MAX_TAM)
+			{
+				Log_logLastError( "error al enviar PAq_SOL_CONCEDIDO al ACR" );
+			}
 
-
+			lpcb_PasarDeLista( &ADP.m_LPB, &ADP.m_LPL, pcb->id );
+			Log_printf(log_info,"se paso de bloqueado a listos el ppcb id %ld",pcb->id);
+		}
+		else
+		{
+			Log_printf(log_error,"no se encontro el ppcb en la lista de bloqueados");
+		}
+	}
 	
 	if ( paq ) 
 		paquetes_destruir( paq );

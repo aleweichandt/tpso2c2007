@@ -214,6 +214,7 @@ void ACR_Timer( tSocket* sockIn )
 	/*Log_log( log_info, "Recibo senial SIGALRM");*/
 	
 	ACR_ControlarPendientes();
+	ACR_ControlarConcesionRecursos();
 }
 
 /**********************************************************************/
@@ -233,7 +234,8 @@ void ACR_PonerTimer(time_t* tiempo){
 /**********************************************************/
 void ACR_ImprimirInfoCtr()
 {
-	int i;
+	int i, pos;
+	long ppcbid;
 	tDatosRecurso* recurso;
 	
 	Log_log(log_info, "  Se imprime la informacion de control del ACR  ");
@@ -242,7 +244,7 @@ void ACR_ImprimirInfoCtr()
 	
 	for (i = 0; i < ACR.nCantRecursos; ++i) {
 
-		recurso =	Rec_BuscarXPos(ACR.ListaRecursos, ACR.nCantRecursos, i);
+		recurso = Rec_BuscarXPos(ACR.ListaRecursos, ACR.nCantRecursos, i);
 		InfoCtr_printf(log_info, "recurso:  %s tiene %d disponibles de un total de %d (sem:%d).",
 				recurso->szNombre,recurso->nAvailable,recurso->nInstancias, recurso->nSemaforo );
 
@@ -251,6 +253,11 @@ void ACR_ImprimirInfoCtr()
 
 		InfoCtr_log(log_info,"Los PPCBs que lo estan esperando son: ");
 		/*TODO: Hacer*/
+		pos = 0;
+		while( (ppcbid = Rec_ObtenerBloqueado(recurso, pos)) > 0){
+			InfoCtr_printf(log_info,"%ld",ppcbid);
+			pos++;
+		}
 	}
 	
 	InfoCtr_CerrarInfo();
@@ -272,7 +279,7 @@ void ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso)
 		/*Log_printf(log_debug,"resultado Instancia: %d",nResul);*/
 		if(nResul == ERROR)
 		{
-			Log_printf(log_error,"No se encuentra la fila P:%ld en la matriz",ppcb->pid);
+			Log_printf(log_warning,"No se encuentra la fila P:%ld en la matriz",ppcb->pid);
 		}else if( nResul > 0 )
 		{
 			InfoCtr_printf(log_info, "	ppcb-id: %ld, prog %s de %s. (instancias:%d)", ppcb->pid,ppcb->szComando,ppcb->szUsuario,nResul);
@@ -450,6 +457,7 @@ void ACR_ControlarPendientes(void)
 			ppcb->sActividad = Estado_Neutral;
 			ACR_DeterminarNodo(ppcb);
 			break;	/*se termina para asegurar que el ppcb migre exitosamente o muera*/
+			/*para probar*/
 			
 		}else if ( ppcb->sActividad == Estado_Neutral )
 		{
@@ -645,6 +653,10 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	char 			*tmp;
 	char			buffer [ PAQUETE_MAX_TAM ]; 
 	unsigned char	ip[4];
+	unsigned char 	id_Proceso;
+	unsigned short 	puerto;
+	tRecurso		recurso;
+	int				ppcbid;
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -711,7 +723,13 @@ void ACR_AtenderADP ( tSocket *sockIn )
 			}
 */		
 	}
-
+	else if( IS_PAQ_SOL(paq) ){
+		
+		paquetes_ParsearSol(buffer,ip,&id_Proceso,&puerto,&ppcbid,&recurso);
+		
+		ACR_PedirRecurso((long)ppcbid, recurso);
+	}
+	
 	if( paq )
 		paquetes_destruir(paq);
 }
@@ -1210,4 +1228,196 @@ int ACR_DevolverRecurso(int id,tRecurso rec){
 	Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i",rec,ACR.ListaRecursos[rec].nSemaforo, ACR.ListaRecursos[rec].nAvailable);
 	
 	return (MatrizRec_RestarInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id,	rec, 1));
+}
+/**********************************************************************/
+void ACR_PedirRecurso(long ppcbid, tRecurso recurso)
+{
+	int pos;
+	tPpcbAcr* ppcb;
+	
+	do{
+		/* Verifica si el usuario tiene permiso sobre el recurso pedido*/
+		if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL ){
+			Log_printf(log_error,"no se ha encontrado el ppcb id: %ld",ppcbid);
+			break;
+		}
+		
+		if( !ACR_VerificaPermisosUsuario(ppcb->szUsuario,recurso) ){
+			Log_printf(log_info,"El usuario %s no tiene permisos sobre el recurso %d",
+						ppcb->szUsuario,recurso);
+			break;
+		}
+		
+		Rec_DecrementarInst(&ACR.ListaRecursos[recurso],FALSE);
+		/*no asigna pero disminuye el semaforo*/
+		
+		if( Rec_AgregarBloqueado(&ACR.ListaRecursos[recurso], ppcbid) == ERROR ){
+			Log_log(log_error,"no se pudo agregar a la lista de bloqueados");
+			break;
+		}
+		
+		Log_printf(log_info,"el ppcb_id %ld ha pedido recurso %d",ppcbid,recurso);
+		return;	
+	}while(0);
+	Log_printf(log_error,"el ppcb_id %ld no pudo pedir recurso %d",ppcbid,recurso);
+	
+}
+
+/**********************************************************************/
+int ACR_VerificaPermisosUsuario(char szUsuario[LEN_USUARIO], tRecurso recurso){
+	char szLinea[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	char szUserNameExt[LEN_USUARIO] = {'\0'};
+	char szRecursosExt[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	FILE *pfile;
+	
+	if( ( pfile = fopen( ACR.sz_userPath, "r" ) ) == NULL )
+	{
+		Log_printf(log_debug, "Error al abrir el archivo de Usuarios\n");
+		return FALSE;
+	}
+	
+	while(fgets(szLinea,LEN_MAX_LINEA_ARCH_USUARIOS, pfile))
+	{
+		ACR_ExtraerUserName(szUserNameExt, szLinea);
+		ACR_ExtraerRecursos(szRecursosExt, szLinea);
+		if ((strcmp(szUsuario, szUserNameExt) == 0) && 
+				ACR_EstaRecurso(ACR.ListaRecursos[recurso].szNombre, szRecursosExt))
+		{
+			fclose(pfile);
+			return TRUE;
+		}
+	}
+	fclose(pfile);
+	return FALSE;
+}
+/**********************************************************/
+void ACR_ExtraerUserName(char* szUserNAme, const char* szLinea)
+{
+	char szLineaCpy[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	
+	strcpy(szLineaCpy, szLinea);
+	strcpy(szUserNAme, strtok(szLineaCpy, ":"));
+	return;
+}
+/**********************************************************/
+void ACR_ExtraerRecursos(char* szRecursos, const char* szLinea)
+{
+	char szLineaCpy[LEN_MAX_LINEA_ARCH_USUARIOS] = {'\0'};
+	char* p;
+	strcpy(szLineaCpy,szLinea);
+	p = strtok(szLineaCpy, ":");
+	p = strtok(NULL, ":");
+	p = strtok(NULL, ":");
+	strcpy(szRecursos, p);
+	return;
+}
+
+/***********************************************************************************/
+char ACR_EstaRecurso( const char* szRecursoPedido, char *szRecursos )
+{
+	char szEncrips[256];
+	char *pAux;
+	
+	if ( strlen(szRecursos) == 0 )
+		return FALSE;
+	
+	strcpy( szEncrips, szRecursos );/*Hago esto porque el strtok afecta al char de entrada*/
+	
+	pAux = strtok( szEncrips, _SEP_RECURSO_ );
+	
+	while ( pAux )
+	{
+		if ( strcmp( pAux, szRecursoPedido ) == 0 )
+		{
+			return TRUE;			
+		}
+		
+		pAux = strtok( NULL, _SEP_RECURSO_ );
+	}
+	return FALSE;
+}
+
+/**********************************************************************/
+void ACR_ControlarConcesionRecursos()
+{
+	int i;
+	tDatosRecurso* recurso;
+	
+	for (i = 0; i < ACR.nCantRecursos; ++i) {
+
+		recurso = Rec_BuscarXPos(ACR.ListaRecursos, ACR.nCantRecursos, i);
+		ACR_ControlarConcesionRecurso(recurso,i);
+	}
+}
+
+/**********************************************************************/
+void ACR_ControlarConcesionRecurso(tDatosRecurso* recurso, int posRecurso)
+{
+	int 	pos;
+	long 	ppcbid;
+	tPpcbAcr* ppcb = NULL;
+	
+	/* se verifica si el recurso tiene ppcbs bloqueados */
+	if( Rec_SinBloqueados(recurso) )
+		return;
+	
+	/* se verifica que hayan instancias disponibles del recurso */
+	if(recurso->nAvailable == 0)
+		return;
+	
+	ppcbid = Rec_ObtenerBloqueado(recurso,0);
+
+	if( ppcbid == (long)NULL ){
+		Log_log(log_warning,"se obtuvo un bloqueado nulo");
+		return;
+	}
+	
+	if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL ){
+		Log_printf(log_error,"no se ha encontrado el ppcb id: %ld",ppcbid);
+		return;
+	}
+	
+	if( ppcb->sActividad != Estado_Activo ){
+		Log_printf(log_info,"el ppcb id %ld que se quizo asignar no está en un nodo de red de carga",
+					ppcb->pid);
+		return;
+	}
+	
+	ACR_ConcederRecurso( ppcb, recurso, posRecurso );
+	
+}
+
+/**********************************************************************/
+void ACR_ConcederRecurso(tPpcbAcr* ppcb, tDatosRecurso* recurso, int posRecurso)
+/* Esta funcion tiene efecto de lado, que se evito
+ * tener anteriormente en el procedimiento */
+{
+	int 	nSend;
+	long 	ppcbidBLoqueado = Rec_QuitarBloqueado(recurso);
+	char 	*tmp;
+	unsigned char ip[4]={'\0','\0','\0','\0'};
+	
+	if( ppcbidBLoqueado != ppcb->pid ){
+		Log_printf(log_error, "el ppcbid que se saco de la lista de bloqueados (%ld) no coincide con el ppcb(%ld)",
+					ppcbidBLoqueado, ppcb->pid );
+	}
+	
+	if( Rec_DecrementarInst(recurso,TRUE) ){
+		Log_printf( log_info, "Se concedio el recurso %s al ppcb id %ld %s de %s",
+				 	recurso->szNombre, ppcb->pid, ppcb->szComando, ppcb->szUsuario );
+		
+		MatrizRec_SumarInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,ppcb->pid, posRecurso,1);
+		
+		tmp = paquetes_newPaqSolConcedidoAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,(int)ppcb->pid);
+		
+		nSend = conexiones_sendBuff( ppcb->socketADP, tmp, PAQUETE_MAX_TAM );
+		if( nSend == (int)NULL || nSend == ERROR )
+			Log_logLastError("Ocurrio un error en envío de PAQ_SOL_CONCEDIDO");
+		
+		
+	}else{
+		Log_printf( log_error, "No se concedio el recurso %s al ppcb id %ld %s de %s",
+				 	recurso->szNombre, ppcb->pid, ppcb->szComando, ppcb->szUsuario );
+	}
+	
 }

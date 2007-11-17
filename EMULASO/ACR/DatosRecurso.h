@@ -55,6 +55,7 @@ void				Rec_ObtenerVectorDisponibles( tDatosRecurso *pLista, const int nTope, in
 int					Rec_AgregarBloqueado(tDatosRecurso* recurso, long ppcbid);
 long				Rec_ObtenerBloqueado(tDatosRecurso* recurso, int pos);
 long				Rec_QuitarBloqueado(tDatosRecurso* recurso);
+int 				Rec_SinBloqueados(tDatosRecurso* recurso);
 
 #endif /*DATOSRECURSO_H_*/
 
