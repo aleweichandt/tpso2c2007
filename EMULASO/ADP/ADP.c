@@ -15,11 +15,13 @@
 /**********************************************************/
 int main(int argc, char *argv[])
 {
+/*	TestPlanificacion();*/
+	
 	if ( ADP_Init() == ERROR )
 		return EXIT_SUCCESS;
 	
 	while ( 1 )
-	{		
+	{
 	 	conexiones_aguardarConexion( ADP.m_ListaSockets, 
 	 								&(ADP.m_ultimoSocket) );
 	}

@@ -48,12 +48,12 @@ typedef struct
 	tListaPCB	m_LPE;
 	
 	int			m_Q;
-	int			m_nLimite1,
-				m_nLimite2;
+	float		m_fLimite1,
+				m_fLimite2;
 	/*Memoria*/
 	int			m_nMemMax,
 				m_nMemDisp;	
-
+	int			m_nCantPCBs;
 	
 } tADP;
 
@@ -87,7 +87,7 @@ void	ADP_RealizarInforme();
 void 	ADP_ImprimirInfoCtr();
 void 	ADP_CargarPCBsStates( int *pnCantPCBs, char szPCBStates[PAQ_LEN_MSGCTRL+1] );
 int 	ADP_LlenarBuffPCBsStates( tListaPCB Lista, int *pnSize, char szPCBStates[PAQ_LEN_MSGCTRL+1], tState state );
-void ADP_InfoLista( tListaPCB Lista, tState state );
+void 	ADP_InfoLista( tListaPCB Lista, tState state );
 
 /* - Migracion - */
 void 	ADP_RecibirArchivo( tSocket *sockIn );
@@ -109,6 +109,8 @@ int 	ADP_PasarDeLPLaLPE();
 void 	ADP_LiberarRecursos(int pid);
 tunPCB* ADP_BuscarPCB( long id );
 void ADP_EliminarDeLista( long id );
+
+void ADP_TimeOut( tSocket *sockIn );
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
