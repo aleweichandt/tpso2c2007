@@ -1104,6 +1104,54 @@ tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP, unsigned c
 		
 		return paq;
 }
+
+char IS_PAQ_SOL_CONCEDIDO( tPaquete *paq ){ return (paq->id.id_Msg == PAQ_SOL_CONCEDIDO); }
+
+tPaquete* paquetes_newPaqSolConcedido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id ){
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_Crear() ) )
+		return NULL;
+	
+	paquetes_CargarIdMSg( paq, IP, id_Proceso, PAQ_SOL_CONCEDIDO , puerto );
+	
+	paq->msg_len = PAQ_LEN_MSGCTRL;
+	
+	memcpy( &(paq->msg[SOLDEV_POS_PPCBID]), &PPCB_id, sizeof( int ) );
+	
+	return paq;	
+}
+
+char* paquetes_newPaqSolConcedidoAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id){
+	tPaquete *pNew; char *Ret;
+	
+	if ( (pNew = paquetes_newPaqSolConcedido(IP,id_Proceso, puerto, PPCB_id )) )
+	{
+		Ret = paquetes_PaqToChar( pNew );
+		
+		paquetes_destruir( pNew );
+		
+		return Ret;
+	}	
+	
+	return NULL;
+}
+
+tPaquete* paquetes_ParsearSolConcedido( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id ){
+	tPaquete *paq;
+	
+	if ( !(paq = paquetes_CharToPaq( buffer ) ) )
+		return NULL;
+	
+	memcpy( IP, &(paq->id.IP), sizeof(char[4]) );
+	memcpy( id_Proceso, &(paq->id.id_Proceso), sizeof(unsigned char) );
+	memcpy( puerto, &(paq->id.puerto), sizeof(unsigned short int) );
+	
+	memcpy( PPCB_id, &(paq->msg[SOLDEV_POS_PPCBID]),  sizeof (int) );
+	
+	return paq;
+}
+
 /*--------------------------RemainingTimeExecution-------------------------------*/
 
 tPaquete* paquetes_newPaqGetRemainingTimeExecution( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto )

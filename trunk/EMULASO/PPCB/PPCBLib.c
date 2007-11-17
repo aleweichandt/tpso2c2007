@@ -1018,10 +1018,12 @@ void PCB_AtenderADP ( tSocket *sockIn )
 		PCB.State = LISTO;
 		
 	}else if ( IS_PAQ_EXEC_PCB(paq) ){
-		
-		Log_log(log_info, "Se reanuda la Ejecucion del PPCB");
-		PCB.State = EJECUTANDO;
-		
+		if( PCB.State == LISTO ){
+			Log_log(log_info, "Se reanuda la Ejecucion del PPCB");
+			PCB.State = EJECUTANDO;
+		}else{
+			Log_log(log_info, "Se intento reanudar la Ejecucion del PPCB pero no tiene estado LISTO");
+		}
 	}else if (IS_PAQ_GET_REMAINING_TIME_EXECUTION(paq)){
 		tPaquete *pPaq;
 		int		nSend;
