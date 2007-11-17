@@ -104,6 +104,7 @@ typedef enum
 	
 	/*sol y dev de recursos*/
 	PAQ_SOL,
+	PAQ_SOL_CONCEDIDO,
 	PAQ_DEV,
 	
 	/*RemainingTimeExecution*/
@@ -312,12 +313,16 @@ tPaquete* paquetes_newPaqKill( unsigned char IP[4], unsigned char id_Proceso, un
 #define SOLDEV_POS_RECURSO	sizeof(int)
 
 char IS_PAQ_SOL( tPaquete *paq );
+char IS_PAQ_SOL_CONCEDIDO( tPaquete *paq );
 char IS_PAQ_DEV( tPaquete *paq );
 tPaquete* paquetes_newPaqSol( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado );
+tPaquete* paquetes_newPaqSolConcedido( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id );
 tPaquete* paquetes_newPaqDev( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
 char* paquetes_newPaqSolAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoSolicitado );
+char* paquetes_newPaqSolConcedidoAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id);
 char* paquetes_newPaqDevAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int PPCB_id, tRecurso recursoDevuelto );
 tPaquete* paquetes_ParsearSol( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoSolicitado );
+tPaquete* paquetes_ParsearSolConcedido( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id );
 tPaquete* paquetes_ParsearDev( const char* buffer, unsigned char* IP, unsigned char* id_Proceso, unsigned short int* puerto, int* PPCB_id, tRecurso* recursoDevuelto );
 
 /*----------------------RemainingTimeExecution-------------------*/
