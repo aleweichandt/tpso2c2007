@@ -1046,8 +1046,12 @@ void PCB_AtenderADP ( tSocket *sockIn )
 			Log_logLastError( "Error enviando INFO_REMAINING_TIME_EXECUTION al ADP" );
 		}	
 		paquetes_destruir( pPaq );
+	}else if (IS_PAQ_SOL_CONCEDIDO(paq)){
+		int id;
+		memcpy( &id, &(paq->msg[SOLDEV_POS_PPCBID]), sizeof( int ) );
+		Log_log(log_info, "se concedio la solicitud al ppcb_id");
+		PCB.State = LISTO;
 	}
-	
 	if ( paq ) 
 		paquetes_destruir( paq );
 	

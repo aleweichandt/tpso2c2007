@@ -103,7 +103,8 @@ void 	ACR_ConcederRecurso(tPpcbAcr* ppcb, tDatosRecurso* recurso, int posRecurso
 void	ACR_ImprimirInfoCtr();
 void 	ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso);
 
-int ACR_DevolverRecurso(int id,tRecurso rec);
-int ACR_DevolverTodos(int id);
+int ACR_DevolverRecurso(long id,tRecurso rec);
+int ACR_DevolverTodos(long id);
+int ACR_CrearEnListaRec(long id); 
 
 #endif /*ACRLIB_H_*/
