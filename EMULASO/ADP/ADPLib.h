@@ -11,6 +11,7 @@
 #ifndef ADPLIB_H_
 #define ADPLIB_H_
 #include "../incGeneral/incGeneral.h"
+#include "../incGeneral/ventanas.h"
 #include "../incGeneral/Sockets/conexiones.h"
 #include "../incGeneral/Sockets/paquetesGeneral.h"
 #include "../incGeneral/log.h"
@@ -53,7 +54,11 @@ typedef struct
 	/*Memoria*/
 	int			m_nMemMax,
 				m_nMemDisp;	
-	int			m_nCantPCBs;
+	int			m_nCantPCBs,
+				m_nCantDisp;
+	tVentana	*m_pwMain,
+				*m_pwInfo,
+				*m_pwLogger;
 	
 } tADP;
 
@@ -111,6 +116,11 @@ tunPCB* ADP_BuscarPCB( long id );
 void ADP_EliminarDeLista( long id );
 
 void ADP_TimeOut( tSocket *sockIn );
+
+/*Interface grafica*/
+void ADP_CrearGraficos( int activarGraficos );
+void ADP_printToWin( tVentana* win, char* msg );
+void ADP_printfToWin( tVentana* win, const char* fmt, ... );
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
