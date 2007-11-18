@@ -233,7 +233,7 @@ int createPCB(char *argv[]) {
 		
 		bzero(strBuff,sizeof(strBuff));
 		while (!feof(cfgCode) && fgets(strBuff, 200, cfgCode)) {
-			strncpy(PCB.Code[line], strBuff,20 );
+			strncpy(PCB.Code[line], strBuff,30 );
 			line++;
 		}
 		PCB.ultimaSentencia = line;
@@ -294,7 +294,7 @@ int PCB_ExecuteInstruction(int line) {
 	int (*executer)(char *);
 	int paramStart;
 	
-	strncpy(sentence, PCB.Code[line], 20);
+	strncpy(sentence, PCB.Code[line], 30);
 	
 	strncpy(instruction, sentence, 4);
 	instruction[4] = '\0';
@@ -501,6 +501,13 @@ int PCB_Init(int argc, char *argv[] )
 		PCB.tiempoRestanteOper = 0;	/*Se inicializa en cero*/
 		PCB.argc = argc;	/*Lo guardo para arreglar error en crear config.ppcb<ID>*/
 			
+		/*tests*/
+		if (0)
+		{
+			createPCB(argv);
+			createPCBConfig();
+			return 0;
+		}
 		if ( argc == 3) {
 			
 			PCB.nIdProcesoPadre = atoi( argv[2] );	/*el proceso que lo origino (o _ID_ACR_ o _ID_ADP_)*/
@@ -642,7 +649,7 @@ int PCB_LeerConfig()
 		sprintf(strCode, "CODE%d", line);
 		
 		while ( (tmp = config_GetVal( cfg, _PPCB_, strCode) ) ) {
-			strncpy( PCB.Code[line-1], tmp, 20);
+			strncpy( PCB.Code[line-1], tmp, 30);
 			
 			line++;
 			sprintf(strCode, "CODE%d", line);
@@ -1322,10 +1329,21 @@ int PCB_RemainingTimeExecution()
 		char parameter[20];
 		int paramStart;
 		
-		strncpy(sentence, PCB.Code[line], 20);
+		strncpy(sentence, PCB.Code[line], 30);
 		
 		strncpy(instruction, sentence, 4);
 		instruction[4] = '\0';
+		
+		if ( !strcmp("MEM ", instruction) )
+		{
+			line++;
+			continue;
+		}
+		
+		if ( !strcmp("", instruction) )
+		{
+			break;
+		}
 				
 		if ( !strcmp("SOL ", instruction) 	||
 		     !strcmp("DEV ", instruction) 	||
