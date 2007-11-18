@@ -233,7 +233,7 @@ int createPCB(char *argv[]) {
 		
 		bzero(strBuff,sizeof(strBuff));
 		while (!feof(cfgCode) && fgets(strBuff, 200, cfgCode)) {
-			strncpy(PCB.Code[line], strBuff,30 );
+			strncpy(PCB.Code[line], strBuff,50 );
 			line++;
 		}
 		PCB.ultimaSentencia = line;
@@ -288,13 +288,12 @@ void PCB_ExecuteProgram(tSocket *sockIn) {
 }
 /**************************************************************/
 int PCB_ExecuteInstruction(int line) {
-	char sentence[20];
+	char sentence[50];
 	char instruction[5];
-	char parameter[20];
 	int (*executer)(char *);
 	int paramStart;
 	
-	strncpy(sentence, PCB.Code[line], 30);
+	strncpy(sentence, PCB.Code[line], 50);
 	
 	strncpy(instruction, sentence, 4);
 	instruction[4] = '\0';
@@ -649,7 +648,7 @@ int PCB_LeerConfig()
 		sprintf(strCode, "CODE%d", line);
 		
 		while ( (tmp = config_GetVal( cfg, _PPCB_, strCode) ) ) {
-			strncpy( PCB.Code[line-1], tmp, 30);
+			strncpy( PCB.Code[line-1], tmp, 50);
 			
 			line++;
 			sprintf(strCode, "CODE%d", line);
@@ -1298,17 +1297,17 @@ void 	PCB_CerrarConexion( tSocket *sockIn )
 int		PCB_RecursoFromFriendlyName(tRecurso* recurso, const char* param)
 {
 	int result = ERROR;
-	if (strcmp("Impresora", param) == 0)
+	if ((strcmp("Impresora", param) == 0) || (strcmp("impresora", param) == 0))
 	{
 		*recurso = Impresora;
 		result = OK;
 	}
-	else if(strcmp("Disco", param) == 0)
+	else if((strcmp("Disco", param) == 0) || (strcmp("disco", param) == 0))
 	{
 		*recurso = Disco;
 		result = OK;
 	}
-	else if (strcmp("Cinta", param) == 0)
+	else if ((strcmp("Cinta", param) == 0) || (strcmp("cinta", param) == 0))
 	{
 		*recurso = Cinta;
 		result = OK;
@@ -1322,15 +1321,14 @@ int PCB_RemainingTimeExecution()
 	int remainingTime = 0;
 	
 	Log_log(log_info, "Calculando tiempo restante de ejecucion");
-	return -1;/*solo de prueba*/
+	
 	while (line <= PCB.ultimaSentencia)
 	{
-		char sentence[20];
+		char sentence[50];
 		char instruction[5];
-		char parameter[20];
 		int paramStart;
 		
-		strncpy(sentence, PCB.Code[line], 30);
+		strncpy(sentence, PCB.Code[line], 50);
 		
 		strncpy(instruction, sentence, 4);
 		instruction[4] = '\0';
