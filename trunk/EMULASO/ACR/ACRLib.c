@@ -600,6 +600,7 @@ void ACR_AtenderADS ( tSocket *sockIn )
 			if ( (pidChild = ACR_ForkPPCBInicial( lpcb_id, szNomProg, szUsuario, idSesion )) != ERROR  &&
 				ACR_CrearPPCBInicial( lpcb_id, pidChild, szNomProg, szUsuario, idSesion ) == OK ){
 				Log_printf(log_info,"Se creo pid:%ld,prog:%s,usr:%s,sesion:%d",lpcb_id,szNomProg,szUsuario,idSesion);
+				ACR_CrearEnListaRec(lpcb_id);
 				tmp = paquetes_newPaqProgExecutingAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port,szNomProg,idSesion);
 			}else{
 				Log_printf(log_error,"Existe el programa %s en el directorio pero error creandolo",szNomProg);
@@ -692,7 +693,7 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	}
 	if(IS_PAQ_DEV(paq))
 	{/*me llega un DEV del ADP. libero el recurso*/
-		int id;
+		long id;
 		tRecurso rec;
 		
 		Log_log(log_debug, "me llego un DEV del ADP");
@@ -1199,12 +1200,15 @@ int ACR_LiberarRecursos(int idSesion){
 	return OK;
 }
 /************************************************************************/
-int ACR_DevolverTodos(int id){
+int ACR_DevolverTodos(long id){
 	int *valores;
 	int i;
 	
 	valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id);
-	if(valores == NULL)return ERROR;
+	if(valores == NULL){
+		Log_log(log_error, "no existe ppcb en lista de asignacion");
+		return ERROR;
+	}
 	
 	for(i=0;i<MAX_LISTA_REC;i++){
 		ACR.ListaRecursos[i].nAvailable+=valores[i];
@@ -1216,11 +1220,18 @@ int ACR_DevolverTodos(int id){
 	return (MatrizRec_EliminarProceso(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id));
 }
 /*************************************************************************/
-int ACR_DevolverRecurso(int id,tRecurso rec){
+int ACR_DevolverRecurso(long id,tRecurso rec){
 	
 	int *valores;
 	valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id);
-	if(valores == NULL)return ERROR;
+	if(valores == NULL){
+		Log_printf(log_error, "no existe ppcb_id:%i en lista de asignacion",id);
+		return ERROR;
+	}
+	if(valores[rec]<=0){
+		Log_printf(log_error, "ppcb_id:%i intenta devolver un recurso no asignado",id);
+		return ERROR;
+	}
 		
 	ACR.ListaRecursos[rec].nSemaforo++;
 	if(ACR.ListaRecursos[rec].nSemaforo > 0)ACR.ListaRecursos[rec].nAvailable++;
@@ -1421,3 +1432,15 @@ void ACR_ConcederRecurso(tPpcbAcr* ppcb, tDatosRecurso* recurso, int posRecurso)
 	}
 	
 }
+/**********************************************************************/
+int ACR_CrearEnListaRec(long id){
+	/*se crea en matriz de asignacion la fila del nuevo pcb creado*/
+	int instanciaNula[MAX_LISTA_REC]={0,0,0};
+	if(MatrizRec_AgregarProceso(&ACR.MatrizAsignacion, ACR.nCantRecursos, id, instanciaNula)==NULL){
+		Log_printf(log_error,"no se pudo crear fila en Matriz de Asignacion para ppcb id:%i",id);
+		return ERROR;
+	}
+	Log_printf(log_info,"se creo fila en Matriz de Asignacion para ppcb id:%i",id);
+	return OK;
+}
+
