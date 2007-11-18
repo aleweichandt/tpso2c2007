@@ -69,7 +69,7 @@ typedef struct
 	char ProgramPath[LEN_DIR];
 	tState State;
 	Stack stack;
-	char Code[20][20];
+	char Code[30][50];
 	int	ultimaSentencia;
 	int tiempoRestanteOper;
 	
