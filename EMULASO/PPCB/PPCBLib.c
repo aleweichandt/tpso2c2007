@@ -1322,6 +1322,7 @@ int PCB_RemainingTimeExecution()
 	int remainingTime = 0;
 	
 	Log_log(log_info, "Calculando tiempo restante de ejecucion");
+	return -1;/*solo de prueba*/
 	while (line <= PCB.ultimaSentencia)
 	{
 		char sentence[20];
