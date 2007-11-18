@@ -278,7 +278,7 @@ void MSH_AtenderADS( tSocket* sockIn )
 		MSH_GetKey();
 		MShell.m_ListaSockets[ SOCK_TECLADO ]->callback = &MSH_ProcesarTecladoIfUsrOk;
 		sockIn->callback = &MSH_AtenderADSEncript;
-		ventana_Print( MShell.m_pwRemoto, "Ingrese Contraseña:" );
+		ventana_Print( MShell.m_pwRemoto, "Ingrese Password:" );
 		Log_log( log_debug, "ADS confirma usuario!" );
 	}
 	if ( IS_PAQ_USR_ERROR ( paq ) )
