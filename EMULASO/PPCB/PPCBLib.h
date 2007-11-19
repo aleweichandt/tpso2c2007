@@ -101,6 +101,7 @@ void 	PCB_CerrarConexion( tSocket *sockIn );
 void	PCB_ExecuteProgram(tSocket *sockIn);
 int		PCB_RecursoFromFriendlyName(tRecurso* recurso, const char* param);
 int 	PCB_ExecuteImpFinal(char *param);
+void 	PCB_ImprimirInfoCtr();
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
