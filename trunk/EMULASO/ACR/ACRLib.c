@@ -693,15 +693,17 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	}
 	if(IS_PAQ_DEV(paq))
 	{/*me llega un DEV del ADP. libero el recurso*/
-		long id;
+		int id;
 		tRecurso rec;
 		
 		Log_log(log_debug, "me llego un DEV del ADP");
 		
-		memcpy( &(paq->msg[SOLDEV_POS_PPCBID]), &id ,  sizeof (int) );
-		memcpy( &(paq->msg[SOLDEV_POS_RECURSO]), &rec , sizeof (tRecurso));
+		memcpy( &id, &(paq->msg[SOLDEV_POS_PPCBID]), sizeof( int ) );
+		memcpy( &rec, &(paq->msg[SOLDEV_POS_RECURSO]), sizeof (tRecurso));
 		
-		if(ACR_DevolverRecurso(id,rec)==OK)Log_log(log_info,"se devolvio el recurso correctamente");
+		Log_printf(log_info, "ppcb:%i pide recurso",id);
+		
+		if(ACR_DevolverRecurso((long)id,rec)==OK)Log_log(log_info,"se devolvio el recurso correctamente");
 		else Log_log(log_info,"no hay recursos que devolver");
 	}
 	else if ( IS_PAQ_INFO_PCBS_STATES( paq ) )
@@ -1206,16 +1208,16 @@ int ACR_DevolverTodos(long id){
 	
 	valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id);
 	if(valores == NULL){
-		Log_log(log_error, "no existe ppcb en lista de asignacion");
+		Log_printf(log_error, "no existe ppcb_id:%i en lista de asignacion",id);
 		return ERROR;
-	}
+	}else Log_printf(log_info, "ppcb_id:%i libera sus recursos",id);
 	
 	for(i=0;i<MAX_LISTA_REC;i++){
 		ACR.ListaRecursos[i].nAvailable+=valores[i];
 		ACR.ListaRecursos[i].nSemaforo+=valores[i];
 		if(ACR.ListaRecursos[i].nSemaforo > 0)ACR.ListaRecursos[i].nAvailable=ACR.ListaRecursos[i].nSemaforo;
 		
-		Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i",i,ACR.ListaRecursos[i].nSemaforo, ACR.ListaRecursos[i].nAvailable);
+		Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i,total=%i",i,ACR.ListaRecursos[i].nSemaforo, ACR.ListaRecursos[i].nAvailable, ACR.ListaRecursos[i].nInstancias);
 	}
 	return (MatrizRec_EliminarProceso(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id));
 }
@@ -1232,11 +1234,10 @@ int ACR_DevolverRecurso(long id,tRecurso rec){
 		Log_printf(log_error, "ppcb_id:%i intenta devolver un recurso no asignado",id);
 		return ERROR;
 	}
-		
 	ACR.ListaRecursos[rec].nSemaforo++;
 	if(ACR.ListaRecursos[rec].nSemaforo > 0)ACR.ListaRecursos[rec].nAvailable++;
 	
-	Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i",rec,ACR.ListaRecursos[rec].nSemaforo, ACR.ListaRecursos[rec].nAvailable);
+	Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i,total=%i",rec,ACR.ListaRecursos[rec].nSemaforo, ACR.ListaRecursos[rec].nAvailable, ACR.ListaRecursos[rec].nInstancias);
 	
 	return (MatrizRec_RestarInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id,	rec, 1));
 }
@@ -1256,8 +1257,9 @@ void ACR_PedirRecurso(long ppcbid, tRecurso recurso)
 		if( !ACR_VerificaPermisosUsuario(ppcb->szUsuario,recurso) ){
 			Log_printf(log_info,"El usuario %s no tiene permisos sobre el recurso %d",
 						ppcb->szUsuario,recurso);
+			ACR_KillPorPermiso(ppcbid, recurso);
 			break;
-		}
+		}/*ALEW aca hay que hacer el printf y matar el pcb*/
 		
 		Rec_DecrementarInst(&ACR.ListaRecursos[recurso],FALSE);
 		/*no asigna pero disminuye el semaforo*/
@@ -1443,4 +1445,98 @@ int ACR_CrearEnListaRec(long id){
 	Log_printf(log_info,"se creo fila en Matriz de Asignacion para ppcb id:%i",id);
 	return OK;
 }
+/**********************************************************************/
+void ACR_KillPorPermiso(long id, tRecurso rec){
+/*libera recurso por negarse el programa por permisos de usuario*/
+	tListaPpcbAcr 	Lista = ACR.t_ListaPpcbPend;
+	tPpcbAcr		*ppcb = NULL;
+	time_t			now = time(NULL);
+	unsigned int 	alpe;
+	tSocket* 		socket = NULL;
+	unsigned char 	ip[4];
+	tPaquete* paqSend=NULL;
+	int nSend, pidVector[25], i = 0, indice = 0;
+	
+	for(i=0;i<25;i++)pidVector[i]=0;
+	i=0;
+	ReducirIP(ACR.sz_ACR_IP,ip);
+	
+	Log_printf(log_debug,"se procede a eliminar el ppcb_id:%i por negarse los permisos",id);
+	while( Lista )
+	{
+		ppcb = PpcbAcr_Datos( Lista );
+		if(ppcb != NULL){		
+			if( ppcb->pid == id){
+				if ( ppcb->sActividad != Estado_Activo  )
+				{
+					Log_printf(log_info,
+						"Se elimina PPCB id:%ld de LPendientes por negarse permisos",
+						ppcb->pid);
+				
+					/*Elimino el proceso PPCB*/
+					ACR_DevolverTodos(ppcb->pid);
+					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando);
+					kill( ppcb->pidChild, SIGTERM );
+					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
+					Lista = ACR.t_ListaPpcbPend;
+					
+				}
+				else if(ppcb->sActividad == Estado_Activo)
+				{
+					/*si esta activo acumulo en vector de pids para mandar a adps*/
+					pidVector[i]=ppcb->pid;
+					i++;
+					ACR_DevolverTodos(ppcb->pid);
+					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando);
+					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
+					Lista = ACR.t_ListaPpcbPend;
+				}else{
+					Lista = PpcbAcr_Siguiente( Lista );
+				}
+			}
+		}
+	}
+	if(pidVector[0]!=0){
+		Log_log(log_debug,"se envia id para matarlo a cada adp");
+		paqSend = paquetes_newPaqKill(ip,_ID_ACR_,ACR.usi_ACR_Port,pidVector);
+		while( socket = DatosAdpACR_Obtener( &ACR.t_ListaSocketAdp, indice ) )
+		{
+			
+			nSend = conexiones_sendBuff( socket, (const char*)paquetes_PaqToChar( paqSend ), PAQUETE_MAX_TAM );
+			if ( nSend != PAQUETE_MAX_TAM )
+			{
+				Log_log( log_error,"Error enviando id para matarlo al ADP" );
+			}
+			indice++;
+		}
+	}
+	return;
+}
 
+int ACR_MandarPrint(int IdSesion,char* progName){
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
+	char* param=malloc(PRINT_LEN_MSG);
+	strcpy(param,"se finaliza ");
+	strcat(param,progName);
+	strcat(param,"por no tener permisos");
+	
+	memset( szIP, 0, 4 );
+	
+	ReducirIP(ACR.sz_ACR_IP,szIP);
+	
+	
+	pPaq = paquetes_newPaqPrint(szIP, (unsigned char)_ACR_, ACR.usi_ACR_Port, IdSesion, progName, param);
+	
+	Log_log( log_debug, "Mando PRINT al ADS" );
+	nSend = conexiones_sendBuff( ACR.psocketADS, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	if ( nSend != PAQUETE_MAX_TAM )
+	{
+		Log_logLastError( "error enviando PRINT al ADS" );
+	}	
+	paquetes_destruir( pPaq );
+	
+	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
+}

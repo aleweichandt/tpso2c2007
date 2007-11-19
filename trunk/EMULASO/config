@@ -6,7 +6,7 @@
 <ADS_IP>=127.0.0.1
 <ADS_PORT>=9150
 <ACR_IP>=127.0.0.1
-<ACR_PORT>=9603
+<ACR_PORT>=9602
 <PATH_USU>=./usuarios
 <PATH_KEY_USU>=./claves
 <PATH_ESTADO>=./estado
@@ -15,7 +15,7 @@
 <ACR_PORT>=9602
 <ADP_IP>=127.0.0.1
 <ADP_PORT>=9568
-<MAX_MEM>=30
+<MAX_MEM>=1000
 <Q>=10
 <L1>=0.5
 <L2>=0.01

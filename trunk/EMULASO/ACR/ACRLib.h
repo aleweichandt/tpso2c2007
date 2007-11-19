@@ -105,6 +105,9 @@ void 	ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso);
 
 int ACR_DevolverRecurso(long id,tRecurso rec);
 int ACR_DevolverTodos(long id);
-int ACR_CrearEnListaRec(long id); 
+int ACR_CrearEnListaRec(long id);
+void ACR_KillPorPermiso(long id, tRecurso rec);
+int ACR_MandarPrint(int IdSesion,char* progName);
+
 
 #endif /*ACRLIB_H_*/
