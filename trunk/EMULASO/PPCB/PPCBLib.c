@@ -48,6 +48,7 @@ void PCB_ProcesarSeniales( int senial )
 		{
 			createPCBConfig();
 		}
+		PCB_ImprimirInfoCtr();
 		signal(SIGUSR1, PCB_ProcesarSeniales);
 		
 	}
@@ -475,7 +476,7 @@ int PCB_ExecutePush(char *param) {
 	
 	push(&PCB.stack, value);
 	Log_printf( log_info, "Se inserta en la pila: %c", value);
-	MyStackPrint(&PCB.stack);
+	/*MyStackPrint(&PCB.stack);*/
 	/*sleep(1);*/
 	return 0;
 }
@@ -505,7 +506,8 @@ int PCB_Init(int argc, char *argv[] )
 		{
 			createPCB(argv);
 			createPCBConfig();
-			return 0;
+			PCB_ImprimirInfoCtr();
+			return -1;
 		}
 		if ( argc == 3) {
 			
@@ -1402,6 +1404,43 @@ void SetRemainingTime(int remainingTimeExecution)
 				
 			}
 		} while (0);	
+}
+/**********************************************************/
+void PCB_ImprimirInfoCtr()
+{
+	int line = 0;
+	int i = 0;
+	Stack* stack = NULL;
+	
+	Log_log(log_info, "  Se imprime la informacion de control del PPCB  ");
+	
+	InfoCtr_Inicializar("PPCB","1");
+	
+	InfoCtr_printf(log_info, "Usuario: %s", PCB.User);
+	InfoCtr_printf(log_info, "Comando completo: exec %s", PCB.ProgName);
+	/*code*/
+	InfoCtr_log(log_info, "Codigo del PPCB:");
+	while( line < PCB.ultimaSentencia ) {
+		InfoCtr_log(log_info, PCB.Code[line]);
+		line++;
+	}
+	InfoCtr_printf(log_info, "Instruction pointer: %d", PCB.IP);
+	/*stack*/
+	InfoCtr_log(log_info, "Contenido del stack:");
+	stack = &(PCB.stack);
+	if (stack->top == 0)
+		InfoCtr_log(log_info, "El stack esta vacio");
+	else
+	{
+		for (i=0;i<stack->top;i++)
+		{
+			InfoCtr_printf(log_info, "posicion %d: %c ", i, stack->v[i]);
+		}
+	}
+
+	
+	InfoCtr_CerrarInfo();
+
 }
 /**********************************************************/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
