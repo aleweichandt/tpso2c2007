@@ -113,15 +113,14 @@ void InformarLista( tListaPCB Lista )
 {
 	tunPCB			*pPCB;
 	char			szInfo[255], szAux[20];
-	char			esEjec = (Lista == ADP.m_LPE);
 	
 	memset( szInfo, 0, 255 );
 	
-	if ( Lista == ADP.m_LPE )
+	if ( Lista == ADP.m_LPE  && ADP.m_LPE )
 		strcpy(szInfo, "LPE: ");
-	else if ( Lista == ADP.m_LPL )
+	else if ( Lista == ADP.m_LPL && ADP.m_LPE )
 		strcpy(szInfo, "LPL: ");
-	else if ( Lista == ADP.m_LPB )
+	else if ( Lista == ADP.m_LPB && ADP.m_LPE )
 		strcpy(szInfo, "LPB: ");
 	
 	while( Lista )
@@ -130,17 +129,13 @@ void InformarLista( tListaPCB Lista )
 		
 		Log_printf( log_debug, "PCB %ld , Q %d", pPCB->id, pPCB->Q );
 		
-		if ( esEjec )
-			sprintf( szAux, "[%ld,%d],", pPCB->id, pPCB->Q );
-		else
-			sprintf( szAux, "[%ld],", pPCB->id );
+		sprintf( szAux, "[%ld],", pPCB->id );
 			
 		strcat( szInfo, szAux );					
 		
 		Lista = lpcb_Siguiente( Lista );
 	}
 	
-	ventana_Clear( ADP.m_pwInfo );
 	ADP_printToWin( ADP.m_pwInfo, szInfo );
 }
 
@@ -244,6 +239,7 @@ void ADP_Dispatcher(int n)
 	{
 		Log_log( log_debug, "<< Entra al Dispatcher >>" );
 		ADP_printToWin( ADP.m_pwLogger, "<< Entra al Dispatcher >>" );
+		ventana_Clear( ADP.m_pwInfo );
 		
 		/* Esto se puede mejorar para que los saque exactamente a medida que se van venciendo
 		 * con eso saca todos los que se hayan vencido.*/
@@ -257,13 +253,13 @@ void ADP_Dispatcher(int n)
 	
 		/*Las paso a LTL*/
 		Log_printf( log_debug, "LPL" );
-		InformarLista( ADP.m_LPL );
+		/*InformarLista( ADP.m_LPL );*/
 		
 		Log_printf( log_debug, "LPE" );
-		InformarLista( ADP.m_LPE );
+		/*InformarLista( ADP.m_LPE );*/
 
 		Log_printf( log_debug, "LPB" );
-		InformarLista( ADP.m_LPB );
+		/*InformarLista( ADP.m_LPB );*/
 		
 		lpcb_PasarDeLTPaLTL( &ADP.m_LPE, &ADP.m_LPL, &ADP.m_nMemDisp ); 
 	
@@ -550,6 +546,8 @@ void ADP_ProcesarSeniales( int senial )
 		ADP_DesactivarAlarma();
 		ADP_ImprimirInfoCtr();
 		ADP_ActivarAlarma();
+		
+		signal(SIGUSR1, &ADP_ProcesarSeniales );
 	}
 	else if ( senial == SIGUSR2 )
 	{
@@ -724,6 +722,7 @@ int ADP_Init( )
 		
 		alarm( 1 );
 		signal( SIGALRM, &ADP_Dispatcher );
+		signal(SIGUSR1, &ADP_ProcesarSeniales ); 
 	
 		return OK;
 		
@@ -1721,7 +1720,7 @@ void ADP_CrearGraficos( int activarGraficos )
 		pantalla_Clear();
 		
 		ADP.m_pwMain  	= ventana_Crear(X_MAIN, 	Y_MAIN, 	ANCHO_MAIN, 	ALTO_MAIN, 	1, szTitle );
-		ADP.m_pwInfo 	= ventana_Crear(X_INFO, 	Y_INFO, 	ANCHO_INFO, 	ALTO_INFO, 	0, "Info");
+		ADP.m_pwInfo 	= ventana_Crear(X_INFO, 	Y_INFO, 	ANCHO_INFO, 	ALTO_INFO, 	1, "Info");
 		ADP.m_pwLogger 	= ventana_Crear(X_LOGGER, 	Y_LOGGER, 	ANCHO_LOGGER, 	ALTO_LOGGER, 	0, "Logger");
 	}
 	else
