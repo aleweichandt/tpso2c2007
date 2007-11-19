@@ -204,9 +204,10 @@ long Rec_ObtenerBloqueado(tDatosRecurso* recurso, int pos){
 long Rec_QuitarBloqueado(tDatosRecurso* recurso){
 	int pos = 1;
 	long returnVal = recurso->ListaBloqueados[0];
-	while( pos < MAX_LISTA_BLOQ )
+	while( pos < MAX_LISTA_BLOQ ){
 		recurso->ListaBloqueados[pos-1] = recurso->ListaBloqueados[pos];
-		
+		pos++;
+	}
 	return returnVal;
 }
 /*******************************************************************/

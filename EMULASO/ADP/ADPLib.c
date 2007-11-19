@@ -1287,7 +1287,11 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	{/*me llega el dev, se lo reenvio al ACR*/
 		int nSend;
 		
-		Log_log( log_error, "Mando DEV al ACR" );
+		int id;
+		memcpy( &id,&(paq->msg[SOLDEV_POS_PPCBID]), sizeof( int ) );
+		Log_printf(log_error,"es una prueba %i%i%i",id,id,id);
+		
+		Log_log( log_info, "Mando DEV al ACR" );
 		ADP_printToWin( ADP.m_pwLogger, "Mando DEV al ACR" );
 		
 		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );

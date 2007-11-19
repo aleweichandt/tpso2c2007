@@ -397,7 +397,7 @@ int PCB_ExecuteDev(char *param) {
 	
 	pPaq = paquetes_newPaqDev(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.PPCB_ID, recurso);
 	
-	Log_printf( log_info, "Se devuelve recurso: %s", param);
+	Log_printf( log_info, "Ppcb_id:%i devuelve recurso: %s",PCB.PPCB_ID, param);
 	
 	nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
 	if ( nSend != PAQUETE_MAX_TAM )
