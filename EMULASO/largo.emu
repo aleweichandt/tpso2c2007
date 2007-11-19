@@ -1,0 +1,22 @@
+MEM 15
+IMP Apilando...
+PUSH 1
+PUSH B
+PUSH 5
+OPER 15
+IMP Desapilando...
+POP
+POP
+OPER 10
+POP
+IMP Apilando 2...
+PUSH 1
+PUSH B
+PUSH 5
+OPER 15
+IMP Desapilando 2...
+POP
+POP
+OPER 10
+POP
+IMP Listo, chau.
