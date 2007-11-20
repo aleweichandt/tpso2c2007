@@ -148,10 +148,11 @@ tunPCB* lpcb_PasarDeLista( tListaPCB* listaO, tListaPCB* listaD, long id )
 	tunPCB	*pPCBAPasar,
 			*pPCBNuevo;
 	tunPCB pcb;
+	tListaPCB tmp;
 	
 	pcb.id = id;
     
-    tListaPCB tmp = lista_buscar( listaO, &pcb, &compararPCBxId );
+    tmp = lista_buscar( listaO, &pcb, &compararPCBxId );
     
 	if ( tmp )
 	{
