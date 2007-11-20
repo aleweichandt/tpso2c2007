@@ -768,7 +768,7 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 		memcpy( &lpcb_id, paq->msg, sizeof(long) );
 		bzero(szPathArch,sizeof(szPathArch));
 		
-		ArmarPathPCBConfig( szPathArch, lpcb_id );
+		ArmarPathPCBConfig( szPathArch, lpcb_id, sizeof(szPathArch) );
 		
 		
 		
@@ -829,7 +829,7 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 	FILE*			arch;
 	char 			*tmp;
 	char			buffer [ PAQUETE_ARCH_MAX_TAM ];
-	char			szPathArch[15];
+	char			szPathArch[255];
 	unsigned char	szIP[4];
 	long			lpcb_id;
 	int 			pidChild;
@@ -860,7 +860,7 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 		
 		bzero(szPathArch,sizeof(szPathArch));
 		lpcb_id = (long)sockIn->extra;
-		ArmarPathPCBConfig( szPathArch, lpcb_id );
+		ArmarPathPCBConfig( szPathArch, lpcb_id,sizeof(szPathArch) );
 		
 		if ( (arch = fopen( szPathArch, "ab+" )) ){
 			fprintf( arch, "%s", paq->msg );
@@ -979,7 +979,7 @@ int ACR_ForkPPCBInicial( long lpcb_id, char szNomProg[LEN_COMANDO_EJEC], char sz
 /**********************************************************/
 int	ACR_CrearPPCB( long lpcbid, int pidChild )
 {
-	char		szPathArch[51];
+	char		szPathArch[255];
 	tPpcbAcr	*ppcb =NULL;
 	tPpcbAcr	ppcbAux;
 	char 		*tmp;
@@ -993,7 +993,7 @@ int	ACR_CrearPPCB( long lpcbid, int pidChild )
 	}
 */	
 	bzero(szPathArch,sizeof(szPathArch));
-	ArmarPathPCBConfig( szPathArch, lpcbid );
+	ArmarPathPCBConfig( szPathArch, lpcbid,sizeof(szPathArch) );
 	
 	do
 	{
