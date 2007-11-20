@@ -86,7 +86,7 @@ int AmpliarIP( const unsigned char* szIPReducido, char* szIP );
 
 #define _LARGO_CMD_	100
 
-void ArmarPathPCBConfig( char* szPathOut, long lpcb_id );/*02-10-07:LAS:*/
+void ArmarPathPCBConfig( char* szPathOut, long lpcb_id, int size );/*02-10-07:LAS:*/
 
 #endif /*INCGENERAL_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
