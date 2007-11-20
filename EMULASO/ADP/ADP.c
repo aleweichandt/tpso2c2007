@@ -22,6 +22,9 @@ int main(int argc, char *argv[])
 	
 	while ( 1 )
 	{
+		ADP.m_ListaSockets[SOCK_ESCUCHA]->onTimeOut = &ADP_TimeOut;
+		ADP.m_ListaSockets[SOCK_ESCUCHA]->segundos_timeout = 1;
+		
 	 	conexiones_aguardarConexion( ADP.m_ListaSockets, 
 	 								&(ADP.m_ultimoSocket) );
 	}

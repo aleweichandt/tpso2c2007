@@ -142,12 +142,15 @@ void InformarLista( tListaPCB Lista )
 /*------------------------------------------------------------------*/
 void ADP_DesactivarAlarma()
 {
+	return;
+	
+	int nRestoAlarma;
 	Log_printf( log_debug, "Se desactiva alarma" );
 	/*ADP_printToWin( ADP.m_pwLogger, "Se desactiva alarma" );*/
 	
 	g_nAlarmaActiva = 0;
-/*	
 	nRestoAlarma = alarm( 0 );
+/*	
 	Log_printf( log_debug, "Restaban %d seg para el Q", nRestoAlarma );
 */	
 }
@@ -155,6 +158,8 @@ void ADP_DesactivarAlarma()
 /*------------------------------------------------------------------*/
 void ADP_ActivarAlarma()
 {
+	return;
+	
 	if ( g_nAlarmaActiva )
 		return;
 		
@@ -298,7 +303,7 @@ void ADP_Dispatcher(int n)
 	}
 	
 	/*Si entro aca quiere decir que se cumplio el timer asi que reseteo la senial*/
-	alarm( 1 );
+	ADP_ActivarAlarma();
 	signal( SIGALRM, &ADP_Dispatcher );
 }
 
@@ -486,7 +491,7 @@ tunPCB* ADP_BuscarPCBMayorTRestante( tListaPCB Lista, int *nMayor, tunPCB* pcb1 
 		kill( pPCB->pid, SIGUSR1 );
 		usleep(1000); /*Por las dudas, le doy un tiempo para que grabe*/
 	
-		ArmarPathPCBConfig( szArchivo, pPCB->id );
+		ArmarPathPCBConfig( szArchivo, pPCB->id,sizeof(szArchivo) );
 			
 		if ( (cfg = config_Crear( szArchivo, _PPCB_ )) )
 		{
@@ -598,7 +603,7 @@ void ADP_ImprimirInfoCtr()
 /**********************************************************/
 void ADP_InfoLista( tListaPCB Lista, tState state )
 {
-	char szArchivo[ 50 ];
+	char szArchivo[ 255 ];
 	char szCmd[50];
 	char szUsr[50];
 	char szEstado[50];
@@ -626,7 +631,7 @@ void ADP_InfoLista( tListaPCB Lista, tState state )
 	{
 		pcb = lpcb_Datos( Lista );
 		
-		ArmarPathPCBConfig( szArchivo, pcb->id );
+		ArmarPathPCBConfig( szArchivo, pcb->id,sizeof(szArchivo) );
 		
 	
 		if ( !(cfg = config_Crear( szArchivo, _PPCB_ )) ) 
@@ -720,7 +725,7 @@ int ADP_Init( )
 		if ( !g_lTime2 )
 			g_lTime2 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
 		
-		alarm( 1 );
+		ADP_ActivarAlarma();
 		signal( SIGALRM, &ADP_Dispatcher );
 		signal(SIGUSR1, &ADP_ProcesarSeniales ); 
 	
@@ -1198,11 +1203,13 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	char 			*tmp;
 	char			buffer [ PAQUETE_MAX_TAM ];
 	FILE*			arch;
-	char			szPathArch[512]; 
+	char			szPathArch[255]; 
 	long			lpcb_id;
 	tunPCB			*pPCB;
 	int 			nSend;
+	char			szIP[4];
 
+	memset(szPathArch,0,255);
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
 	if ( ERROR == len || !len)
@@ -1233,7 +1240,7 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 		Log_printf( log_debug, "...del pcb %ld", lpcb_id );
 		ADP_printfToWin( ADP.m_pwLogger, "...del pcb %ld", lpcb_id );
 		
-		ArmarPathPCBConfig( szPathArch, lpcb_id );
+		ArmarPathPCBConfig( szPathArch, lpcb_id,sizeof(szPathArch) );
 		
 		
 		if ( (arch = fopen( szPathArch, "wb+" )) )
@@ -1247,6 +1254,17 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 		{
 			Log_logLastError( "No pude abrir el archivo de la migracion" );
 			ADP_printToWin( ADP.m_pwLogger,"No pude abrir el archivo de la migracion" );
+			
+			/*Envio el msj de migracion Fault*/
+			Log_log( log_debug, "envio migrar Fault" );
+			ReducirIP( ADP.m_IP, szIP);
+			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarFault( szIP, _ID_ADP_, ADP.m_Port ), 
+					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
+			{
+				Log_logLastError("enviando migrar_Fault");
+				ADP_printToWin( ADP.m_pwLogger, "enviando migrar_Fault" );
+			}
+			
 		}
 	}
 	else if(IS_PAQ_PRINT(paq))
@@ -1399,7 +1417,7 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 	FILE*			arch;
 	char 			*tmp;
 	char			buffer [ PAQUETE_ARCH_MAX_TAM ];
-	char			szPathArch[512];	 
+	char			szPathArch[255];	 
 	unsigned char	szIP[4];
 	long			lpcb_id;
 	int				nMemoria;
@@ -1440,7 +1458,7 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 		
 		bzero(szPathArch,sizeof(szPathArch));
 		lpcb_id = (long)sockIn->extra;
-		ArmarPathPCBConfig( szPathArch, lpcb_id );
+		ArmarPathPCBConfig( szPathArch, lpcb_id,sizeof(szPathArch) );
 		
 		if ( (arch = fopen( szPathArch, "ab+" )) ){
 			fprintf( arch, "%s", paq->msg );
@@ -1458,6 +1476,7 @@ void ADP_RecibirArchivo( tSocket *sockIn )
 				Log_logLastError("enviando migrar_Fault");
 				ADP_printToWin( ADP.m_pwLogger, "enviando migrar_Fault" );
 			}
+			sockIn->callback = 	&ADP_AtenderPCB;
 		}
 	}
 	else if ( IS_PAQ_FIN_MIGRAR( paq ) )
@@ -1725,7 +1744,7 @@ void ADP_CrearGraficos( int activarGraficos )
 		
 		ADP.m_pwMain  	= ventana_Crear(X_MAIN, 	Y_MAIN, 	ANCHO_MAIN, 	ALTO_MAIN, 	1, szTitle );
 		ADP.m_pwInfo 	= ventana_Crear(X_INFO, 	Y_INFO, 	ANCHO_INFO, 	ALTO_INFO, 	1, "Info");
-		ADP.m_pwLogger 	= ventana_Crear(X_LOGGER, 	Y_LOGGER, 	ANCHO_LOGGER, 	ALTO_LOGGER, 	0, "Logger");
+		ADP.m_pwLogger 	= ventana_Crear(X_LOGGER, 	Y_LOGGER, 	ANCHO_LOGGER, 	ALTO_LOGGER, 1, "Logger");
 	}
 	else
 	{
@@ -1749,10 +1768,12 @@ void ADP_printToWin( tVentana *win, char* msg )
 			stHoy->tm_hour, stHoy->tm_min , stHoy->tm_sec, msg );
 		
 		ventana_Print( win, szLog );
+		fflush(stdout);
 	}
 	else
 	{
 		ventana_Print( win, msg );
+		fflush(stdout);
 	}	
 }
 
