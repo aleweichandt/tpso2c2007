@@ -744,7 +744,7 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 	tPaquete* 		paq ; 
 	char 			*tmp;
 	char			buffer [ PAQUETE_MAX_TAM ];
-	char			szPathArch[15]; 
+	char			szPathArch[255];/*15 era muy chico y yo usa paths largos, uffff*/ 
 	long			lpcb_id;
 	FILE*			arch;
 	tPpcbAcr		*ppcbEncontrado;
