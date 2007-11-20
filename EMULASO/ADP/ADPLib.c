@@ -143,15 +143,12 @@ void InformarLista( tListaPCB Lista )
 void ADP_DesactivarAlarma()
 {
 	return;
-	
+/*	
 	int nRestoAlarma;
 	Log_printf( log_debug, "Se desactiva alarma" );
-	/*ADP_printToWin( ADP.m_pwLogger, "Se desactiva alarma" );*/
 	
 	g_nAlarmaActiva = 0;
 	nRestoAlarma = alarm( 0 );
-/*	
-	Log_printf( log_debug, "Restaban %d seg para el Q", nRestoAlarma );
 */	
 }
 
@@ -159,27 +156,16 @@ void ADP_DesactivarAlarma()
 void ADP_ActivarAlarma()
 {
 	return;
-	
+/*	
 	if ( g_nAlarmaActiva )
 		return;
 		
 	Log_printf( log_debug, "Se Activa alarma" );
-	/*ADP_printToWin( ADP.m_pwLogger, "Se Activa alarma" );*/
-/*		
-	if ( !ADP_SeCumplioQ() && !ADP_SeCumplioTimerAverage() )
-	{
-		alarm( 1 );
-		signal(SIGALRM, &ADP_Dispatcher ); 
-	}
-	else
-	{
-		ADP_Dispatcher( SIGALRM );	
-	}
-*/
 	alarm( 1 );
 	signal(SIGALRM, &ADP_Dispatcher ); 
 	
 	g_nAlarmaActiva = 1;
+*/	
 }
 
 
@@ -666,7 +652,7 @@ int ADP_Init( )
 {
 	time_t ahoraGlobal = time( NULL );
 	struct tm* ahoraLocal = localtime(&ahoraGlobal);
-	
+
 	do
 	{
 		Log_Inicializar( _ADP_, "1" );
@@ -714,7 +700,7 @@ int ADP_Init( )
 		signal(SIGALRM, ADP_ProcesarSeniales);
 		signal(SIGCHLD, ADP_ProcesarSeniales);
 		
-		struct tm* ahoraLocal = localtime(&ahoraGlobal);
+		ahoraLocal = localtime(&ahoraGlobal);
 		signal(SIGTERM, ADP_ProcesarSeniales);
 		signal(SIGINT, ADP_ProcesarSeniales);
 	
