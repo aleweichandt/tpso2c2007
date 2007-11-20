@@ -107,8 +107,10 @@ void ArmarPathPCBConfig( char* szPathOut, long lpcb_id )
 {
 	char			szNombreArch[50];
 
+	memset( szNombreArch, 0, 50 );/*por las dudas*/
+
 	/*Se puede agregar aca la comprobacion de la carpeta de los pcbs*/	
-	getcwd( szPathOut, sizeof (szNombreArch) );
+	getcwd( szPathOut, sizeof (szPathOut) );/*esto no estaba bien: sizeof (szNombreArch)*/
 	sprintf( szNombreArch, "/config.ppcb%ld", lpcb_id );
 	strcat( szPathOut, szNombreArch );
 }
