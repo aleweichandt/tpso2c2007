@@ -548,7 +548,7 @@ void ADP_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGINT || senial == SIGTERM )
 	{	
-		Log_log( log_warning, "Recibo senial SIGTERM p SIGINT");		
+		Log_log( log_warning, "Recibo senial SIGTERM o SIGINT");		
 		ADP_Salir();
 	}
 	else if ( senial == SIGCHLD )
@@ -1193,7 +1193,7 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	long			lpcb_id;
 	tunPCB			*pPCB;
 	int 			nSend;
-	char			szIP[4];
+	unsigned char	szIP[4];
 
 	memset(szPathArch,0,255);
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
