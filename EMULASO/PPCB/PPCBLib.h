@@ -102,6 +102,7 @@ void	PCB_ExecuteProgram(tSocket *sockIn);
 int		PCB_RecursoFromFriendlyName(tRecurso* recurso, const char* param);
 int 	PCB_ExecuteImpFinal(char *param);
 void 	PCB_ImprimirInfoCtr();
+void	PCB_VolverAlACR(tSocket *sockIn);
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
