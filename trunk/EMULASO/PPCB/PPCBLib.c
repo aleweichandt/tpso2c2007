@@ -57,7 +57,6 @@ void PCB_ProcesarSeniales( int senial )
 		if( PCB.nIdProcesoPadre == _ID_ADP_ )
 		{
 			Log_log( log_warning, "Recibo senial SIGUR2");
-			
 			if( PCB.State == EJECUTANDO ) PCB.State = LISTO;  /*Evito que siga ejecutando en el ACR*/
 			PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);
 		}
@@ -1445,6 +1444,14 @@ void PCB_ImprimirInfoCtr()
 	
 	InfoCtr_CerrarInfo();
 
+}
+/**********************************************************/
+void	PCB_VolverAlACR(tSocket *sockIn)
+{
+	Log_log( log_warning, "El ADP esta caido, se migra al ACR");
+	if( PCB.State == EJECUTANDO ) PCB.State = LISTO;  /*Evito que siga ejecutando en el ACR*/
+	PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);
+	return;
 }
 /**********************************************************/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
