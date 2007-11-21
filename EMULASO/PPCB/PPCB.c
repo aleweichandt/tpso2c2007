@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		}else{
 			PCB.m_socketADP->onTimeOut= PCB_ExecuteProgram;
 			PCB.m_socketADP->segundos_timeout = ALRM_T;
-			PCB.m_socketADP->onClose = PCB_VolverAlACR;
+			/*PCB.m_socketADP->onClose = PCB_VolverAlACR;*/
 		}
 		conexiones_aguardarConexion( PCB.m_ListaSockets, 
 	 								&(PCB.m_ultimoSocket) );
