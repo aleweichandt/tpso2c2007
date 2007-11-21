@@ -56,6 +56,8 @@ void PCB_ProcesarSeniales( int senial )
 	{	/*Migrar al ACR*/
 		if( PCB.nIdProcesoPadre == _ID_ADP_ )
 		{
+			Log_log( log_warning, "Recibo senial SIGUR2");
+			
 			if( PCB.State == EJECUTANDO ) PCB.State = LISTO;  /*Evito que siga ejecutando en el ACR*/
 			PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);
 		}
@@ -260,6 +262,7 @@ int createPCB(char *argv[]) {
 }
 /***********************************************************/
 void PCB_ExecuteProgram(tSocket *sockIn) {
+	char szaux[50];
 	
 	/*Log_log(log_debug,"Entre en el Execute program del timeout");*/
 	if ( PCB.State == EJECUTANDO && PCB.IP < PCB.ultimaSentencia) {
@@ -282,7 +285,8 @@ void PCB_ExecuteProgram(tSocket *sockIn) {
 		/* "Proceso <PPCBID> finalizado exitosamente" */
 		/*PCB_Salir(); /* ¿Esto se hara aca? confirmar con Leonardo */
 		/*Hola, soy Leonardo: voy probar matarte yo (ADP)*/
-		PCB_ExecuteImpFinal( "finalizado correctamente." );
+		sprintf( szaux, "Proceso %ld finalizado exitosamente", PCB.PPCB_ID );
+		PCB_ExecuteImpFinal( szaux );
 		PCB.State = FINALIZADO;
 	}
 	
