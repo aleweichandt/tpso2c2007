@@ -1519,9 +1519,8 @@ int ACR_MandarPrint(int IdSesion,char* progName){
 	int		nSend;
 	unsigned char szIP[4];
 	char* param=malloc(PRINT_LEN_MSG);
-	strcpy(param,"se finaliza ");
 	strcat(param,progName);
-	strcat(param,"por no tener permisos");
+	strcat(param," no tiene permisos");
 	
 	memset( szIP, 0, 4 );
 	
