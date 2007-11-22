@@ -122,5 +122,7 @@ void ADP_CrearGraficos( int activarGraficos );
 void ADP_printToWin( tVentana* win, char* msg );
 void ADP_printfToWin( tVentana* win, const char* fmt, ... );
 
+void ADP_MigrarLosPCBs( tListaPCB Lista );
+
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
