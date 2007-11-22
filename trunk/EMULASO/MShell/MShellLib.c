@@ -400,6 +400,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		strcat(msgPrint, ":");
 		strcat(msgPrint, msg);
 		ventana_Print( MShell.m_pwRemoto, msgPrint );
+		fflush(stdout);
 	}	
 				
 	if ( paq ) 
