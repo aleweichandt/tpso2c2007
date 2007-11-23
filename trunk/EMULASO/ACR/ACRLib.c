@@ -1320,7 +1320,7 @@ void ACR_ExtraerRecursos(char* szRecursos, const char* szLinea)
 	strcpy(szLineaCpy,szLinea);
 	p = strtok(szLineaCpy, ":");
 	p = strtok(NULL, ":");
-	p = strtok(NULL, ":");
+	p = strtok(NULL, "\n");
 	strcpy(szRecursos, p);
 	return;
 }
@@ -1340,7 +1340,7 @@ char ACR_EstaRecurso( const char* szRecursoPedido, char *szRecursos )
 	
 	while ( pAux )
 	{
-		if ( strcmp( pAux, szRecursoPedido ) == 0 )
+		if ( strcasecmp( pAux, szRecursoPedido ) == 0 )
 		{
 			return TRUE;			
 		}
@@ -1475,7 +1475,7 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 				
 					/*Elimino el proceso PPCB*/
 					ACR_DevolverTodos(ppcb->pid);
-					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando);
+					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando,rec);
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 					Lista = ACR.t_ListaPpcbPend;
@@ -1487,7 +1487,7 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 					pidVector[i]=ppcb->pid;
 					i++;
 					ACR_DevolverTodos(ppcb->pid);
-					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando);
+					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando,rec);
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 					Lista = ACR.t_ListaPpcbPend;
 				}else{
@@ -1513,14 +1513,15 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 	return;
 }
 
-int ACR_MandarPrint(int IdSesion,char* progName){
-	tSocket *pSocket;
+int ACR_MandarPrint(int IdSesion,char* progName, tRecurso rec){
+	tSocket  *pSocket;
 	tPaquete *pPaq;
-	int		nSend;
+	int		 nSend;
 	unsigned char szIP[4];
-	char* param=malloc(PRINT_LEN_MSG);
-	strcat(param,progName);
-	strcat(param," no tiene permisos");
+	char	 param[PRINT_LEN_MSG];
+	
+	bzero(param, sizeof(param));
+	sprintf(param,"no tiene permiso de %s",ACR.ListaRecursos[rec].szNombre);
 	
 	memset( szIP, 0, 4 );
 	

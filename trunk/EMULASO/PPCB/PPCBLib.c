@@ -68,7 +68,7 @@ void PCB_ProcesarSeniales( int senial )
 	else if ( senial == SIGINT )
 	{			
 		Log_log( log_warning, "Recibo senial SIGINT");
-		PCB_Salir();
+		/*PCB_Salir();*/
 	}
 	else if ( senial == SIGTERM )
 	{	
@@ -78,7 +78,7 @@ void PCB_ProcesarSeniales( int senial )
 	else if ( senial == SIGCHLD )
 	{	
 		Log_log( log_warning, "Recibo senial SIGCHILD");
-		
+		signal(SIGCHLD, PCB_ProcesarSeniales);
 	}
 }
 
@@ -585,6 +585,7 @@ int PCB_Init(int argc, char *argv[] )
 		signal(SIGTERM, PCB_ProcesarSeniales);
 		signal(SIGUSR1, PCB_ProcesarSeniales);
 		signal(SIGUSR2, PCB_ProcesarSeniales);
+		signal(SIGINT,  PCB_ProcesarSeniales);
 	
 		/*PCB_Migrar("127.0.0.1",9550, SOCK_ADP); /* Esto fue de prueba*/
 		
@@ -1060,7 +1061,7 @@ void PCB_AtenderADP ( tSocket *sockIn )
 	}else if (IS_PAQ_SOL_CONCEDIDO(paq)){
 		int id;
 		memcpy( &id, &(paq->msg[SOLDEV_POS_PPCBID]), sizeof( int ) );
-		Log_log(log_info, "se concedio la solicitud al ppcb_id");
+		Log_printf(log_info, "se concedio la solicitud al ppcb_id %d",id);
 		PCB.State = LISTO;
 	}
 	if ( paq ) 
