@@ -75,6 +75,7 @@ void ACR_Salir()
 	/* Logear salida, hacer un clean up? */
 	
 	DatosAdpACR_EliminarLista( &ACR.t_ListaSocketAdp );
+	MatrizRec_EliminarMatriz(&ACR.MatrizAsignacion);
 	
 	conexiones_CerrarLista( 0, &ACR.ui_ultimoSocket, ACR.t_ListaSockets );
 	free(ACR.t_ListaSockets);
@@ -685,7 +686,7 @@ void ACR_AtenderADP ( tSocket *sockIn )
 			ACR_DevolverTodos(pid);
 			
 			if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,pid,&pos)) == NULL ){
-				Log_printf(log_error,"no se ha encontrado el ppcb id: %ld",pid);
+				Log_printf(log_error,"(atenderADP)no se ha encontrado el ppcb id: %ld",pid);
 				return;
 			}
 			PpcbAcr_EliminarPpcb(&ACR.t_ListaPpcbPend,(long)pid);
@@ -711,7 +712,7 @@ void ACR_AtenderADP ( tSocket *sockIn )
 		memcpy( &id, &(paq->msg[SOLDEV_POS_PPCBID]), sizeof( int ) );
 		memcpy( &rec, &(paq->msg[SOLDEV_POS_RECURSO]), sizeof (tRecurso));
 		
-		Log_printf(log_info, "ppcb:%i pide recurso",id);
+		Log_printf(log_info, "ppcb:%i devuelve recurso %d",id,rec);
 		
 		if(ACR_DevolverRecurso((long)id,rec)==OK)Log_log(log_info,"se devolvio el recurso correctamente");
 		else Log_log(log_info,"no hay recursos que devolver");
@@ -1249,7 +1250,8 @@ int ACR_DevolverRecurso(long id,tRecurso rec){
 		return ERROR;
 	}
 	ACR.ListaRecursos[rec].nSemaforo++;
-	if(ACR.ListaRecursos[rec].nSemaforo > 0)ACR.ListaRecursos[rec].nAvailable++;
+	ACR.ListaRecursos[rec].nAvailable++;
+	/*if(ACR.ListaRecursos[rec].nSemaforo > 0)ACR.ListaRecursos[rec].nAvailable++; /*Esto es un error, dsps te explico Ale*/
 	
 	Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i,total=%i",rec,ACR.ListaRecursos[rec].nSemaforo, ACR.ListaRecursos[rec].nAvailable, ACR.ListaRecursos[rec].nInstancias);
 	
@@ -1264,7 +1266,7 @@ void ACR_PedirRecurso(long ppcbid, tRecurso recurso)
 	do{
 		/* Verifica si el usuario tiene permiso sobre el recurso pedido*/
 		if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL ){
-			Log_printf(log_error,"no se ha encontrado el ppcb id: %ld",ppcbid);
+			Log_printf(log_error,"(Pedir Recurso)no se ha encontrado el ppcb id: %ld",ppcbid);
 			break;
 		}
 		
@@ -1400,7 +1402,9 @@ void ACR_ControlarConcesionRecurso(tDatosRecurso* recurso, int posRecurso)
 	}
 	
 	if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL ){
-		Log_printf(log_error,"no se ha encontrado el ppcb id: %ld",ppcbid);
+		Log_printf(log_warning,"(ControlarConcesionRecurso)no se ha encontrado el ppcb id: %ld, posible ppcb eliminado",ppcbid);
+		Rec_QuitarBloqueado(recurso);
+		/*recurso->nSemaforo++;	ahora hay uno menos para bloquear al recurso, hay que pensarlo +*/
 		return;
 	}
 	

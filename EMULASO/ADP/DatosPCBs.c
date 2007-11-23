@@ -46,10 +46,10 @@ int compararPCBxId( const void *t1, const void *t2 )
 /***********************************************************************************/
 int compararPCBXSock( const void *t1, const void *t2 )
 {
-	tunPCB 	*pcb1 = (tunPCB*) t1;
-	tSocket	*psock = (tSocket*) t2;
-						
-	if ( pcb1->pSocket == psock )
+	tunPCB 	*pcb1 = (tunPCB*) t1,
+			*pcb2 = (tunPCB*) t2;
+							
+	if ( pcb1->pSocket == pcb2->pSocket )
 	{
 		return 0;
 	}
@@ -198,7 +198,9 @@ tListaPCB lpcb_Siguiente( tListaPCB lista )
 /****************************************************************************************/
 tunPCB* lpcb_ObtenerPCBXSock( tListaPCB *lista, tSocket* sock )
 {
-	tListaPCB tmp = lista_buscar( lista, sock, &compararPCBXSock );
+	tunPCB ppcbAux;
+	ppcbAux.pSocket = sock;
+	tListaPCB tmp = lista_buscar( lista, &ppcbAux, &compararPCBXSock );
 	return ( tmp? tmp->datos : NULL );
 } 
  
