@@ -1331,10 +1331,20 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 		memset( szIP, 0, 4 );
 		ReducirIP(ADP.m_IP,szIP);
 		
+		Log_log( log_info, "Recibo un PAQ_SOL del PCB" );
 		ADP_printToWin( ADP.m_pwLogger, "Se recibe un paq Sol" );
 	
 		paquetes_ParsearSol(buffer, (unsigned char*)IP,&id_Proceso, &puerto, &PPCB_id, &recursoSolicitado);
 		lpcb_PasarDeLista(&ADP.m_LPE, &ADP.m_LPB, PPCB_id);
+		
+		if( pPCB = lpcb_BuscarPCBxid( &ADP.m_LPB, PPCB_id ) ) {
+			ADP.m_nMemDisp += pPCB->MemoriaRequerida;
+			/*se devuelve la memoria*/
+			Log_log(log_info,"se devuelve la memoria al pasar a bloqueados");
+		} else {
+			Log_printf(log_error,"no se encontro el ppcb en la lista de bloqueados");
+		}		
+		
 		Log_printf(log_info, "se movio el PPCB id = %d de la LPE a la LPB", PPCB_id);
 		if ( conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_newPaqSolAsStr(szIP, (unsigned char)_ADP_, ADP.m_Port, PPCB_id, recursoSolicitado),PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
 		{
@@ -1581,7 +1591,7 @@ void 	ADP_CerrarConexion( tSocket *sockIn )
 		
 		ADP_EliminarDeLista( pPCB->id );
 	}
-	
+	Log_log(log_warning,"se cierra socket PPCB");
 	conexiones_CerrarSocket(ADP.m_ListaSockets,sockIn,&ADP.m_ultimoSocket);
 }
 
