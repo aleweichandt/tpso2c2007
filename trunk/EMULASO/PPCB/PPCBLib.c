@@ -1063,6 +1063,8 @@ void PCB_AtenderADP ( tSocket *sockIn )
 		memcpy( &id, &(paq->msg[SOLDEV_POS_PPCBID]), sizeof( int ) );
 		Log_printf(log_info, "se concedio la solicitud al ppcb_id %d",id);
 		PCB.State = LISTO;
+	} else {
+		Log_log(log_warning,"recibo en atenderADP un mensaje que no reconozco");
 	}
 	if ( paq ) 
 		paquetes_destruir( paq );

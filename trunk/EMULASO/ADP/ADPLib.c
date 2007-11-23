@@ -244,13 +244,13 @@ void ADP_Dispatcher(int n)
 	
 		/*Las paso a LTL*/
 		Log_printf( log_debug, "LPL" );
-		/*InformarLista( ADP.m_LPL );*/
+		InformarLista( ADP.m_LPL );
 		
 		Log_printf( log_debug, "LPE" );
-		/*InformarLista( ADP.m_LPE );*/
+		InformarLista( ADP.m_LPE );
 
 		Log_printf( log_debug, "LPB" );
-		/*InformarLista( ADP.m_LPB );*/
+		InformarLista( ADP.m_LPB );
 		
 		lpcb_PasarDeLTPaLTL( &ADP.m_LPE, &ADP.m_LPL, &ADP.m_nMemDisp ); 
 	
@@ -1051,13 +1051,16 @@ void ADP_AtenderACR ( tSocket *sockIn )
 		Log_log( log_debug, "el ACR me manda un GetPerformance" );
 		ADP_printToWin( ADP.m_pwLogger, "el ACR me manda un GetPerformance" );
 
-		if ( (fCargaProm = ADP_CalcularCargaPromReal()) <= 0.0 )
-			fCargaProm = 1.0;
+		fCargaProm = ADP_CalcularCargaPromReal();
 		
 		/*CantPCB = (float)ADP.m_nMemMax / fCargaProm; Ubiese estado bueno haberlo pensado como funcion, pero el cambio es facil igual*/
-		CantPCB = ADP.m_nCantDisp; 
-		Log_printf(log_debug,"CantPCB(%d) = ADP.m_nMemMax(%.5f) / fCargaProm(%.5f) = (%.5f)",
-					CantPCB,(float)ADP.m_nMemMax, fCargaProm, (float)ADP.m_nMemMax / fCargaProm);
+		if( fCargaProm > ADP.m_fLimite1 ){
+			CantPCB = 0.0;		/*lo dice el enunciado Leonardoooo!! lo digo con onda, pero cuando hiciste el arreglo lo volviste a leer?*/
+		}else{
+			CantPCB = ADP.m_nCantDisp;
+		} 
+		Log_printf(log_debug,"CantPCB(%d), ADP.m_nMemMax(%.5f), fCargaProm(%.5f)",
+					CantPCB,(float)ADP.m_nMemMax, fCargaProm);
 		ReducirIP( ADP.m_IP, szIP ); /*01-10-07:LAS: Esto lo tenia que reducir*/
 		Log_printf(log_debug,"ip:%s,puerto=%d",ADP.m_IP,ADP.m_Port);
 		if( (buffPaq = paquetes_newPaqInfoPerformanceAsStr( szIP, _ID_ADP_, ADP.m_Port,
