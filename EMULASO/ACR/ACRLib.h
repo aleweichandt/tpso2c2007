@@ -107,7 +107,7 @@ int ACR_DevolverRecurso(long id,tRecurso rec);
 int ACR_DevolverTodos(long id);
 int ACR_CrearEnListaRec(long id);
 void ACR_KillPorPermiso(long id, tRecurso rec);
-int ACR_MandarPrint(int IdSesion,char* progName);
+int ACR_MandarPrint(int IdSesion,char* progName, tRecurso rec);
 
 
 #endif /*ACRLIB_H_*/
