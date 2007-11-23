@@ -658,6 +658,9 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	unsigned short 	puerto;
 	tRecurso		recurso;
 	int				ppcbid;
+	int 			pos;
+	tPpcbAcr* 		ppcb;
+	
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -680,6 +683,13 @@ void ACR_AtenderADP ( tSocket *sockIn )
 			Log_printf(log_debug,"detecto finalizacion por paquete print. Se liberan los recursosdel PPCB id:%i",pid);
 				
 			ACR_DevolverTodos(pid);
+			
+			if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,pid,&pos)) == NULL ){
+				Log_printf(log_error,"no se ha encontrado el ppcb id: %ld",pid);
+				return;
+			}
+			PpcbAcr_EliminarPpcb(&ACR.t_ListaPpcbPend,(long)pid);
+			Log_printf(log_info,"Se elimino el ppcb %d de la administracion del ACR",pid);
 		}
 		
 		/*se lo reenvio al ADS*/
@@ -1208,18 +1218,22 @@ int ACR_DevolverTodos(long id){
 	
 	valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id);
 	if(valores == NULL){
-		Log_printf(log_error, "no existe ppcb_id:%i en lista de asignacion",id);
+		Log_printf(log_error, "no existe ppcb_id:%ld en lista de asignacion",id);
 		return ERROR;
-	}else Log_printf(log_info, "ppcb_id:%i libera sus recursos",id);
+	}else Log_printf(log_info, "ppcb_id:%ld libera sus recursos",id);
 	
 	for(i=0;i<MAX_LISTA_REC;i++){
 		ACR.ListaRecursos[i].nAvailable+=valores[i];
 		ACR.ListaRecursos[i].nSemaforo+=valores[i];
-		if(ACR.ListaRecursos[i].nSemaforo > 0)ACR.ListaRecursos[i].nAvailable=ACR.ListaRecursos[i].nSemaforo;
+		/*if(ACR.ListaRecursos[i].nSemaforo > 0)ACR.ListaRecursos[i].nAvailable=ACR.ListaRecursos[i].nSemaforo; /*Esto es un error, luego te explico Ale*/
 		
 		Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i,total=%i",i,ACR.ListaRecursos[i].nSemaforo, ACR.ListaRecursos[i].nAvailable, ACR.ListaRecursos[i].nInstancias);
 	}
-	return (MatrizRec_EliminarProceso(&ACR.MatrizAsignacion,ACR.nCantRecursos,(long)id));
+	
+	if( MatrizRec_EliminarProceso(&ACR.MatrizAsignacion,ACR.nCantRecursos,id) == 0){
+		Log_printf(log_error,"No se pudo eliminar el ppcb_id: %ld de la matriz asignacion",id);
+	}
+	return OK;
 }
 /*************************************************************************/
 int ACR_DevolverRecurso(long id,tRecurso rec){
