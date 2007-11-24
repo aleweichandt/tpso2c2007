@@ -448,7 +448,10 @@ int	ADP_MigrarPCBPesado()
 		}
 		else
 		{
-			Log_printf( log_info,"Decido sacar al pcb %ld, PERO el socket esta en NULL!!", pcb1->id );
+			/*fuerzo la migracion*/
+			kill( pcb1->pid, SIGUSR2 );
+			ADP_EliminarDeLista( pcb1->id );
+			/*Log_printf( log_info,"Decido sacar al pcb %ld, PERO el socket esta en NULL!!", pcb1->id );*/
 			/*ADP_printfToWin( ADP.m_pwLogger,"Decido sacar al pcb %ld, PERO el socket esta en NULL!!", pcb1->id );*/
 			return ERROR;
 		}
