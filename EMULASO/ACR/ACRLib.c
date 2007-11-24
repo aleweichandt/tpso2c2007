@@ -689,6 +689,15 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	{/*me llega el print*/
 		int nSend;
 		long int pid;
+		
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;		
+		int idSesion;
+		char nomProg[PRINT_LEN_NOM_PROG];
+		char msg[PRINT_LEN_MSG];
+		
+		
 		/*chequeo el unused en la cabecera por si finaliza el pcb*/
 		memcpy(&pid, &(paq->id.UnUsed), sizeof(long int) );
 		if(pid != 0){
@@ -700,6 +709,18 @@ void ACR_AtenderADP ( tSocket *sockIn )
 			if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,pid,&pos)) == NULL ){
 				Log_printf(log_error,"(atenderADP)no se ha encontrado el ppcb id: %ld",pid);
 				return;
+			}
+			paquetes_ParsearPaqPrint(buffer, ip, &idProceso, &puerto, &idSesion, nomProg, msg);
+			if(idSesion == -1)
+			{
+				if( paq )
+				{
+					paquetes_destruir(paq);
+				}
+				idSesion = ppcb->lIdSesion;
+				strncpy(nomProg, ppcb->szComando, 4);
+				paq = paquetes_newPaqPrint(ip, idProceso, puerto, idSesion, nomProg, msg);
+				
 			}
 			PpcbAcr_EliminarPpcb(&ACR.t_ListaPpcbPend,(long)pid);
 			Log_printf(log_info,"Se elimino el ppcb %d de la administracion del ACR",pid);
