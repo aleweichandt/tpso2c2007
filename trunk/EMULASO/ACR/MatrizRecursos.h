@@ -13,7 +13,7 @@
 #include "../incGeneral/incGeneral.h"
 #include "../incGeneral/Estructuras/estructuras.h"
 #include "DatosRecurso.h"
-#include "DatosPpcbACR.h"
+/*#include "DatosPpcbACR.h"*/
 
 typedef struct sFila{
 	long tid;
