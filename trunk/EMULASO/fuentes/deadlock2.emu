@@ -1,0 +1,9 @@
+MEM 30
+IMP pido el primer recurso
+SOL Impresora
+OPER 5
+IMP pido el segundo recurso
+SOL Cinta
+DEV Impresora
+DEV Cinta
+IMP termine
