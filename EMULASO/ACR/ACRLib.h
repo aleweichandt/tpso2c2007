@@ -26,6 +26,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "../incGeneral/ventanas.h"
 
 #define ALRM_T 4				/*Periodo en segundos para la alarma*/
 
@@ -54,7 +55,10 @@ typedef struct
 	tDatosRecurso		ListaRecursos[MAX_LISTA_REC];
 	int					nCantRecursos;
 	tListaFilas			MatrizAsignacion;
-	
+
+	tVentana			*m_pwMain, 
+						*m_pwLPP, 
+						*m_pwRec;	
 } tACR;
 
 /* "Objeto" Publico */
@@ -109,5 +113,9 @@ int ACR_CrearEnListaRec(long id);
 void ACR_KillPorPermiso(long id, tRecurso rec);
 int ACR_MandarPrint(int IdSesion,char* progName, tRecurso rec);
 
+/*Graficos*/
+void ACR_CrearGraficos( int activarGraficos );
+void ACR_printToWin( tVentana *win, char* msg );
+void ACR_printfToWin( tVentana* win, const char* fmt, ... );
 
 #endif /*ACRLIB_H_*/
