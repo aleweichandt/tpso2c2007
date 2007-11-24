@@ -118,4 +118,6 @@ void ACR_CrearGraficos( int activarGraficos );
 void ACR_printToWin( tVentana *win, char* msg );
 void ACR_printfToWin( tVentana* win, const char* fmt, ... );
 
+void ACR_ActualizarVentanas();
+
 #endif /*ACRLIB_H_*/

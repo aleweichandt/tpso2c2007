@@ -52,6 +52,7 @@ int ACR_Init()
 		signal(SIGUSR1, ACR_ProcesarSeniales);
 		signal(SIGINT , ACR_ProcesarSeniales);
 		signal(SIGCHLD, ACR_ProcesarSeniales);
+		ACR_CrearGraficos(1);
 	
 		return OK;
 		
@@ -83,7 +84,7 @@ void ACR_Salir()
 	free(ACR.t_ListaSockets);
 	
 	Log_Cerrar();
-	/*pantalla_Clear();*/
+	pantalla_Clear();
 	
 	if ( ACR.m_pwMain )
 		ventana_Destruir(ACR.m_pwMain );
@@ -228,6 +229,7 @@ void ACR_Timer( tSocket* sockIn )
 	
 	ACR_ControlarPendientes();
 	ACR_ControlarConcesionRecursos();
+	ACR_ActualizarVentanas();
 }
 
 /**********************************************************************/
@@ -1699,8 +1701,8 @@ void ACR_printToWin( tVentana *win, char* msg )
 		return;
 /* Descomentar esto si se quiere tener una ventana de logger! Hay que crearla tb.
  * Abajo se imprime la hora
- * 		
-	if ( win == ADP.m_pwLogger )
+ */ 		
+	/*if ( win == ACR.m_pwLogger )
 	{
 	  	sprintf( szLog, "%02d:%02d:%02d: %s", 
 			stHoy->tm_hour, stHoy->tm_min , stHoy->tm_sec, msg );
@@ -1709,8 +1711,8 @@ void ACR_printToWin( tVentana *win, char* msg )
 		fflush(stdout);
 	}
 	else
-	{
-*/	
+	{*/
+	
 		ventana_Print( win, msg );
 		fflush(stdout);
 /*	}*/	
@@ -1727,4 +1729,43 @@ void ACR_printfToWin( tVentana* win, const char* fmt, ... )
 	va_end(args);
 	
 	ACR_printToWin( win, buffer);
+}
+
+void ACR_ActualizarVentanas(){
+	tListaPpcbAcr 	Lista = ACR.t_ListaPpcbPend;
+	tPpcbAcr		*ppcb = NULL;
+	tPaquete* paqSend=NULL;
+	int i = 0;
+	int *valores/*[MAX_LISTA_REC]*/;
+	
+	ventana_Clear( ACR.m_pwRec );ventana_Clear( ACR.m_pwLPP );
+	
+	ACR_printToWin(ACR.m_pwRec,"Recursos");
+	for(i=0;i<MAX_LISTA_REC;i++){
+		ACR_printfToWin(ACR.m_pwRec,"%s[s:%i][d:%i][t:%i]"
+				,ACR.ListaRecursos[i].szNombre,ACR.ListaRecursos[i].nSemaforo,ACR.ListaRecursos[i].nAvailable,ACR.ListaRecursos[i].nInstancias);
+	}
+	ACR_printToWin(ACR.m_pwRec,"Matriz Asignacion");
+	ACR_printToWin(ACR.m_pwRec,"       [I] [D] [C]");
+	ACR_printToWin(ACR.m_pwLPP,"LPP");
+	
+	while( Lista )
+	{
+		ppcb = PpcbAcr_Datos( Lista );
+		if(ppcb != NULL){		
+			if ( ppcb->sActividad != Estado_Activo  )
+			{
+				ACR_printfToWin(ACR.m_pwLPP,"%i",ppcb->pid);	
+			}
+			else if(ppcb->sActividad == Estado_Activo)
+			{
+										
+			}
+			valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,ppcb->pid);
+			if(valores != NULL){
+				ACR_printfToWin(ACR.m_pwRec,"[pid%i] [I:%i][D:%i] [C:%i]",ppcb->pid,valores[0],valores[1],valores[2]);
+			}
+			Lista = PpcbAcr_Siguiente( Lista );
+		}
+	}
 }
