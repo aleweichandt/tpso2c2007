@@ -25,6 +25,8 @@ int ACR_Init()
 			Log_log( log_error, "Error leyendo la configuracion" ); 
 			break;
 		}
+	
+		ACR_CrearGraficos( 0 ); /*Ale, despues cambia esto por 1 para activar graficos*/
 				
 		/* inicializacion de la lista de sockets */
 		if ( !(ACR.t_ListaSockets = malloc( MALLOC_SOCKS_INI *sizeof(tSocket*) ) ) ) 
@@ -82,6 +84,16 @@ void ACR_Salir()
 	
 	Log_Cerrar();
 	/*pantalla_Clear();*/
+	
+	if ( ACR.m_pwMain )
+		ventana_Destruir(ACR.m_pwMain );
+		
+	if ( ACR.m_pwLPP )
+		ventana_Destruir(ACR.m_pwLPP );
+	
+	if ( ACR.m_pwRec )
+		ventana_Destruir(ACR.m_pwRec );
+		
 	exit(EXIT_SUCCESS);
 }
 
@@ -1557,4 +1569,85 @@ int ACR_MandarPrint(int IdSesion,char* progName, tRecurso rec){
 	paquetes_destruir( pPaq );
 	
 	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
+}
+
+/************************************************************************/
+void ACR_CrearGraficos( int activarGraficos )
+{
+	#define X_MAIN		1
+	#define Y_MAIN		1
+	#define ANCHO_MAIN	PANTALLA_COLS
+	#define ALTO_MAIN	PANTALLA_ROWS
+
+	#define X_INFO		1
+	#define Y_INFO		4
+	#define ANCHO_INFO	(ANCHO_MAIN / 2)-2
+	#define ALTO_INFO	PANTALLA_ROWS-4
+
+	#define X_LOGGER		(ANCHO_MAIN / 2)+1
+	#define Y_LOGGER		4
+	#define ANCHO_LOGGER	(ANCHO_MAIN / 2)-1
+	#define ALTO_LOGGER		PANTALLA_ROWS-4
+	
+	char	szTitle[PANTALLA_COLS+1];
+	
+	sprintf( szTitle, "[B&RR - ACR] %s: %d", ACR.sz_ACR_IP, ACR.usi_ACR_Port );
+
+	
+	if ( activarGraficos )
+	{
+		pantalla_Clear();
+		
+		ACR.m_pwMain  	= ventana_Crear(X_MAIN, 	Y_MAIN, 	ANCHO_MAIN, 	ALTO_MAIN, 	1, szTitle );
+		ACR.m_pwLPP 	= ventana_Crear(X_INFO, 	Y_INFO, 	ANCHO_INFO, 	ALTO_INFO, 	1, "LPP");
+		ACR.m_pwRec 	= ventana_Crear(X_LOGGER, 	Y_LOGGER, 	ANCHO_LOGGER, 	ALTO_LOGGER, 1, "Recursos");
+		
+		ventana_Clear( ACR.m_pwRec );
+		ventana_Clear( ACR.m_pwLPP );
+	}
+	else
+	{
+		ACR.m_pwMain = ACR.m_pwLPP = ACR.m_pwRec = NULL;
+	}
+}
+
+/***********************************************************************/
+void ACR_printToWin( tVentana *win, char* msg )
+{
+	time_t		stTime = time( NULL );
+	struct tm*	stHoy = localtime( &stTime );
+	char szLog[255];
+	
+	if (win == NULL)
+		return;
+/* Descomentar esto si se quiere tener una ventana de logger! Hay que crearla tb.
+ * Abajo se imprime la hora
+ * 		
+	if ( win == ADP.m_pwLogger )
+	{
+	  	sprintf( szLog, "%02d:%02d:%02d: %s", 
+			stHoy->tm_hour, stHoy->tm_min , stHoy->tm_sec, msg );
+		
+		ventana_Print( win, szLog );
+		fflush(stdout);
+	}
+	else
+	{
+*/	
+		ventana_Print( win, msg );
+		fflush(stdout);
+/*	}*/	
+}
+
+/***********************************************************************/
+void ACR_printfToWin( tVentana* win, const char* fmt, ... )
+{
+	va_list args;	
+	char buffer[500];
+	
+	va_start(args, fmt);
+	vsprintf(buffer, fmt, args);
+	va_end(args);
+	
+	ACR_printToWin( win, buffer);
 }
