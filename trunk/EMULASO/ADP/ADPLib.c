@@ -63,7 +63,7 @@ void TestPlanificacion()
 	lpcb_AgregarALista( &ADP.m_LPL, ppcb );
 
 	ppcb = pcb_Crear( "127.0.0.1", "", 3, 9700, NULL, NULL, 5, 50, 9000 );
-	lpcb_AgregarALista( &ADP.m_LPB, ppcb );
+		lpcb_AgregarALista( &ADP.m_LPB, ppcb );
 
 	ppcb = pcb_Crear( "127.0.0.1", "", 4, 9700, NULL, NULL, -5, 50, 9000 );
 	lpcb_AgregarALista( &ADP.m_LPE, ppcb );
@@ -118,10 +118,13 @@ void InformarLista( tListaPCB Lista )
 	
 	if ( Lista == ADP.m_LPE  && ADP.m_LPE )
 		strcpy(szInfo, "LPE: ");
-	else if ( Lista == ADP.m_LPL && ADP.m_LPE )
+	else if ( Lista == ADP.m_LPL && ADP.m_LPL )
 		strcpy(szInfo, "LPL: ");
-	else if ( Lista == ADP.m_LPB && ADP.m_LPE )
+	else if ( Lista == ADP.m_LPB && ADP.m_LPB )
 		strcpy(szInfo, "LPB: ");
+		
+	if ( !Lista )
+		ADP_printToWin( ADP.m_pwInfo, "" );
 	
 	while( Lista )
 	{
@@ -231,6 +234,7 @@ void ADP_Dispatcher(int n)
 		Log_log( log_debug, "<< Entra al Dispatcher >>" );
 		ADP_printToWin( ADP.m_pwLogger, "<< Entra al Dispatcher >>" );
 		ventana_Clear( ADP.m_pwInfo );
+		fflush( stdout );
 		
 		/* Esto se puede mejorar para que los saque exactamente a medida que se van venciendo
 		 * con eso saca todos los que se hayan vencido.*/
@@ -351,7 +355,7 @@ int 	ADP_InformarSuspencion()
 			Log_printf( log_debug, "envio Suspension al pcb %ld", pPCB->id );
 			ADP_printfToWin( ADP.m_pwLogger, "envio Suspension al pcb %ld", pPCB->id  );
 	
-			if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqSuspendPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
+			if ( pPCB->pSocket && conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqSuspendPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
 					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
 			{
 				Log_logLastError("enviando suspend_pcb");
@@ -387,7 +391,7 @@ void ADP_InformarReanudacion()
 						pPCB->id, pPCB->pSocket->descriptor );
 						
 		ReducirIP( ADP.m_IP, szIPReducido );	
-		if ( conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqExecPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
+		if ( pPCB->pSocket && conexiones_sendBuff( pPCB->pSocket, (const char*) paquetes_newPaqExecPCBAsStr( szIPReducido, _ID_ADP_, ADP.m_Port ), 
 				PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
 		{
 			Log_logLastError("enviando exec_pcb");
