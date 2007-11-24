@@ -1110,6 +1110,7 @@ void ADP_AtenderACR ( tSocket *sockIn )
 		ReducirIP( ADP.m_IP, szIP );
 		
 		memset( &(szPCBStates[0]), 0, PAQ_LEN_MSGCTRL+1 );
+		nCantPCBs = 0;
 		
 		ADP_CargarPCBsStates( &nCantPCBs, szPCBStates );
 		

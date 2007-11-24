@@ -247,11 +247,28 @@ void ACR_PonerTimer(time_t* tiempo){
 /**********************************************************/
 void ACR_ImprimirInfoCtr()
 {
-	int i, pos;
+	int i, pos, nSend, indice=0;
 	long ppcbid;
 	tDatosRecurso* recurso;
+	tSocket* 		socket = NULL;
+	char *tmp;
+	unsigned char 	ip[4];
 	
 	Log_log(log_info, "  Se imprime la informacion de control del ACR  ");
+	
+	ReducirIP(ACR.sz_ACR_IP,ip);
+	
+	while( socket = DatosAdpACR_Obtener( &ACR.t_ListaSocketAdp, indice ) )
+	{
+		Log_log(log_debug, "Tengo un adp para el state");
+		tmp = paquetes_newPaqGetPCBsStatesAsStr(ip,_ID_ACR_,ACR.usi_ACR_Port);
+		
+		nSend = conexiones_sendBuff( socket, tmp, PAQUETE_MAX_TAM );
+		if( nSend == (int)NULL || nSend == ERROR )
+			Log_logLastError("Ocurrio un error en envío de PAQ_GET_PCB_STATES");
+		
+		indice++;
+	}
 	
 	InfoCtr_Inicializar("ACR","1");
 	
@@ -756,23 +773,52 @@ void ACR_AtenderADP ( tSocket *sockIn )
 	}
 	else if ( IS_PAQ_INFO_PCBS_STATES( paq ) )
 	{
-/*	Gonza: aca tenes como recorrer el paquete, si queres hace las conversiones	
-			int i = 0;
-			int cant ;
-			int size = 0;
-			short int id;
-			char state;
-			
-			memcpy( &cant, &(paq->id.UnUsed[0]), sizeof(int) );
-			for (i = 0; i < cant; i ++)
-			{
-				memcpy( &id, &(paq->msg[size]), sizeof(short int) );
-				size += sizeof(short int);
-				memcpy( &state, &(paq->msg[size]), sizeof(char) );
-				size += sizeof(char);
+	/*Gonza: aca tenes como recorrer el paquete, si queres hace las conversiones*/	
+		int i = 0;
+		int cant ;
+		int size = 0;
+		short int id;
+		char state;
+		char estado[24];
+		
+		bzero(estado,sizeof(estado));		
+		
+		Log_log(log_debug,"Llega un PAQ_INFO_PCBS_STATES");
+		InfoCtr_Inicializar("ACR","1");
+		
+		memcpy( &cant, &(paq->id.UnUsed[0]), sizeof(int) );
+		for (i = 0; i < cant; i ++)
+		{
+			memcpy( &id, &(paq->msg[size]), sizeof(short int) );
+			size += sizeof(short int);
+			memcpy( &state, &(paq->msg[size]), sizeof(char) );
+			size += sizeof(char);
 
+			if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,(long)id,&pos)) == NULL ){
+				Log_printf(log_error,"(atenderADP)no se ha encontrado el ppcb id: %d",id);
+				InfoCtr_CerrarInfo();
+				return;
 			}
-*/		
+			
+			if( (int)state == EJECUTANDO )
+				strncpy(estado,"EJECUTANDO",23);
+			else if( (int)state == LISTO )
+				strncpy(estado,"LISTO",23);
+			else if( (int)state == BLOQUEADO )
+				strncpy(estado,"BLOQUEADO",23);
+			else if( (int)state == PENDIENTE )
+				strncpy(estado,"PENDIENTE",23);
+			else if( (int)state == FINALIZADO )
+				strncpy(estado,"FINALIZADO",23);
+			
+			InfoCtr_printf(log_info, "PCB[id:%ld][usr:%s][ip:%s][est:%s][com:%s][idSesion:%ld]",
+				ppcb->pid,ppcb->szUsuario,
+				conexiones_getIpRemotaDeSocket(ppcb->socketADP),
+				estado,	ppcb->szComando, ppcb->lIdSesion);
+			
+		}
+		InfoCtr_CerrarInfo();
+			
 	}
 	else if( IS_PAQ_SOL(paq) ){
 		
@@ -1441,7 +1487,7 @@ void ACR_ControlarConcesionRecurso(tDatosRecurso* recurso, int posRecurso)
 	if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL ){
 		Log_printf(log_warning,"(ControlarConcesionRecurso)no se ha encontrado el ppcb id: %ld, posible ppcb eliminado",ppcbid);
 		Rec_QuitarBloqueado(recurso);
-		/*recurso->nSemaforo++;	ahora hay uno menos para bloquear al recurso, hay que pensarlo +*/
+		recurso->nSemaforo++;	/*ahora hay uno menos para bloquear al recurso, hay que pensarlo +*/
 		return;
 	}
 	
