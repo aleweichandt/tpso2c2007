@@ -408,6 +408,7 @@ void ADS_AtenderACR ( tSocket *sockIn )
 		if ( nSend != PAQUETE_MAX_TAM )
 		{
 			Log_logLastError( "error enviando PRINT al Mshell" );
+			Log_printf(log_info, "buffer: %s", msg);
 		}
 	}
 	
@@ -685,7 +686,7 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 	
 	if((usr = UsuariosADS_BuscarUsr(&(ADS.m_ListaUsuarios),connId, &iPos))==NULL)
 	{
-		Log_printf(log_debug, "Error al abrir el archivo de Clave\n");
+		Log_printf(log_debug, "No se encontro el usuario con el IdSesion = %d\n", connId);
 		return -1;
 	}
 	if(usr->key != -1)
