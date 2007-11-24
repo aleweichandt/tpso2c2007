@@ -436,6 +436,7 @@ void ACR_HandShake( tSocket* sockIn )
 void ACR_ControlarPendientes(void)
 {
 	tListaPpcbAcr 	Lista = ACR.t_ListaPpcbPend;
+	char param[PRINT_LEN_MSG];
 	tPpcbAcr		*ppcb = NULL;
 	time_t			now = time(NULL);
 	
@@ -456,6 +457,9 @@ void ACR_ControlarPendientes(void)
 				ppcb->pid, ppcb->szComando, ppcb->szUsuario, difftime( now, ppcb->sFechaInactvdad ));
 			
 			/*Elimino el proceso PPCB*/
+			bzero(param, sizeof(param));
+			sprintf(param,"%s murio por timeout",ppcb->szComando);
+			ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando, param);
 			kill( ppcb->pidChild, SIGTERM );
 			PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 			Lista = ACR.t_ListaPpcbPend;
@@ -1506,6 +1510,7 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 	tSocket* 		socket = NULL;
 	unsigned char 	ip[4];
 	tPaquete* paqSend=NULL;
+	char	 param[PRINT_LEN_MSG];
 	int nSend, pidVector[25], i = 0, indice = 0;
 	
 	for(i=0;i<25;i++)pidVector[i]=0;
@@ -1525,8 +1530,11 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 						ppcb->pid);
 				
 					/*Elimino el proceso PPCB*/
+					bzero(param, sizeof(param));
+					sprintf(param,"no tiene permiso de %s",ACR.ListaRecursos[rec].szNombre);
+					
 					ACR_DevolverTodos(ppcb->pid);
-					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando,rec);
+					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando,/*rec*/param);
 					kill( ppcb->pidChild, SIGTERM );
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 					Lista = ACR.t_ListaPpcbPend;
@@ -1538,7 +1546,9 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 					pidVector[i]=ppcb->pid;
 					i++;
 					ACR_DevolverTodos(ppcb->pid);
-					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando,rec);
+					bzero(param, sizeof(param));
+					sprintf(param,"no tiene permiso de %s",ACR.ListaRecursos[rec].szNombre);
+					ACR_MandarPrint(ppcb->lIdSesion,ppcb->szComando,/*rec*/param);
 					PpcbAcr_EliminarPpcb( &ACR.t_ListaPpcbPend, ppcb->pid );
 					Lista = ACR.t_ListaPpcbPend;
 				}else{
@@ -1564,15 +1574,15 @@ void ACR_KillPorPermiso(long id, tRecurso rec){
 	return;
 }
 
-int ACR_MandarPrint(int IdSesion,char* progName, tRecurso rec){
+int ACR_MandarPrint(int IdSesion,char* progName, /*tRecurso rec,*/char param[PRINT_LEN_MSG]){
 	tSocket  *pSocket;
 	tPaquete *pPaq;
 	int		 nSend;
 	unsigned char szIP[4];
-	char	 param[PRINT_LEN_MSG];
+	/*char	 param[PRINT_LEN_MSG];
 	
 	bzero(param, sizeof(param));
-	sprintf(param,"no tiene permiso de %s",ACR.ListaRecursos[rec].szNombre);
+	sprintf(param,"no tiene permiso de %s",ACR.ListaRecursos[rec].szNombre);*/
 	
 	memset( szIP, 0, 4 );
 	
