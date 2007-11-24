@@ -199,8 +199,9 @@ tListaPCB lpcb_Siguiente( tListaPCB lista )
 tunPCB* lpcb_ObtenerPCBXSock( tListaPCB *lista, tSocket* sock )
 {
 	tunPCB ppcbAux;
+	tListaPCB tmp;
 	ppcbAux.pSocket = sock;
-	tListaPCB tmp = lista_buscar( lista, &ppcbAux, &compararPCBXSock );
+	tmp = lista_buscar( lista, &ppcbAux, &compararPCBXSock );
 	return ( tmp? tmp->datos : NULL );
 } 
  
