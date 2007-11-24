@@ -111,7 +111,7 @@ int ACR_DevolverRecurso(long id,tRecurso rec);
 int ACR_DevolverTodos(long id);
 int ACR_CrearEnListaRec(long id);
 void ACR_KillPorPermiso(long id, tRecurso rec);
-int ACR_MandarPrint(int IdSesion,char* progName, tRecurso rec);
+int ACR_MandarPrint(int IdSesion,char* progName, /*tRecurso rec*/char param[PRINT_LEN_MSG]);
 
 /*Graficos*/
 void ACR_CrearGraficos( int activarGraficos );
