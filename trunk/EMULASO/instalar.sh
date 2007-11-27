@@ -1,5 +1,5 @@
 #!/bin/sh
-echo instalando B&RR Emulaso
+echo instalando ByRR Emulaso
 mkdir nodo1 nodo2 nodo3
 cp adp nodo1/adp
 cp adp nodo2/adp
