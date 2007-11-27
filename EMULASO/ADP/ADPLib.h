@@ -119,8 +119,8 @@ void ADP_TimeOut( tSocket *sockIn );
 
 /*Interface grafica*/
 void ADP_CrearGraficos( int activarGraficos );
-void ADP_printToWin( tVentana* win, char* msg );
-void ADP_printfToWin( tVentana* win, const char* fmt, ... );
+void ADP_printToWinAt( tVentana* win, char* msg, int y );
+void ADP_printfToWin( tVentana* win, int y, const char* fmt, ... );
 
 void ADP_MigrarLosPCBs( tListaPCB Lista );
 
