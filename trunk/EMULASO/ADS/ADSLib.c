@@ -543,6 +543,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			unsigned char szIP[4];
 			char *stringSesion;
 			int nSend,idSesion;
+			unsigned short int npuerto, descriptor;
 			
 			memset( szIP, 0, 4 );
 			if (ReducirIP(ADS.m_IP,szIP) == ERROR)
@@ -550,9 +551,16 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 			idSesion=sockIn->descriptor;
 			stringSesion=malloc(sizeof(int)+1);
 			sprintf(stringSesion,"%i",idSesion);
+			
+			
+			/*Antes de cerrar el socket tomo el puerto, sino que con basura y le pasa cualquier cosa por el paquete
+			 * y tambien el sock descriptor*/
+			npuerto = conexiones_getPuertoLocalDeSocket(sockIn);
+			descriptor = sockIn->descriptor;
+			
 			ADS_CerrarConexion(sockIn);
 			
-			if ( !(paqSend  = paquetes_newPaqEnd_Sesion( szIP, _ID_ADS_, conexiones_getPuertoLocalDeSocket(sockIn),stringSesion )) )
+			if ( !(paqSend  = paquetes_newPaqEnd_Sesion( szIP, _ID_ADS_, npuerto,stringSesion )) )
 			{
 				Log_log( log_error, "Error enviando Logout al ACR" );
 			}
@@ -563,7 +571,7 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 				Log_logLastError( "Error enviando Logout de un usuario al ACR" );
 			}
 			
-			UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), sockIn->descriptor);
+			UsuariosADS_EliminarUsr(&(ADS.m_ListaUsuarios), descriptor);
 			
 			paquetes_destruir( paqSend );
 		}
