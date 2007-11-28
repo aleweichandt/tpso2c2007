@@ -1,0 +1,11 @@
+MEM 7
+OPER 30
+IMP Secuencia: 2
+IMP Solicitando disco...
+SOL Disco
+IMP Secuencia: 5
+OPER 10
+IMP Devolviendo disco...
+DEV Disco
+OPER 100
+IMP Si se visualiza una secuencia del 1 al 6, la planificacion fue correcta.

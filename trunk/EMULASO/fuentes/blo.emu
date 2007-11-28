@@ -1,0 +1,9 @@
+MEM 90
+IMP Solicitando disco...
+SOL Disco
+OPER 10
+IMP Solicitando cinta...
+SOL Cinta
+OPER 10
+IMP Continuando ejecucion...
+OPER 30

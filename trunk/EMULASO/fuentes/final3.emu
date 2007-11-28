@@ -1,0 +1,10 @@
+MEM 7
+OPER 60
+IMP Secuencia: 3
+IMP Solicitando disco...
+SOL Disco
+IMP Secuencia: 6
+OPER 10
+IMP Solicitando impresora...
+SOL Impresora
+IMP Esto no deberia imprimirse.
