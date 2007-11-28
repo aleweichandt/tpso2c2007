@@ -319,7 +319,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 	}
 	
 	Log_log( log_debug, "Me llega un paquete del ADS" );
-	
+	MSH_GetKey();
 	paq = paquetes_CharToPaq(AplicarXorEnString(buffer,key));
 
 	if ( IS_PAQ_PWD_OK ( paq ) )
