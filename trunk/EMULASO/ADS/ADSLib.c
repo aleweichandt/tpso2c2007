@@ -598,7 +598,10 @@ void ADS_AtenderMSH ( tSocket *sockIn )
 				}
 			}
 		}
-		
+		else
+		{
+			Log_log(log_info,"mensaje desconocido, probable desigualdad en clave simétrica");
+		}
 		if ( paq )
 		{
 			paquetes_destruir( paq );
