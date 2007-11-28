@@ -1,0 +1,9 @@
+MEM 15
+IMP Secuencia: 1
+IMP Solicitando disco...
+SOL Disco
+OPER 120
+IMP Secuencia: 4
+IMP Devolviendo disco...
+DEV Disco
+OPER 100
