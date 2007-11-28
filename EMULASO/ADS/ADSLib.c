@@ -697,10 +697,11 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 		Log_printf(log_debug, "No se encontro el usuario con el IdSesion = %d\n", connId);
 		return -1;
 	}
-	if(usr->key != -1)
+	/*28-nov-07 se saca el cacheo de la clave de encriptacion*/
+	/*if(usr->key != -1)
 	{
 		return usr->key;
-	}
+	}*/
 	strcpy(szNombreArchivoClave, pathClaves);
 	strcat(szNombreArchivoClave, "/");
 	strcat(szNombreArchivoClave, usr->Usuario);
