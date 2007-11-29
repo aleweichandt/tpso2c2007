@@ -197,7 +197,7 @@ int createPCB(char *argv[]) {
 
 	FILE *cfgCode;
 	int line=0;
-	char strBuff[50];
+	char strBuff[200];
 		
 	do {
 		/*
@@ -235,7 +235,8 @@ int createPCB(char *argv[]) {
 		
 		bzero(strBuff,sizeof(strBuff));
 		while (!feof(cfgCode) && fgets(strBuff, 200, cfgCode)) {
-			strncpy(PCB.Code[line], strBuff,50 );
+			strncpy(PCB.Code[line], strBuff,49 );
+			PCB.Code[line][49]='\0';
 			line++;
 		}
 		PCB.ultimaSentencia = line;

@@ -28,7 +28,7 @@ int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, tPpcbAcr *ppcb )
 
 	/*Si no lo encuentra lo agrega*/
 	if ( !lista_buscar( lista, ppcb, &comparaPpcbAcr ) )
-		lista_insertar( lista, ppcb, sizeof(tPpcbAcr), &comparaPpcbAcr, 1 );
+		lista_insertar( lista, ppcb, sizeof(tPpcbAcr), &comparaPpcbAcrTime, 1 );
 	
 	/*PpcbAcr_BuscarPpcb(lista,ppcb->pid,&pos);*/
 	return 1;
@@ -99,6 +99,10 @@ tPpcbAcr* PpcbAcr_ObtenerPpcbXPid( tListaPpcbAcr *lstppcb, tPpcbAcr* ppcbPid )
 	return (tmp? tmp->datos : NULL);
 }
 
+void PpcbAcr_ReordenarLista(tListaPpcbAcr *lista){
+	lista_reordenar(lista,comparaPpcbAcrTime);
+}
+
 /*********************************************************/
 int comparaPpcbAcr( const void *ppcb1, const void *ppcb2 )
 {
@@ -106,6 +110,14 @@ int comparaPpcbAcr( const void *ppcb1, const void *ppcb2 )
 			   *ppcbAcr2 = (tPpcbAcr*) ppcb2;
 			   
 	return (int)(ppcbAcr1->pid - ppcbAcr2->pid); 
+}
+
+int comparaPpcbAcrTime( const void *ppcb1, const void *ppcb2 )
+{
+	tPpcbAcr *ppcbAcr1 = (tPpcbAcr*) ppcb1,
+			   *ppcbAcr2 = (tPpcbAcr*) ppcb2;
+			   
+	return (int)(ppcbAcr1->sFechaInactvdad - ppcbAcr2->sFechaInactvdad); 
 }
 
 /*********************************************************/
