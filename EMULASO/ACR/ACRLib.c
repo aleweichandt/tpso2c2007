@@ -978,6 +978,8 @@ void ACR_RecibirArchivo( tSocket *sockIn )
 		if ( (pidChild = ACR_ForkPPCB( lpcb_id )) != ERROR  &&
 			ACR_CrearPPCB( lpcb_id, pidChild ) == OK ){
 			Log_printf(log_info,"Se creo PCB pid:%ld",lpcb_id);
+			PpcbAcr_ReordenarLista(&ACR.t_ListaPpcbPend);
+			Log_log(log_debug,"Se mantiene ordenada la lista");
 			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqMigrarOKAsStr( szIP, _ID_ACR_, ACR.usi_ACR_Port ), 
 					PAQUETE_MAX_TAM ) != PAQUETE_MAX_TAM )
 			{
@@ -1734,11 +1736,20 @@ void ACR_printfToWin( tVentana* win, const char* fmt, ... )
 void ACR_ActualizarVentanas(){
 	tListaPpcbAcr 	Lista = ACR.t_ListaPpcbPend;
 	tPpcbAcr		*ppcb = NULL;
+	tSocket			*socket=NULL;
 	tPaquete* paqSend=NULL;
-	int i = 0;
+	int i = 0, indice=0;
 	int *valores/*[MAX_LISTA_REC]*/;
 	
 	ventana_Clear( ACR.m_pwRec );ventana_Clear( ACR.m_pwLPP );
+	
+	ACR_printToWin(ACR.m_pwLPP,"ADPs disponibles");
+	while( socket = DatosAdpACR_Obtener( &ACR.t_ListaSocketAdp, indice ) )
+	{
+		ACR_printfToWin(ACR.m_pwLPP,"%s",conexiones_getIpRemotaDeSocket(socket));
+		indice++;
+	}
+	
 	
 	ACR_printToWin(ACR.m_pwRec,"Recursos");
 	for(i=0;i<MAX_LISTA_REC;i++){
@@ -1755,7 +1766,7 @@ void ACR_ActualizarVentanas(){
 		if(ppcb != NULL){		
 			if ( ppcb->sActividad != Estado_Activo  )
 			{
-				ACR_printfToWin(ACR.m_pwLPP,"%i",ppcb->pid);	
+				ACR_printfToWin(ACR.m_pwLPP,"%i %s",ppcb->pid, ppcb->szComando);	
 			}
 			else if(ppcb->sActividad == Estado_Activo)
 			{
@@ -1763,7 +1774,7 @@ void ACR_ActualizarVentanas(){
 			}
 			valores = MatrizRec_ObtenerVectorInstancia(&ACR.MatrizAsignacion,ACR.nCantRecursos,ppcb->pid);
 			if(valores != NULL){
-				ACR_printfToWin(ACR.m_pwRec,"[pid%i] [I:%i][D:%i] [C:%i]",ppcb->pid,valores[0],valores[1],valores[2]);
+				ACR_printfToWin(ACR.m_pwRec,"[pid%i] [%i] [%i] [%i]",ppcb->pid,valores[0],valores[1],valores[2]);
 			}
 			Lista = PpcbAcr_Siguiente( Lista );
 		}
