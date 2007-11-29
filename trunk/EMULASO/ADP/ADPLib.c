@@ -1794,7 +1794,7 @@ void ADP_CrearGraficos( int activarGraficos )
 	
 	char	szTitle[PANTALLA_COLS+1];
 	
-	sprintf( szTitle, "[B&RR - ADP] %s: %d", ADP.m_IP, ADP.m_Port );
+	sprintf( szTitle, "[B&RR - ADP] %s: %d    L1=%.2f  L2=%.2f", ADP.m_IP, ADP.m_Port, ADP.m_fLimite1, ADP.m_fLimite2 );
 
 	
 	if ( 1 ) /*por si lo quiero desactivar en el futuro*/
