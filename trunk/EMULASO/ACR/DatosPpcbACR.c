@@ -28,7 +28,7 @@ int 		PpcbAcr_AgregarPpcb	(tListaPpcbAcr *lista, tPpcbAcr *ppcb )
 
 	/*Si no lo encuentra lo agrega*/
 	if ( !lista_buscar( lista, ppcb, &comparaPpcbAcr ) )
-		lista_insertar( lista, ppcb, sizeof(tPpcbAcr), &comparaPpcbAcrTime, 1 );
+		lista_insertar( lista, ppcb, sizeof(tPpcbAcr), &comparaPpcbAcrTime, _CON_REPET_ );
 	
 	/*PpcbAcr_BuscarPpcb(lista,ppcb->pid,&pos);*/
 	return 1;

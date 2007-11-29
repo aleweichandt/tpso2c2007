@@ -210,6 +210,27 @@ long Rec_QuitarBloqueado(tDatosRecurso* recurso){
 	}
 	return returnVal;
 }
+
+long Rec_EliminarPidDeBloqueados(tDatosRecurso* recurso, long pid){
+	int pos = 0;
+	long ppcbid = 0;
+	while( (ppcbid = Rec_ObtenerBloqueado(recurso, pos)) > 0){
+		
+		if( ppcbid == pid ){
+			/*Encontre el pid y debo eliminarlo de la lista*/
+			recurso->nSemaforo++;
+			pos++;
+			while( pos < MAX_LISTA_BLOQ ){
+				recurso->ListaBloqueados[pos-1] = recurso->ListaBloqueados[pos];
+				pos++;
+			}
+			return;
+		}
+		
+		pos++;
+	}
+}
+
 /*******************************************************************/
 int Rec_SinBloqueados(tDatosRecurso* recurso){
 	return recurso->ListaBloqueados[0] == (long)NULL;
