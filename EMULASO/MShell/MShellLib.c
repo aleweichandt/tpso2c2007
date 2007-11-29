@@ -13,7 +13,7 @@
  /*Variables privadas*/
 sigset_t 		conjunto_seniales;
 char			isUsrLogued;	/*1 si el usuario esta logueado, 0 si no lo esta*/
-char			isExit;		/*seal para separar cuando cierra sesion de cuando cierra el mshell*/
+char			isExit;		/*senial para separar cuando cierra sesion de cuando cierra el mshell*/
 char 			key;
 char 			logInterno;
 
@@ -275,7 +275,7 @@ void MSH_AtenderADS( tSocket* sockIn )
 	}
 	if ( IS_PAQ_USR_OK ( paq ) )
 	{/*Si el ADS me responde Usr_Ok se pide contrasea!*/
-		MSH_GetKey();
+		/*MSH_GetKey();*/
 		MShell.m_ListaSockets[ SOCK_TECLADO ]->callback = &MSH_ProcesarTecladoIfUsrOk;
 		sockIn->callback = &MSH_AtenderADSEncript;
 		ventana_Print( MShell.m_pwRemoto, "Ingrese Password:" );
@@ -328,7 +328,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		Log_log( log_debug, "ADS acepta password, sesion iniciada!" );
 		ventana_Print( MShell.m_pwRemoto, "bienvenido a B&RR MShell." );
 	}
-	if ( IS_PAQ_PWD_ERROR ( paq ) )
+	else if ( IS_PAQ_PWD_ERROR ( paq ) )
 	{/*Si el ADS me responde Pwd_Error no inicia sesion!*/
 		Log_log( log_debug, "ADS rechaza password!" );
 		ventana_Print( MShell.m_pwRemoto, "Password Invalida");
@@ -336,7 +336,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 			/*conexiones_CerrarSocket( MShell.m_ListaSockets, sockIn, &MShell.m_ultimoSocket );*/
 		}
 	}
-	if ( IS_PAQ_PROG_EXECUTING ( paq ) )
+	else if ( IS_PAQ_PROG_EXECUTING ( paq ) )
 	{/*Si el ADS ejecuta el programa!*/
 		unsigned char ip[4] = {'\0'};
 		unsigned char idProceso;
@@ -351,7 +351,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		ventana_Print( MShell.m_pwRemoto, tmp );
 		Log_log( log_debug, "ADS acepta exec!" );
 	}
-	if ( IS_PAQ_NO_PROG ( paq ) )
+	else if ( IS_PAQ_NO_PROG ( paq ) )
 	{/*Si el ADS no ejecuta el programa!*/
 		unsigned char ip[4] = {'\0'};
 		unsigned char idProceso;
@@ -381,7 +381,7 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 			MSH_Salir();
 		}
 	}*/
-	if ( IS_PAQ_PRINT ( paq ) )
+	else if ( IS_PAQ_PRINT ( paq ) )
 	{/*Si el ADS envia un print!*/
 		
 		unsigned char ip[4] = {'\0'};
@@ -401,7 +401,11 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		strcat(msgPrint, msg);
 		ventana_Print( MShell.m_pwRemoto, msgPrint );
 		fflush(stdout);
-	}	
+	}
+	else
+	{
+		Log_log(log_info, "mensaje desconocido. probable desigualdad en clave simetrica.");
+	}
 				
 	if ( paq ) 
 		paquetes_destruir( paq );
@@ -603,7 +607,7 @@ int MSH_Login_Send (tSocket *pSocket, char msj[15], int isPwd)
 		
 		/*Mando el Pwd al ADS*/
 			Log_log( log_debug, "envio Password al ADS" );
-			
+			MSH_GetKey();
 			if ( !(pPaq  = paquetes_newPaqLogin_Pwd( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),msj )) )
 				return ERROR;
 			
@@ -629,7 +633,7 @@ int MSH_Exec_Prog (tSocket *pSocket, char prog[30])
 	
 	/*Mando el programa al ADS*/
 	Log_log( log_debug, "envio nombre del programa al ADS" );
-	
+	MSH_GetKey();
 	if ( !(pPaq  = paquetes_newPaqExec_Prog( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket),prog )) )
 		return ERROR;
 	
@@ -655,7 +659,7 @@ int MSH_Logout (tSocket *pSocket)
 	
 	/*Mando el logout al ADS*/
 	Log_log( log_debug, "envio Aviso de Logout al ADS" );
-	
+	MSH_GetKey();
 	if ( !(pPaq  = paquetes_newPaqLogout( szIP, _ID_MSHELL_, conexiones_getPuertoLocalDeSocket(pSocket) )) )
 		return ERROR;
 	
