@@ -1314,6 +1314,7 @@ int ACR_DevolverTodos(long id){
 		ACR.ListaRecursos[i].nAvailable+=valores[i];
 		ACR.ListaRecursos[i].nSemaforo+=valores[i];
 		/*if(ACR.ListaRecursos[i].nSemaforo > 0)ACR.ListaRecursos[i].nAvailable=ACR.ListaRecursos[i].nSemaforo; /*Esto es un error, luego te explico Ale*/
+		Rec_EliminarPidDeBloqueados(&ACR.ListaRecursos[i],id);
 		
 		Log_printf(log_info,"estado de recurso %i: semaforo=%i,disponibles=%i,total=%i",i,ACR.ListaRecursos[i].nSemaforo, ACR.ListaRecursos[i].nAvailable, ACR.ListaRecursos[i].nInstancias);
 	}
@@ -1489,8 +1490,8 @@ void ACR_ControlarConcesionRecurso(tDatosRecurso* recurso, int posRecurso)
 	}
 	
 	if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,ppcbid,&pos)) == NULL ){
-		Log_printf(log_warning,"(ControlarConcesionRecurso)no se ha encontrado el ppcb id: %ld, posible ppcb eliminado",ppcbid);
-		Rec_QuitarBloqueado(recurso);
+		Log_printf(log_error,"(ControlarConcesionRecurso)no se ha encontrado el ppcb id: %ld, posible ppcb eliminado",ppcbid);
+		/*Rec_QuitarBloqueado(recurso);		esto se cambio, ahora se hace al liberar, no al conceder
 		recurso->nSemaforo++;	/*ahora hay uno menos para bloquear al recurso, hay que pensarlo +*/
 		return;
 	}

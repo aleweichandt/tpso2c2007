@@ -21,6 +21,7 @@
 #define 	OK		0
 #define 	ERROR	-1
 #define _SIN_REPET_		1
+#define _CON_REPET_		0
 
 #define CONN_BACKLOG		10
 
