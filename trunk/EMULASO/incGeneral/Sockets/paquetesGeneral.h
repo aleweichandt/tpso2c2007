@@ -347,5 +347,7 @@ tPaquete* paquetes_newPaqInfoPCBsStates( unsigned char IP[4], unsigned char id_P
 char* paquetes_newPaqGetPCBsStatesAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto );
 char* paquetes_newPaqInfoPCBsStatesAsStr( unsigned char IP[4], unsigned char id_Proceso, unsigned short int puerto, int nCantPCBs, char msg[PAQ_LEN_MSGCTRL+1] );
 
+char* AplicarXorEnString(char *szStringOrigen, int clave);
+
 #endif /*PAQUETES__GRALH_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

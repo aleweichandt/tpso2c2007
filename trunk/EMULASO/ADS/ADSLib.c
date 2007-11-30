@@ -717,11 +717,13 @@ int ADS_GetClaveByConnId(int connId, const char *pathClaves )
 	}
 	key = fgetc(fp);
 	
-	fclose(fp);
+	Log_printf(log_debug, "se consiguio clave: %c", key);
 	
-	usr->key = key;
+	fflush(fp);
+	
+	fclose(fp);
  	
-	return usr->key;
+	return key;
 }
 /**********************************************************/
 void ADS_Salir()
