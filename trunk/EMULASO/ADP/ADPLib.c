@@ -132,6 +132,11 @@ void InformarLista( tListaPCB Lista )
 		strcpy(szInfo, "LPB: ");
 		y = 1;
 	}
+	else if ( Lista == ADP.m_LPN && ADP.m_LPN )
+	{
+		strcpy(szInfo, "LPN: ");
+		y = 0;
+	}
 		
 	if ( !Lista )
 		return;
@@ -140,7 +145,7 @@ void InformarLista( tListaPCB Lista )
 	{
 		pPCB = lpcb_Datos( Lista );
 		
-		Log_printf( log_debug, "PCB %ld , Q %d", pPCB->id, pPCB->Q );
+		/*Log_printf( log_debug, "PCB %ld , Q %d", pPCB->id, pPCB->Q );*/
 		
 		sprintf( szAux, "[%ld],", pPCB->id );
 			
@@ -150,6 +155,7 @@ void InformarLista( tListaPCB Lista )
 	}
 	
 	ADP_printToWin( ADP.m_pwInfo, szInfo,y );
+	Log_printf( log_debug, szInfo );
 }
 
 /*------------------------------------------------------------------*/
@@ -283,16 +289,19 @@ void ADP_Dispatcher(int n)
 		ADP_InformarReanudacion();
 		
 		g_lTime1 = (ahoraLocal->tm_hour *60*60)+ (ahoraLocal->tm_min*60) + ahoraLocal->tm_sec;
-		
-		Log_log( log_debug, "<< Sale del Dispatcher >>" );
-		ADP_printToWin( ADP.m_pwLogger, "<< Sale del Dispatcher >>",1 );
-		
+
+		Log_printf( log_debug, "LPN" );
+		InformarLista( ADP.m_LPN );
 		Log_printf( log_debug, "LPB" );
 		InformarLista( ADP.m_LPB );
 		Log_printf( log_debug, "LPL" );
 		InformarLista( ADP.m_LPL );
 		Log_printf( log_debug, "LPE" );
 		InformarLista( ADP.m_LPE );
+		
+		Log_log( log_debug, "<< Sale del Dispatcher >>" );
+		ADP_printToWin( ADP.m_pwLogger, "<< Sale del Dispatcher >>",1 );
+		
 		
 /*		sprintf( szInfo, "Cant PCBs a aceptar %d, Mem Disp %d", ADP.m_nCantDisp, ADP.m_nMemDisp );
 		ADP_printToWin( ADP.m_pwInfo, szInfo,4 );*/
@@ -458,6 +467,7 @@ int	ADP_MigrarPCBPesado()
 		return OK;
 	}
 	
+	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPN, &nMayor, pcb1 );
 	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPL, &nMayor, pcb1 );
 	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPE, &nMayor, pcb1 );
 	pcb1 = ADP_BuscarPCBMayorTRestante( ADP.m_LPB, &nMayor, pcb1 );
@@ -549,6 +559,7 @@ int ADP_CantidadPCBs()
 {
 	int nRet = 0;
 	
+	nRet += lista_contar( &ADP.m_LPN );
 	nRet += lista_contar( &ADP.m_LPL );
 	nRet += lista_contar( &ADP.m_LPE );
 	nRet += lista_contar( &ADP.m_LPB );
@@ -565,6 +576,11 @@ void ADP_ProcesarSeniales( int senial )
 	if ( senial == SIGALRM ) /*Timer*/
 	{
 		
+	}
+	else if ( senial == SIGKILL || senial == 9 )
+	{
+		Log_log( log_warning, "Recibo senial SIGKILL");
+		/*ADP_Salir();*/
 	}
 	else if ( senial == SIGUSR1 )
 	{
@@ -698,6 +714,7 @@ int ADP_Init( )
 		
 		ADP_CalcularCargaPromReal();		
 		
+		ADP.m_LPN = NULL;
 		ADP.m_LPL = NULL;
 		ADP.m_LPB = NULL;
 		ADP.m_LPE = NULL;
@@ -740,6 +757,7 @@ int ADP_Init( )
 		ahoraLocal = localtime(&ahoraGlobal);
 		signal(SIGTERM, ADP_ProcesarSeniales);
 		signal(SIGINT, ADP_ProcesarSeniales);
+		/*signal(SIGKILL, ADP_ProcesarSeniales);*/
 	
 	
 		if ( !g_lTime1 )
@@ -967,6 +985,7 @@ void ADP_HandShake( tSocket* sockIn )
 	int nSend;
 	long			lpcb_id;
 	tunPCB			*pcb;
+	char			bListo = 0;
 	
 	memset( szIP, 0, 4 );
 
@@ -987,16 +1006,27 @@ void ADP_HandShake( tSocket* sockIn )
 		
 		memcpy( &lpcb_id, paq->msg, sizeof(long) );
 		
-		if ( (pcb = lpcb_BuscarPCBxid( &ADP.m_LPL, lpcb_id )) ) /*Busco el pcb y actualizo el socket*/
+		if ( (pcb = lpcb_BuscarPCBxid( &ADP.m_LPN, lpcb_id )) ) /*Busco el pcb y actualizo el socket*/
 		{
-			Log_printf( log_debug, "ya tengo el pcb %ld en alguna lista", pcb->id );
+			Log_printf( log_debug, "ya tengo el pcb %ld en la cola de nuevos", pcb->id );
 			pcb->pSocket = sockIn;
-			pcb->Registro[0] = CONECTADO;
+						
+			if ( pcb->Registro[0] == BLOQUEADO )
+			{
+				ADP_printfToWin( ADP.m_pwLogger,1, "Estado del pcb %ld = %d, lo agrego en Listos", pcb->id,  (int) pcb->Registro[0] );
+				lpcb_PasarDeLista( &ADP.m_LPN, &ADP.m_LPB, pcb->id );
+			}
+			else
+			{
+				bListo = 1;
+				ADP_printfToWin( ADP.m_pwLogger,1, "Estado del pcb %ld = %d, lo agrego en Listos", pcb->id,  (int) pcb->Registro[0] );
+				lpcb_PasarDeLista( &ADP.m_LPN, &ADP.m_LPL, pcb->id );
+			}
 		}
-		
-		Log_log( log_debug, "PCB me manda un ping para establecer conexion" );
-		
+			
 		sockIn->callback = &ADP_AtenderPCB;
+			
+		Log_log( log_debug, "PCB me manda un ping para establecer conexion" );
 		
 		/*Mando el Pong al ADP*/
 		paquetes_destruir( paq );
@@ -1020,7 +1050,7 @@ void ADP_HandShake( tSocket* sockIn )
 		}	
 
 		/*Espero y le mando un suspend para que se ponga en listo el pcb*/
-		if ( pcb && pcb->Registro[1] != BLOQUEADO )
+		if ( bListo )
 		{
 			/*usleep( 1000 );*/			
 			if ( conexiones_sendBuff( sockIn, (const char*) paquetes_newPaqSuspendPCBAsStr( szIP, _ID_ADP_, ADP.m_Port ), 
@@ -1222,6 +1252,25 @@ int ADP_LlenarBuffPCBsStates( tListaPCB Lista, int *pnSize, char szPCBStates[PAQ
 }
 
 /**********************************************************/
+void ADP_AtenderPCBNuevo ( tSocket *sockIn )
+/**/
+{
+	int 			len; 
+	char			buffer [ PAQUETE_MAX_TAM ];
+
+	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
+	
+	if ( ERROR == len || !len)
+	{
+		Log_logLastError("Se cierra socket al atender PCB Nuevo");
+		conexiones_CerrarSocket(ADP.m_ListaSockets,sockIn,&ADP.m_ultimoSocket);		
+	
+		return;
+	}
+}
+
+
+/**********************************************************/
 void ADP_AtenderPCB ( tSocket *sockIn )
 /**/
 {
@@ -1235,6 +1284,7 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	tunPCB			*pPCB;
 	int 			nSend;
 	unsigned char	szIP[4];
+	char			mig=0;
 
 	memset(szPathArch,0,255);
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
@@ -1242,7 +1292,8 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	if ( ERROR == len || !len)
 	{
 		Log_logLastError("Se cierra socket al atender PCB");
-		ADP_CerrarConexion( sockIn );		
+		conexiones_CerrarSocket(ADP.m_ListaSockets,sockIn,&ADP.m_ultimoSocket);
+		/*ADP_CerrarConexion( sockIn );*/		
 	
 		return;
 	}
@@ -1297,31 +1348,46 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 	else if(IS_PAQ_PRINT(paq))
 	{/*me llega el print, se lo reenvio al ACR*/
 		ADP_DesactivarAlarma();/*no quiero tener lios al manipular las colas*/
-		
-		Log_log( log_debug, "Mando PRINT al ACR" );
-		ADP_printToWin( ADP.m_pwLogger, "Mando PRINT al ACR",1 );
-		
-		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
-					
-		if(nSend != PAQUETE_MAX_TAM)
-		{
-			Log_logLastError( "error al enviar PRINT al ACR" );
-			/*ADP_printToWin( ADP.m_pwLogger, "error al enviar PRINT al ACR" );*/
-		}
-		
+
 		memcpy( &lpcb_id, paq->id.UnUsed, sizeof(long) );
 		
-		if( lpcb_id  != 0 )
+		if ( lpcb_id == 0 || (lpcb_id > 0 && !lpcb_BuscarPCBxid( &ADP.m_LPN, lpcb_id)) )
+		{/*Si no viene con el pcb_id O viene y no esta en la cola de Nuevos, entonces mando el print
+		Esto es porque cuando migra, el ACR le corta la conexion y llega un print con id por muerte inesperada,
+		entonces no quiero que cuando este print llegue al ACR le devuelva los recursos.*/
+			Log_log( log_debug, "Mando PRINT al ACR" );
+			ADP_printToWin( ADP.m_pwLogger, "Mando PRINT al ACR",1 );
+			
+			nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+						
+			if(nSend != PAQUETE_MAX_TAM)
+			{
+				Log_logLastError( "error al enviar PRINT al ACR" );
+				/*ADP_printToWin( ADP.m_pwLogger, "error al enviar PRINT al ACR" );*/
+			}
+		}
+
+		if ( lpcb_id < 0 )
+		{
+			mig = 1;
+			lpcb_id *= (-1);
+			Log_printf(log_debug,"Migra el PCB %ld", lpcb_id );
+			ADP_printfToWin( ADP.m_pwLogger,1,"Migra el PCB %ld", lpcb_id );
+		}
+		
+		if( lpcb_id  > 0 )
 		{/*Entonces es el print final*/
-			Log_printf(log_debug,"Finalizo el PCB %ld", lpcb_id );
-			ADP_printfToWin( ADP.m_pwLogger,1,"Finalizo el PCB %ld", lpcb_id );
+			Log_printf(log_debug,paq->msg );
+			ADP_printfToWin( ADP.m_pwLogger,1,paq->msg );
 			
 			if ( (pPCB = ADP_BuscarPCB( lpcb_id ) ) )
 			{
 				Log_printf(log_debug,"Mando el kill al PCB %ld", lpcb_id );
-				kill( pPCB->pid, SIGTERM );
 				
-				ADP_EliminarDeLista( pPCB->id );
+				if ( !mig )
+					kill( pPCB->pid, SIGTERM );
+				
+				ADP_CerrarConexion(sockIn);
 			}	
 		}
 		
@@ -1392,24 +1458,24 @@ void ADP_AtenderPCB ( tSocket *sockIn )
 
 /***********************************************************/
 tunPCB* ADP_BuscarPCB( long id )
-{
+{/*No busca en la cola de nuevos*/
 	tunPCB *pPCB;
 	
 	if ( (pPCB = lpcb_BuscarPCBxid( &ADP.m_LPL, id ) ) ||
 		(pPCB = lpcb_BuscarPCBxid( &ADP.m_LPE, id ) ) ||
-		(pPCB = lpcb_BuscarPCBxid( &ADP.m_LPB, id ) ) )
+		(pPCB = lpcb_BuscarPCBxid( &ADP.m_LPB, id ) )  )
 		return pPCB;
 	return NULL;
 }
 
 /***********************************************************/
 tunPCB* ADP_BuscarPCBxSocket( tSocket* pSocket )
-{
+{/*No busco en la cola de nuevos*/
 	tunPCB *pPCB;
 	
 	if ( (pPCB = lpcb_ObtenerPCBXSock( &ADP.m_LPL, pSocket ) ) ||
 		(pPCB = lpcb_ObtenerPCBXSock( &ADP.m_LPE, pSocket ) ) ||
-		(pPCB = lpcb_ObtenerPCBXSock( &ADP.m_LPB, pSocket ) ) )
+		(pPCB = lpcb_ObtenerPCBXSock( &ADP.m_LPB, pSocket ) )  )
 		return pPCB;
 	return NULL;
 }
@@ -1422,27 +1488,35 @@ void ADP_EliminarDeLista( long id )
 	if ( lpcb_BuscarPCBxid( &ADP.m_LPL, id )  )
 	{
 		lpcb_EliminarDeLista( &ADP.m_LPL, id );
-		Log_printf(log_debug,"Elimino el PCB de la lista LPL");
+		Log_printf(log_debug,"Elimino el PCB %ld de la lista LPL", id);
 		ADP.m_nCantDisp++;
 		return;
 	}
-	if ( (pcb = lpcb_BuscarPCBxid( &ADP.m_LPE, id )) )
+	else if ( (pcb = lpcb_BuscarPCBxid( &ADP.m_LPE, id )) )
 	{
 		/*Tengo que devolver la memoria que estaba usando!!!*/
 		ADP.m_nMemDisp += pcb->MemoriaRequerida;
 				
 		lpcb_EliminarDeLista( &ADP.m_LPE, id );
-		Log_printf(log_debug,"Elimino el PCB de la lista LPE");
+		Log_printf(log_debug,"Elimino el PCB %ld de la lista LPE", id);
 		ADP.m_nCantDisp++;
 		return;
 	}
-	if ( lpcb_BuscarPCBxid( &ADP.m_LPB, id )  )
+	else if ( lpcb_BuscarPCBxid( &ADP.m_LPB, id )  )
 	{
 		lpcb_EliminarDeLista( &ADP.m_LPB, id );
-		Log_printf(log_debug,"Elimino el PCB de la lista LPB");
+		Log_printf(log_debug,"Elimino el PCB %ld de la lista LPB", id);
 		ADP.m_nCantDisp++;
 		return;
 	}
+	else if ( lpcb_BuscarPCBxid( &ADP.m_LPN, id )  )
+	{
+		lpcb_EliminarDeLista( &ADP.m_LPN, id );
+		Log_printf(log_debug,"Elimino el PCB %ld de la lista LPN", id);
+		ADP.m_nCantDisp++;
+		return;
+	}
+	
 }
 
 /***********************************************************/
@@ -1574,6 +1648,7 @@ void ADP_Salir()
 	*/
 	conexiones_CerrarLista( 0, &ADP.m_ultimoSocket, ADP.m_ListaSockets );
 
+	lpcb_LimpiarLista( &ADP.m_LPN );
 	lpcb_LimpiarLista( &ADP.m_LPL );
 	lpcb_LimpiarLista( &ADP.m_LPE );
 	lpcb_LimpiarLista( &ADP.m_LPB );
@@ -1601,25 +1676,8 @@ void 	ADP_CerrarConexion( tSocket *sockIn )
 	int		nSend;
 	unsigned char szIP[4];
 	
-	if ( (pPCB = ADP_BuscarPCBxSocket( sockIn )) && ADP.m_ListaSockets[SOCK_ACR] && pPCB->Registro[0] == CONECTADO )
+	if ( (pPCB = ADP_BuscarPCBxSocket( sockIn )) )
 	{/*Muerte inesperada del PCB, le mando un print al ACR con el id del PCB*/
-		memset( szIP, 0, 4 );
-		
-		ReducirIP( ADP.m_IP, szIP );
-		
-		Log_printf( log_info, "mando un print al ACR por muerte inesperada del PCB: %ld", pPCB->id );
-		
-		pPaq = paquetes_newPaqPrint( szIP, (unsigned char)_ADP_, ADP.m_Port, -1, "", "Muerte inesperada" );/*Si esto provoca error, analizar "" que se pasan*/
-		memcpy( &(pPaq->id.UnUsed), &(pPCB->id), sizeof(long) );
-		
-		Log_log( log_debug, "Mando PRINT al ACR" );
-		nSend = conexiones_sendBuff( ADP.m_ListaSockets[SOCK_ACR], (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
-		if ( nSend != PAQUETE_MAX_TAM )
-		{
-			Log_logLastError( "error enviando PRINT al ACR" );
-		}	
-		paquetes_destruir( pPaq );
-		
 		ADP_EliminarDeLista( pPCB->id );
 	}
 	Log_log(log_warning,"se cierra socket PPCB");
@@ -1649,7 +1707,7 @@ float	ADP_CalcularCargaPromReal()
 	
 	Log_printf(  log_info, "La carga es: %s", loadavg ) ;
 	fCarga = atof( strtok( loadavg," ") );
-	Log_printf( log_info, "carga: %f\n", fCarga);
+	/*Log_printf( log_info, "carga: %f\n", fCarga);*/
 	
 	
 	return fCarga;
@@ -1690,8 +1748,15 @@ int	ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMem, long pid, tState pcb_st
 
 	if ( (pcb = pcb_Crear( ADP.m_IP, "", lpcbid, 0, NULL, NULL, ADP.m_Q, nMem, pid   )) )
 	{
-		pcb->Registro[1] = pcb_state;
+		pSock->callback = &ADP_AtenderPCBNuevo;
+		pcb->Registro[0] = pcb_state;
+
+		ADP.m_nCantDisp--;
+		Log_printf( log_debug, "Estado del pcb %ld = %d", pcb->id,  (int) pcb_state );
+		ADP_printfToWin( ADP.m_pwLogger,1, "Estado del pcb %ld = %d", pcb->id,  (int) pcb_state );
+		return lpcb_AgregarALista( &ADP.m_LPN, pcb );
 		
+/*		
 		if ( pcb_state == BLOQUEADO )
 		{
 			ADP.m_nCantDisp--;
@@ -1706,6 +1771,7 @@ int	ADP_CrearPCB( long lpcbid, tSocket* pSock, int nMem, long pid, tState pcb_st
 			ADP_printfToWin( ADP.m_pwLogger,1, "Estado del pcb %ld = %d, lo agrego en Listos", pcb->id,  (int) pcb_state );
 			return lpcb_AgregarALista( &ADP.m_LPL, pcb );
 		}
+*/		
 	}
 	
 	return ERROR;
@@ -1720,11 +1786,12 @@ void ADP_LiberarRecursos(int pid){
 	/*Le informo a todas las de LTP que paren*/
 	ADP_InformarSuspencion();
 	
-	for(i=0; i<3; i++){
+	for(i=0; i<4; i++){
 		switch (i){
 			case 0:{lista=ADP.m_LPB;break;}
 			case 1:{lista=ADP.m_LPL;break;}
 			case 2:{lista=ADP.m_LPE;break;}
+			case 3:{lista=ADP.m_LPN;break;}
 		}
 		while(lista){
 			pcb = lpcb_Datos( lista );
@@ -1751,6 +1818,10 @@ void ADP_LiberarRecursos(int pid){
 							lpcb_EliminarDeLista( &ADP.m_LPE, pcb->id );
 							SeElimino = 1;
 							/*lista = ADP.m_LPB;*/
+							break;}
+						case 3:{
+							lpcb_EliminarDeLista( &ADP.m_LPN, pcb->id );
+							SeElimino = 1;
 							break;}
 					}
 				}
@@ -1794,7 +1865,7 @@ void ADP_CrearGraficos( int activarGraficos )
 	
 	char	szTitle[PANTALLA_COLS+1];
 	
-	sprintf( szTitle, "[B&RR - ADP] %s: %d    L1=%.2f  L2=%.2f", ADP.m_IP, ADP.m_Port, ADP.m_fLimite1, ADP.m_fLimite2 );
+	sprintf( szTitle, "[B&RR - ADP] %s: %d", ADP.m_IP, ADP.m_Port );
 
 	
 	if ( 1 ) /*por si lo quiero desactivar en el futuro*/
