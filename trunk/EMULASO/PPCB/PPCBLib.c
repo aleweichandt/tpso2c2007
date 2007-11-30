@@ -38,6 +38,9 @@ void PCB_ProcesarSeniales( int senial )
  * te va a romper a cada segundo. ;)*/
 {
 	int nstateChld;
+	char szaux[40];
+	memset(szaux,0,sizeof(szaux));
+	
 	if ( senial == SIGALRM ) /*Timer*/
 	{
 		
@@ -54,25 +57,28 @@ void PCB_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR2 )
 	{	/*Migrar al ACR*/
+		Log_log( log_warning, "Recibo senial SIGUSR2");
+		
 		if( PCB.nIdProcesoPadre == _ID_ADP_ )
 		{
-			Log_log( log_warning, "Recibo senial SIGUR2");
+			sprintf(szaux, "pcb %d migra!", PCB.PPCB_ID);
+			PCB_ExecuteImpFinalMig( szaux );		
+			
 			if( PCB.State == EJECUTANDO ) PCB.State = LISTO;  /*Evito que siga ejecutando en el ACR*/
-			PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);
+			/*PCB_Migrar(PCB.m_ACR_IP,PCB.m_ACR_Port);*/
+			/*Lo comente, porque el ADP le cierra el socket y se va a iniciar nuevamente la
+			 * funcion de migracion*/
 		}
 		signal(SIGUSR2, PCB_ProcesarSeniales);
 	}
 	else if ( senial == SIGHUP )
 	{
 	}
-	else if ( senial == SIGINT )
-	{			
-		Log_log( log_warning, "Recibo senial SIGINT");
-		/*PCB_Salir();*/
-	}
-	else if ( senial == SIGTERM )
+	else if ( senial == SIGTERM || senial == SIGINT )
 	{	
-		Log_log( log_warning, "Recibo senial SIGTERM");		
+		Log_log( log_warning, "Recibo senial SIGTERM o SIGINT");
+		sprintf(szaux, "pcb %d termina inesperadamente", PCB.PPCB_ID);
+		PCB_ExecuteImpFinal( szaux );		
 		PCB_Salir();
 	}
 	else if ( senial == SIGCHLD )
@@ -474,6 +480,41 @@ print comun en que lleva el pcbid*/
 	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
 
 }
+
+/**********************************************************************/
+int PCB_ExecuteImpFinalMig(char *param) 
+{/*Lo tuve que hacer para no romper el disenio que vienen llevando, esta solo difiere con el 
+print comun en que lleva un nro neg, el pcb_id *-1*/
+	/* MENSAJE PRINT!!!!! */
+	tSocket *pSocket;
+	tPaquete *pPaq;
+	int		nSend;
+	unsigned char szIP[4];
+	int		n = (-1)*PCB.PPCB_ID;
+	
+	memset( szIP, 0, 4 );
+	
+	ReducirIP(PCB.m_IP,szIP);
+	
+	Log_printf( log_info, "Se imprime: %s", param);
+	
+	pPaq = paquetes_newPaqPrint(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.SessionID, PCB.ProgName, param);
+	memcpy( &(pPaq->id.UnUsed), &n, sizeof(n) );/*Esta es la diferencia*/
+	Log_log( log_debug, "Mando PRINT al ADP" );
+	nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	if ( nSend != PAQUETE_MAX_TAM )
+	{
+		Log_logLastError( "error enviando PRINT al ADP" );
+	}	
+	paquetes_destruir( pPaq );
+	
+	/*sleep(1);*/
+		
+	return (nSend == PAQUETE_MAX_TAM) ? OK: ERROR;
+
+}
+
+
 /**********************************************************************/
 int PCB_ExecutePush(char *param) {
 	char value = param[0];
@@ -568,7 +609,7 @@ int PCB_Init(int argc, char *argv[] )
 				sockDummy -> estado = estadoConn_standby;
 				PCB.m_ListaSockets[SOCK_ADP] = sockDummy;*/
 				
-			}else if( PCB.nIdProcesoPadre = _ID_ADP_ )	/*si lo creo el ADP, se conecta con el ADP*/
+			}else if( PCB.nIdProcesoPadre == _ID_ADP_ )	/*si lo creo el ADP, se conecta con el ADP*/
 			{
 				if ( PCB_ConectarConADP() == ERROR )
 				{
@@ -942,7 +983,9 @@ void PCB_AtenderACR ( tSocket *sockIn )
 	unsigned char	idProceso;
 	char			szIp[LEN_IP];
 	unsigned short 	nPuerto,nPuerto2;
-
+	char			szLeo[70];
+	
+	memset(szLeo,0,sizeof(szLeo));
 
 	len = conexiones_recvBuff(sockIn, buffer, PAQUETE_MAX_TAM);
 	
@@ -967,6 +1010,13 @@ void PCB_AtenderACR ( tSocket *sockIn )
 	}else if( IS_PAQ_MIGRAR_OK( paq ) ){
 		Log_log(log_info,"Llega un PAQ_MIGRATE_OK");
 		Log_log(log_info,"Kamikaze");
+		
+		if ( PCB.nIdProcesoPadre == _ADP_ )
+		{
+			sprintf( szLeo, "Migra PCB %d", PCB.PPCB_ID );
+			PCB_ExecuteImpFinalMig(szLeo);/*distingo en el pcb cuando migra!*/
+		}
+		
 		PCB_Salir();	/*Si nacio en el nodo del ADP entonces luego de migrar debe cerrarse por si solo*/
 		
 	}
