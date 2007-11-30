@@ -119,5 +119,6 @@ void ACR_printToWin( tVentana *win, char* msg );
 void ACR_printfToWin( tVentana* win, const char* fmt, ... );
 
 void ACR_ActualizarVentanas();
+void ACR_InfoLista( tListaPpcbAcr Lista  );
 
 #endif /*ACRLIB_H_*/
