@@ -10,7 +10,7 @@
 #ifndef DATOSPPCBACR_
 #define DATOSPPCBACR_
 
-#include <time.h>
+/*#include <time.h>  arreglo del warning en MV*/
 #include "../incGeneral/incGeneral.h"
 #include "../incGeneral/Estructuras/estructuras.h"
 #include "../incGeneral/Sockets/conexiones.h"
