@@ -39,6 +39,9 @@ void PCB_ProcesarSeniales( int senial )
 {
 	int nstateChld;
 	char szaux[40];
+	char szArchivo[255];
+	
+	memset(szArchivo,0,sizeof(szArchivo));
 	memset(szaux,0,sizeof(szaux));
 	
 	if ( senial == SIGALRM ) /*Timer*/
@@ -47,10 +50,15 @@ void PCB_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR1 )
 	{	/* Escribir informacion de control */
-		if( PCB.nIdProcesoPadre == _ID_ADP_ )
+		if ( PCB.nIdProcesoPadre == _ID_ACR_ )
 		{
-			createPCBConfig();
+			ArmarPathPCBConfig( szArchivo, PCB.PPCB_ID,sizeof(szArchivo) );
+			remove(szArchivo);
 		}
+		/*if( PCB.nIdProcesoPadre == _ID_ADP_ )
+		{*/
+			createPCBConfig();
+		/*}*/
 		PCB_ImprimirInfoCtr();
 		signal(SIGUSR1, PCB_ProcesarSeniales);
 		
