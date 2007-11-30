@@ -284,7 +284,8 @@ void ACR_ImprimirInfoCtr()
 		ACR_ImprimirPpcbUsando(&ACR.MatrizAsignacion,i);
 
 		InfoCtr_log(log_info,"Los PPCBs que lo estan esperando son: ");
-		/*TODO: Hacer*/
+		/*TODO: esto estaba en asi*/
+				
 		pos = 0;
 		while( (ppcbid = Rec_ObtenerBloqueado(recurso, pos)) > 0){
 			InfoCtr_printf(log_info,"%ld",ppcbid);
@@ -292,9 +293,60 @@ void ACR_ImprimirInfoCtr()
 		}
 	}
 	
+	InfoCtr_log(log_info,"Los PPCBs que lo estan PENDIENTES son: ");
+	ACR_InfoLista( ACR.t_ListaPpcbPend );
+	InfoCtr_log(log_info,"\n");
+	
+		
 	InfoCtr_CerrarInfo();
 
 }
+
+/**********************************************************/
+void ACR_InfoLista( tListaPpcbAcr Lista  )
+{
+	char szArchivo[ 255 ];
+	char szCmd[50];
+	char szUsr[50];
+	char szEstado[50];
+	tPpcbAcr *pcb;
+	char 	*tmp;
+	tConfig *cfg;
+	
+	while( Lista )
+	{
+		pcb = PpcbAcr_Datos( Lista );
+
+		if ( pcb->sActividad == Estado_Inactivo )
+		{		
+			kill( pcb->pidChild, SIGUSR1 );
+			
+			memset(szArchivo,0,sizeof(szArchivo));
+			ArmarPathPCBConfig( szArchivo, pcb->pid,sizeof(szArchivo) );
+			
+		
+			if ( !(cfg = config_Crear( szArchivo, _PPCB_ )) ) 
+				break;
+			
+			if ( (tmp = config_GetVal( cfg, _PPCB_, "CREATORID" ) ) )
+			{
+				strcpy( szUsr, tmp );
+			}
+			if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )
+			{
+				strcpy( szCmd, tmp );
+			}
+			config_Destroy( cfg );
+			
+			InfoCtr_printf( log_info, "PCB.id = %ld, Usr = %s, estado = %s,  Cmd = %s", pcb->pid, szUsr, szEstado, szCmd );
+		}
+				
+		Lista = PpcbAcr_Siguiente( Lista );
+	}
+	
+	
+}
+
 
 /**********************************************************************/
 void ACR_ImprimirPpcbUsando(tListaFilas *matriz, int posRecurso)
