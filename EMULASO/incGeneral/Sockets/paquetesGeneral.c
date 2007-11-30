@@ -1304,4 +1304,23 @@ char* paquetes_newPaqInfoPCBsStatesAsStr( unsigned char IP[4], unsigned char id_
 }
 
 
+char* AplicarXorEnString(char *szStringOrigen, int clave)
+{
+	int i;
+	if(clave == -1)
+	{
+		return szStringOrigen;
+	}
+	for ( i = 0; i < PAQUETE_MAX_TAM; ++i) 
+	{
+		/*if(szStringOrigen[i]  == '\0')
+		{
+			continue;
+		}*/
+		szStringOrigen[i] ^= clave;
+	}
+	return szStringOrigen;
+}
+
+
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/

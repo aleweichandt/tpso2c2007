@@ -81,7 +81,7 @@ int getCadT(FILE *flujo, int fin, char *cad);
 
 int ContarCharEnString( const char *szString, char cCharAContar );
 
-char* AplicarXorEnString(char *szStringOrigen, int clave);
+/*char* AplicarXorEnString(char *szStringOrigen, int clave);*/
 int ReducirIP( const char* szIP, unsigned char* szIPReducido );
 int AmpliarIP( const unsigned char* szIPReducido, char* szIP );
 

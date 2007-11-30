@@ -344,7 +344,8 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
 		int idSesion;		
 				
-		paquetes_ParsearPaqProgExecuting(AplicarXorEnString(buffer,key),ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
+		/*paquetes_ParsearPaqProgExecuting(AplicarXorEnString(buffer,key),ip, &idProceso, &puerto,  nombreProgrma, &idSesion);*/
+		paquetes_ParsearPaqProgExecuting(buffer,ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
 		tmp=malloc(strlen(nombreProgrma)+20);
 		strcpy(tmp,nombreProgrma);
 		strcat(tmp," se esta ejecutando");
@@ -359,7 +360,8 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		char nombreProgrma[LEN_COMANDO_EJEC] = {'\0'};
 		int idSesion;		
 				
-		paquetes_ParsearPaqNoProg(AplicarXorEnString(buffer,key),ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
+		/*paquetes_ParsearPaqNoProg(AplicarXorEnString(buffer,key),ip, &idProceso, &puerto,  nombreProgrma, &idSesion);*/
+		paquetes_ParsearPaqNoProg(buffer,ip, &idProceso, &puerto,  nombreProgrma, &idSesion);
 		tmp=malloc(strlen(nombreProgrma)+35);
 		strcpy(tmp,nombreProgrma);
 		strcat(tmp," no se ejecuto, o no es un programa");
@@ -392,8 +394,8 @@ void MSH_AtenderADSEncript ( tSocket *sockIn )
 		char msg[PRINT_LEN_MSG];
 		char msgPrint[PRINT_LEN_NOM_PROG + PRINT_LEN_MSG + 2] = {'\0'};
 		
-		paquetes_ParsearPaqPrint(AplicarXorEnString(buffer,key), ip, &idProceso, &puerto, &idSesion, nomProg, msg);
-		
+		/*paquetes_ParsearPaqPrint(AplicarXorEnString(buffer,key), ip, &idProceso, &puerto, &idSesion, nomProg, msg);*/
+		paquetes_ParsearPaqPrint(buffer, ip, &idProceso, &puerto, &idSesion, nomProg, msg);
 		Log_log( log_debug, "ADS envio un print!" );
 		
 		strcat(msgPrint, nomProg);
@@ -690,6 +692,9 @@ int MSH_GetKey ()
 		return 0;
 	}
 	key=fgetc(f);
+	
+	fflush(f);
+	
 	fclose(f);
 		
 	return 1;

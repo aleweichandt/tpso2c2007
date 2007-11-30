@@ -51,19 +51,19 @@ int ContarCharEnString( const char *szString, char cCharAContar )
 	return nRetorno;
 }
 /*****************************************************************/
-char* AplicarXorEnString(char *szStringOrigen, int clave)
+/*char* AplicarXorEnString(char *szStringOrigen, int clave)
 {
 	int i;
 	if(clave == -1)
 	{
 		return szStringOrigen;
 	}
-	for ( i = 0; i < strlen(szStringOrigen); ++i) 
+	for ( i = 0; i < PAQUETE_MAX_TAM; ++i) 
 	{
 		szStringOrigen[i] ^= clave;
 	}
 	return szStringOrigen;
-}
+}*/
 
 /*******************************************************************************************/
 /*	Reduce un IP dado de la forma "192.168.0.1" a un char[4] = {192,0,0,1} 
