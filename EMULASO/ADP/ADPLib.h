@@ -44,6 +44,7 @@ typedef struct
 	unsigned int		m_ultimoSocket;
 	
 	/*Planificacion*/
+	tListaPCB	m_LPN;
 	tListaPCB	m_LPL;
 	tListaPCB	m_LPB;
 	tListaPCB	m_LPE;
@@ -119,10 +120,12 @@ void ADP_TimeOut( tSocket *sockIn );
 
 /*Interface grafica*/
 void ADP_CrearGraficos( int activarGraficos );
-void ADP_printToWin( tVentana* win, char* msg, int y );
+void ADP_printToWin( tVentana *win, char* msg, int y );
 void ADP_printfToWin( tVentana* win, int y, const char* fmt, ... );
 
 void ADP_MigrarLosPCBs( tListaPCB Lista );
+
+void ADP_AtenderPCBNuevo(tSocket*);
 
 #endif /*ADPLIB_H_*/
 /*--------------------------< FIN ARCHIVO >-----------------------------------------------*/
