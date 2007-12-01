@@ -1534,7 +1534,10 @@ void ACR_ExtraerRecursos(char* szRecursos, const char* szLinea)
 	p = strtok(szLineaCpy, ":");
 	p = strtok(NULL, ":");
 	p = strtok(NULL, "\n");
-	strcpy(szRecursos, p);
+	if(p)
+		strcpy(szRecursos, p);
+	else
+		strcpy(szRecursos, "");
 	return;
 }
 
