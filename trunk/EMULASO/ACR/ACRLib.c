@@ -1387,6 +1387,8 @@ int ACR_LiberarRecursos(int idSesion){
 				}else{
 					Lista = PpcbAcr_Siguiente( Lista );
 				}
+			}else{
+				Lista = PpcbAcr_Siguiente( Lista );
 			}
 		}
 	}
