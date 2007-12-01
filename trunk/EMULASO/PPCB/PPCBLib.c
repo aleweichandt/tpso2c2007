@@ -50,11 +50,11 @@ void PCB_ProcesarSeniales( int senial )
 	}
 	else if ( senial == SIGUSR1 )
 	{	/* Escribir informacion de control */
-		if ( PCB.nIdProcesoPadre == _ID_ACR_ )
+		/*if ( PCB.nIdProcesoPadre == _ID_ACR_ )
 		{
 			ArmarPathPCBConfig( szArchivo, PCB.PPCB_ID,sizeof(szArchivo) );
 			remove(szArchivo);
-		}
+		}*/
 		/*if( PCB.nIdProcesoPadre == _ID_ADP_ )
 		{*/
 			createPCBConfig();
@@ -462,7 +462,7 @@ int PCB_ExecuteImpFinal(char *param)
 {/*Lo tuve que hacer para no romper el disenio que vienen llevando, esta solo difiere con el 
 print comun en que lleva el pcbid*/
 	/* MENSAJE PRINT!!!!! */
-	tSocket *pSocket;
+	tSocket *pSocket=NULL;
 	tPaquete *pPaq;
 	int		nSend;
 	unsigned char szIP[4];
@@ -475,8 +475,15 @@ print comun en que lleva el pcbid*/
 	
 	pPaq = paquetes_newPaqPrint(szIP, (unsigned char)_PPCB_, PCB.m_Port, PCB.SessionID, PCB.ProgName, param);
 	memcpy( &(pPaq->id.UnUsed), &PCB.PPCB_ID, sizeof(PCB.PPCB_ID) );/*Esta es la diferencia*/
-	Log_log( log_debug, "Mando PRINT al ADP" );
-	nSend = conexiones_sendBuff( PCB.m_socketADP, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
+	
+	if( PCB.nIdProcesoPadre == _ID_ADP_ ){
+		Log_log( log_debug, "Mando PRINT al ADP" );
+		pSocket = PCB.m_socketADP;
+	}else{
+		Log_log( log_debug, "Mando PRINT al ACR" );
+		pSocket = PCB.m_socketACR;
+	}
+	nSend = conexiones_sendBuff( pSocket, (const char*) paquetes_PaqToChar( pPaq ), PAQUETE_MAX_TAM );
 	if ( nSend != PAQUETE_MAX_TAM )
 	{
 		Log_logLastError( "error enviando PRINT al ADP" );
@@ -1019,7 +1026,7 @@ void PCB_AtenderACR ( tSocket *sockIn )
 		Log_log(log_info,"Llega un PAQ_MIGRATE_OK");
 		Log_log(log_info,"Kamikaze");
 		
-		if ( PCB.nIdProcesoPadre == _ADP_ )
+		if ( PCB.nIdProcesoPadre == _ID_ADP_ )
 		{
 			sprintf( szLeo, "Migra PCB %d", PCB.PPCB_ID );
 			PCB_ExecuteImpFinalMig(szLeo);/*distingo en el pcb cuando migra!*/

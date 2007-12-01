@@ -295,7 +295,7 @@ void ACR_ImprimirInfoCtr()
 	
 	InfoCtr_log(log_info,"Los PPCBs que lo estan PENDIENTES son: ");
 	ACR_InfoLista( ACR.t_ListaPpcbPend );
-	InfoCtr_log(log_info,"\n");
+	/*InfoCtr_log(log_info,"\n");*/
 	
 		
 	InfoCtr_CerrarInfo();
@@ -306,39 +306,36 @@ void ACR_ImprimirInfoCtr()
 void ACR_InfoLista( tListaPpcbAcr Lista  )
 {
 	char szArchivo[ 255 ];
-	char szCmd[50];
-	char szUsr[50];
 	char szEstado[50];
-	tPpcbAcr *pcb;
+	tPpcbAcr *ppcb;
 	char 	*tmp;
 	tConfig *cfg;
 	
 	while( Lista )
 	{
-		pcb = PpcbAcr_Datos( Lista );
+		ppcb = PpcbAcr_Datos( Lista );
 
-		if ( pcb->sActividad == Estado_Inactivo )
+		if ( ppcb->sActividad == Estado_Inactivo )
 		{		
-			kill( pcb->pidChild, SIGUSR1 );
+			kill( ppcb->pidChild, SIGUSR1 );
 			
 			memset(szArchivo,0,sizeof(szArchivo));
-			ArmarPathPCBConfig( szArchivo, pcb->pid,sizeof(szArchivo) );
+			ArmarPathPCBConfig( szArchivo, ppcb->pid,sizeof(szArchivo) );
 			
 		
 			if ( !(cfg = config_Crear( szArchivo, _PPCB_ )) ) 
 				break;
 			
-			if ( (tmp = config_GetVal( cfg, _PPCB_, "CREATORID" ) ) )
+			if ( (tmp = config_GetVal( cfg, _PPCB_, "ESTADO" ) ) )
 			{
-				strcpy( szUsr, tmp );
-			}
-			if ( (tmp = config_GetVal( cfg, _PPCB_, "COMANDO" ) ) )
-			{
-				strcpy( szCmd, tmp );
+				strcpy( szEstado, tmp );
 			}
 			config_Destroy( cfg );
+						
+			InfoCtr_printf(log_info, "PCB[id:%ld][usr:%s][ip:%s][est:%s][com:%s][idSesion:%ld]",
+				ppcb->pid,ppcb->szUsuario, ACR.sz_ACR_IP,
+				szEstado, ppcb->szComando, ppcb->lIdSesion);
 			
-			InfoCtr_printf( log_info, "PCB.id = %ld, Usr = %s, estado = %s,  Cmd = %s", pcb->pid, szUsr, szEstado, szCmd );
 		}
 				
 		Lista = PpcbAcr_Siguiente( Lista );
@@ -963,7 +960,65 @@ void ACR_AtenderPPCB( tSocket *sockIn )
 			Log_log(log_warning,"Se recibio MIGRAR_FAULT pero no se encontro PPCB asociado para adminsitrar");
 		}
 	}
-
+	/*if(IS_PAQ_PRINT(paq))
+	{/*me llega el print*//*
+		int nSend, pos;
+		long int pid;
+		
+		unsigned char ip[4] = {'\0'};
+		unsigned char idProceso;
+		unsigned short int puerto;		
+		int idSesion;
+		char nomProg[PRINT_LEN_NOM_PROG];
+		char msg[PRINT_LEN_MSG];
+		tPpcbAcr* ppcb=NULL;
+		
+		/*chequeo el unused en la cabecera por si finaliza el pcb*//*
+		memcpy(&pid, &(paq->id.UnUsed), sizeof(long int) );
+		if(pid > 0){
+			
+			if( (ppcb = PpcbAcr_BuscarPpcb(&ACR.t_ListaPpcbPend,pid,&pos)) == NULL ){
+				Log_printf(log_warning,"(atenderADP)no se ha encontrado el ppcb id: %ld",pid);
+				return;
+			}
+			
+			if( ppcb->sActividad != Estado_Activo )
+			{
+				Log_printf(log_debug,"Se detecto un PRINT inesperado de %ld pero se rechaza por ser el ppcb activo",pid);
+				return;
+			}
+			
+			/*esta cargado el unused, se liberan los recursos*//*
+			Log_printf(log_debug,"detecto finalizacion por paquete print. Se liberan los recursosdel PPCB id:%i",pid);
+				
+			ACR_DevolverTodos(pid);
+			
+			paquetes_ParsearPaqPrint(buffer, ip, &idProceso, &puerto, &idSesion, nomProg, msg);
+			if(idSesion == -1)
+			{
+				if( paq )
+				{
+					paquetes_destruir(paq);
+				}
+				idSesion = ppcb->lIdSesion;
+				strncpy(nomProg, ppcb->szComando, 4);
+				paq = paquetes_newPaqPrint(ip, idProceso, puerto, idSesion, nomProg, msg);
+				
+			}
+			PpcbAcr_EliminarPpcb(&ACR.t_ListaPpcbPend,(long)pid);
+			Log_printf(log_info,"Se elimino el ppcb %d de la administracion del ACR",pid);
+		}
+		
+		/*se lo reenvio al ADS*//*
+		Log_log( log_debug, "Mando PRINT al ADS" );
+		nSend = conexiones_sendBuff( ACR.psocketADS, (const char*) paquetes_PaqToChar( paq ), PAQUETE_MAX_TAM );
+					
+		if(nSend != PAQUETE_MAX_TAM)
+		{
+			Log_logLastError("error al enviar PRINT al ADS" );
+		}
+	}
+*/
 	if( paq )
 		paquetes_destruir(paq);	
 	
