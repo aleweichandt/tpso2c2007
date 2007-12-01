@@ -498,7 +498,7 @@ void MSH_ProcesarTeclado (tSocket* sockIn)
 			{
 				if(MSH_Logout(MShell.m_ListaSockets[ SOCK_ADS ])==ERROR)
 				{
-					Log_log( log_error, "MShell No Envio exec a ADS!!" );
+					Log_log( log_error, "MShell No Envio exit a ADS!!" );
 					break;
 				}else{
 					/*conexiones_CerrarSocket( MShell.m_ListaSockets, MShell.m_ListaSockets[ SOCK_ADS ], &MShell.m_ultimoSocket );*/
